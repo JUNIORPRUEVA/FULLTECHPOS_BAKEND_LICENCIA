@@ -20,7 +20,7 @@ const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 
 const app = express();
-const ADMIN_PORT = 3000;
+const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
 
 // ==========================================
 // MIDDLEWARE

@@ -20,15 +20,26 @@
                 <span class="navbar-brand">FULLTECH POS</span>
             </div>
             
-            <ul class="navbar-menu">
-                <li><a href="#about" class="navbar-link">Características</a></li>
-                <li><a href="#demo" class="navbar-link">Demo</a></li>
-                <li><a href="#license" class="navbar-link">Licencia</a></li>
-                <li><a href="https://wa.me/18295319442" class="navbar-link navbar-contact">WhatsApp</a></li>
-            </ul>
+            <div class="navbar-actions">
+                <a id="downloadDemoBtnTop" class="navbar-download" aria-label="Descargar demo">⬇ Descargar Demo</a>
 
-            <!-- Acceso administrativo (discreto) -->
-            <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+                <a href="https://wa.me/18295319442" class="navbar-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
+
+                <button id="navbarToggle" class="navbar-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">
+                    ☰
+                </button>
+
+                <!-- Acceso administrativo (discreto) -->
+                <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+            </div>
+        </div>
+
+        <div id="navbarMobile" class="navbar-mobile" aria-label="Menú móvil">
+            <button class="navbar-mobile-btn" type="button" onclick="scrollToSection('about')">Características</button>
+            <button class="navbar-mobile-btn" type="button" onclick="scrollToSection('demo')">Demo</button>
+            <button class="navbar-mobile-btn" type="button" onclick="scrollToSection('license')">Licencia</button>
+            <a href="https://wa.me/18295319442" class="navbar-mobile-btn" target="_blank" rel="noopener">WhatsApp</a>
+            <a id="adminLoginLinkMobile" href="#" class="navbar-mobile-btn" target="_blank" rel="noopener">Admin</a>
         </div>
     </nav>
 
@@ -434,14 +445,20 @@
         // Nota: El API Key de Evolution NO debe ir en el frontend.
         // Cada cliente envía la solicitud, y el backend la reenvía al WhatsApp del dueño.
         // ==========================================
-        const BACKEND_API_BASE = 'http://127.0.0.1:3000';
+        // En producción (EasyPanel) la landing vive en el mismo dominio del backend.
+        // En local, si abres la landing por otro puerto (ej. :8000), usamos :3000.
+        const BACKEND_API_BASE =
+            (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')
+                ? 'http://127.0.0.1:3000'
+                : window.location.origin;
 
-        // Link al panel admin (login)
-        const adminLoginLink = document.getElementById('adminLoginLink');
-        if (adminLoginLink) {
-            const returnTo = encodeURIComponent(window.location.href);
-            adminLoginLink.href = `${BACKEND_API_BASE}/admin/login.html?returnTo=${returnTo}`;
-        }
+        // Links al panel admin (login)
+        [document.getElementById('adminLoginLink'), document.getElementById('adminLoginLinkMobile')]
+            .filter(Boolean)
+            .forEach((link) => {
+                const returnTo = encodeURIComponent(window.location.href);
+                link.href = `${BACKEND_API_BASE}/admin/login.html?returnTo=${returnTo}`;
+            });
 
         const licenseForm = document.getElementById('license-request-form');
         if (licenseForm) {
@@ -513,8 +530,9 @@
         async function wireLatestInstaller() {
             const btn1 = document.getElementById('downloadDemoBtn');
             const btn2 = document.getElementById('downloadDemoBtn2');
+            const btnTop = document.getElementById('downloadDemoBtnTop');
 
-            if (!btn1 && !btn2) return;
+            if (!btn1 && !btn2 && !btnTop) return;
 
             try {
                 const response = await fetch(`${BACKEND_API_BASE}/api/latest-installer`);
@@ -526,14 +544,14 @@
 
                 const downloadUrl = `${BACKEND_API_BASE}/${data.version.ruta}`;
 
-                [btn1, btn2].filter(Boolean).forEach(btn => {
+                [btn1, btn2, btnTop].filter(Boolean).forEach(btn => {
                     btn.href = downloadUrl;
                     btn.target = '_blank';
                     btn.rel = 'noopener';
                 });
             } catch (e) {
                 // Si no hay versión todavía, deshabilitar visualmente
-                [btn1, btn2].filter(Boolean).forEach(btn => {
+                [btn1, btn2, btnTop].filter(Boolean).forEach(btn => {
                     btn.href = '#';
                     btn.style.opacity = '0.7';
                     btn.style.pointerEvents = 'none';
@@ -543,6 +561,48 @@
         }
 
         wireLatestInstaller();
+
+        // ==========================================
+        // NAVBAR MÓVIL (MENÚ HAMBURGUESA)
+        // Mantiene "Descargar Demo" siempre visible.
+        // ==========================================
+        (function wireMobileNavbar() {
+            const navbar = document.querySelector('.navbar');
+            const toggle = document.getElementById('navbarToggle');
+            const mobileMenu = document.getElementById('navbarMobile');
+
+            if (!navbar || !toggle || !mobileMenu) return;
+
+            function closeMenu() {
+                navbar.classList.remove('is-open');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+
+            function openMenu() {
+                navbar.classList.add('is-open');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (navbar.classList.contains('is-open')) closeMenu();
+                else openMenu();
+            });
+
+            mobileMenu.querySelectorAll('a,button').forEach((el) => {
+                el.addEventListener('click', () => closeMenu());
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!navbar.classList.contains('is-open')) return;
+                if (navbar.contains(e.target)) return;
+                closeMenu();
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) closeMenu();
+            });
+        })();
 
         // Animación de entrada para elementos al scroll
         const observerOptions = {

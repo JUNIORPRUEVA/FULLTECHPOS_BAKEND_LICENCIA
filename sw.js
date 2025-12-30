@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `fulltech-pos-static-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
