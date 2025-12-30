@@ -1,0 +1,263 @@
+# 🎯 Dónde Poner las Imágenes - Guía Visual Rápida
+
+## 📂 Carpeta Correcta
+
+```
+fulltech_pos_web/
+└── assets/
+    └── img/  ← AQUÍ VAN TUS IMÁGENES
+        ├── logo_fulltech.png (ya existe)
+        ├── hero-dashboard.png ← AGREGA AQUÍ
+        └── [otras imágenes opcionales]
+```
+
+---
+
+## 🖼️ Imagen Principal Necesaria
+
+### Nombre: `hero-dashboard.png`
+
+**Especificaciones:**
+- **Tamaño:** 500x500px o 600x600px
+- **Formato:** PNG o JPG
+- **Peso:** Menos de 100KB (optimizar en TinyPNG)
+- **Contenido:** Captura del sistema, dashboard, screenshot
+- **Ruta exacta:** `fulltech_pos_web/assets/img/hero-dashboard.png`
+
+**Se mostrará:** En el lado derecho del hero (sección inicial)
+
+---
+
+## 📝 Código a Cambiar en index.html
+
+### Línea 27 - CAMBIAR ESTO:
+
+```html
+<div class="placeholder-image">
+    <p>Imagen del Sistema</p>
+</div>
+```
+
+### POR ESTO:
+
+```html
+<img src="assets/img/hero-dashboard.png" 
+     alt="FULLTECH POS Dashboard" 
+     class="hero-system-image">
+```
+
+---
+
+## 🎨 CSS a Agregar en styles.css
+
+### Copiar esto al final del archivo:
+
+```css
+.hero-system-image {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 15px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    animation: slideInUp 0.8s ease-out 0.2s backwards;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.hero-system-image:hover {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    transform: translateY(-5px);
+}
+```
+
+---
+
+## ✅ Checklist de Instalación
+
+- [ ] Tengo mi imagen lista (500x500px)
+- [ ] La imagen está en formato PNG o JPG
+- [ ] He optimizado con TinyPNG (< 100KB)
+- [ ] He copiado a `assets/img/hero-dashboard.png`
+- [ ] He editado el HTML (línea 27)
+- [ ] He agregado el CSS
+- [ ] He guardado ambos archivos
+- [ ] He recargado con Ctrl+Shift+R
+- [ ] ¡La imagen aparece! 🎉
+
+---
+
+## 🎬 Obtener la Imagen (Opciones)
+
+### Opción 1: Captura del Sistema ⭐ MEJOR
+1. Abre FULLTECH POS (si lo tienes instalado)
+2. Abre una ventana del dashboard
+3. Presiona `Print Screen`
+4. Abre Paint: `Inicio → Paint`
+5. Pega la imagen: `Ctrl+V`
+6. Edita/Corta lo que quieras
+7. Redimensiona: `Imagen → Redimensionar`
+8. Guarda como PNG: `Archivo → Guardar Como`
+9. Nombre: `hero-dashboard.png`
+10. Ubicación: `fulltech_pos_web/assets/img/`
+
+### Opción 2: Descarga de Canva (Fácil)
+1. Abre https://canva.com
+2. Busca "Dashboard software"
+3. Elige un template
+4. Personaliza con colores de FULLTECH
+5. Descarga como PNG
+6. Copia a `assets/img/hero-dashboard.png`
+
+### Opción 3: Descarga de Unsplash (Rápido)
+1. Abre https://unsplash.com
+2. Busca "dashboard business"
+3. Descarga una imagen
+4. Redimensiona a 500x500px en Paint
+5. Copia a `assets/img/hero-dashboard.png`
+
+### Opción 4: Usa una imagen de prueba
+Descarga este SVG y cópialo como `placeholder-dashboard.svg`:
+- Ya incluido en: `assets/img/placeholder-dashboard.svg`
+
+---
+
+## 📐 Tamaños de Imagen Perfectos
+
+| Para | Tamaño | Formato | Uso |
+|------|--------|---------|-----|
+| Hero Image | 500x500 | PNG/JPG | Principal del sitio |
+| Logo | 120x120 | PNG | Esquina superior |
+| Feature Icons | 80x80 | PNG | En tarjetas (opcional) |
+| Thumbnail | 200x200 | JPG | Si subes a redes |
+
+---
+
+## 🔧 Pasos EXACTOS (Copy-Paste Ready)
+
+### 1. Guarda tu imagen como:
+```
+C:\Users\PC\Desktop\fulltech_pos_web\assets\img\hero-dashboard.png
+```
+
+### 2. Abre `index.html` y busca:
+```html
+<div class="placeholder-image">
+    <p>Imagen del Sistema</p>
+</div>
+```
+
+### 3. Reemplaza con:
+```html
+<img src="assets/img/hero-dashboard.png" alt="FULLTECH POS Dashboard" class="hero-system-image">
+```
+
+### 4. Abre `styles.css` y agrega al final:
+```css
+.hero-system-image {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 15px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    animation: slideInUp 0.8s ease-out 0.2s backwards;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.hero-system-image:hover {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    transform: translateY(-5px);
+}
+```
+
+### 5. Guarda ambos archivos
+
+### 6. Abre navegador:
+```
+http://localhost:8000
+```
+
+### 7. Recarga con:
+```
+Ctrl + Shift + R
+```
+
+---
+
+## 🆘 Si la Imagen NO Aparece
+
+### ❌ Problema: Imagen no se ve
+✅ Soluciones en orden:
+
+1. **Verifica la ruta:**
+   - ¿Escribiste `hero-dashboard.png`? (minúsculas)
+   - ¿Está en `assets/img/`?
+
+2. **Recarga sin caché:**
+   - Presiona `Ctrl+Shift+R` (no solo `F5`)
+
+3. **Verifica errores:**
+   - Presiona `F12` en navegador
+   - Abre pestaña "Console"
+   - ¿Dice "404 not found"?
+
+4. **Verifica el HTML:**
+   - ¿Borraste el `<div class="placeholder-image">`?
+   - ¿Pegaste el `<img>` correctamente?
+
+5. **Verifica el archivo:**
+   - ¿El archivo realmente existe en esa carpeta?
+   - ¿Es PNG o JPG? (no es GIF, WEBP, etc.)
+
+---
+
+## 💡 Errores Comunes
+
+### ❌ Error 1: Escribiste la ruta incorrecta
+```html
+<!-- MALO -->
+<img src="assets/img/HERO-DASHBOARD.PNG">
+
+<!-- BUENO -->
+<img src="assets/img/hero-dashboard.png">
+```
+(Las mayúsculas y minúsculas importan!)
+
+### ❌ Error 2: El archivo no está en la carpeta correcta
+```
+MALO:  fulltech_pos_web/HERO-DASHBOARD.PNG
+BUENO: fulltech_pos_web/assets/img/hero-dashboard.png
+```
+
+### ❌ Error 3: Usaste un formato no compatible
+```
+MALO:  hero-dashboard.gif
+MALO:  hero-dashboard.webp
+BUENO: hero-dashboard.png
+BUENO: hero-dashboard.jpg
+```
+
+---
+
+## 📞 ¿Necesitas Ayuda?
+
+Si aún tienes problemas:
+
+1. Verifica que TUS cambios se guardaron (Ctrl+S)
+2. Cierra y abre el navegador
+3. Limpia caché: Ctrl+Shift+Delete
+4. Recarga la página: Ctrl+Shift+R
+5. Si sigue sin funcionar, comprueba la consola (F12)
+
+---
+
+## 🎉 ¡Listo!
+
+Una vez que sigas estos pasos, tendrás:
+- ✅ Sitio web profesional
+- ✅ Con imagen real del sistema
+- ✅ Completamente funcional
+- ✅ Listo para mostrar a clientes
+
+**¡Éxito!** 🚀
+

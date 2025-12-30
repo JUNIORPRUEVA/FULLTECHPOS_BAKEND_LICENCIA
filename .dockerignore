@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log*
+*.log
+.env
+.env.*
+.vscode
+
+# Docs and dev-only assets
+/docs
+
+# Local-only folders
+downloads
+
+# Git
+.git
+.gitignore

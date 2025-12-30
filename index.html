@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#05422C">
+    <title>FULLTECH POS - Sistema de Punto de Venta para Negocios en RD</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/assets/img/pwa/icon-180.png">
+    <link rel="icon" href="/assets/img/pwa/icon-192.png">
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <script defer src="/assets/js/pwa.js"></script>
+</head>
+<body>
+    <!-- NAVBAR / BARRA DE NAVEGACIÓN -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <img src="assets/img/logo/logoprincipal.png" alt="FULLTECH POS" class="navbar-logo-img">
+                <span class="navbar-brand">FULLTECH POS</span>
+            </div>
+            
+            <ul class="navbar-menu">
+                <li><a href="#about" class="navbar-link">Características</a></li>
+                <li><a href="#demo" class="navbar-link">Demo</a></li>
+                <li><a href="#license" class="navbar-link">Licencia</a></li>
+                <li><a href="https://wa.me/18295319442" class="navbar-link navbar-contact">WhatsApp</a></li>
+            </ul>
+
+            <!-- Acceso administrativo (discreto) -->
+            <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+        </div>
+    </nav>
+
+    <!-- ENCABEZADO / HERO -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">FULLTECH POS</h1>
+                <p class="hero-subtitle">Sistema POS con ventas, inventario, facturación y más</p>
+                
+                <div class="hero-buttons">
+                    <a id="downloadDemoBtn" class="btn btn-primary">⬇ Descargar Demo</a>
+                    <button class="btn btn-secondary" onclick="scrollToSection('license')">Comprar Licencia</button>
+                    <a href="https://wa.me/18295319442?text=Hola,%20me%20gustaría%20más%20información%20sobre%20FULLTECH%20POS" target="_blank" class="btn btn-tertiary">Contactar por WhatsApp</a>
+                </div>
+            </div>
+            
+            <div class="hero-visual">
+                <img src="assets/img/hero/imagenprincipal.png" alt="FULLTECH POS Dashboard" class="hero-system-image">
+                
+                <!-- Galería de imágenes pequeñas -->
+                <div class="hero-images-gallery">
+                    <img src="assets/img/hero/imagensecundaria.png" alt="Gestión de Inventario" class="gallery-thumb" onclick="openImageModal(this.src)" title="Gestión de Inventario - Click para ampliar">
+                    <img src="assets/img/hero/imagennumerotres.png" alt="Ventas y Reportes" class="gallery-thumb" onclick="openImageModal(this.src)" title="Ventas y Reportes - Click para ampliar">
+                    <img src="assets/img/hero/imagenprincipal.png" alt="Dashboard Principal" class="gallery-thumb" onclick="openImageModal(this.src)" title="Dashboard Principal - Click para ampliar">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL PARA VER IMÁGENES EN GRANDE -->
+    <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
+        <div class="image-modal-content">
+            <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+            <img id="imageModalImg" src="" alt="Imagen ampliada" class="image-modal-img">
+        </div>
+    </div>
+
+    <!-- SECCIÓN: ¿QUÉ ES FULLTECH POS? -->
+    <section class="about" id="about">
+        <div class="container">
+            <h2 class="section-title">¿Qué es FULLTECH POS?</h2>
+            <p class="section-description">
+                FULLTECH POS es un sistema de punto de venta moderno y confiable diseñado especialmente para negocios dominicanos. 
+                Perfecto para colmados, tiendas, ferreterías, boutiques, suplidores, empresas pequeñas, electrónica, repuestos y más. 
+                Gestiona tus ventas, inventario, facturación, cotizaciones y clientes desde una única plataforma.
+            </p>
+
+            <div class="features-grid">
+                <!-- Característica 1: Inventario -->
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon">📦</div>
+                        <h3 class="feature-title">Gestión de Inventario</h3>
+                    </div>
+                    <p class="feature-description">
+                        Controla tu stock en tiempo real.
+                    </p>
+                    <div class="feature-card-footer">
+                        <a href="javascript:void(0)" onclick="showFeatureDetails(0)">Ver más</a>
+                    </div>
+                </div>
+
+                <!-- Característica 2: Ventas Rápidas -->
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Ventas Rápidas</h3>
+                    </div>
+                    <p class="feature-description">
+                        Procesa ventas en segundos.
+                    </p>
+                    <div class="feature-card-footer">
+                        <a href="javascript:void(0)" onclick="showFeatureDetails(1)">Ver más</a>
+                    </div>
+                </div>
+
+                <!-- Característica 3: Facturación y Cotizaciones -->
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon">📄</div>
+                        <h3 class="feature-title">Facturación</h3>
+                    </div>
+                    <p class="feature-description">
+                        Genera facturas profesionales.
+                    </p>
+                    <div class="feature-card-footer">
+                        <a href="javascript:void(0)" onclick="showFeatureDetails(2)">Ver más</a>
+                    </div>
+                </div>
+
+                <!-- Característica 4: Gestión de Clientes -->
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon">👥</div>
+                        <h3 class="feature-title">Clientes</h3>
+                    </div>
+                    <p class="feature-description">
+                        Registro completo de tus clientes.
+                    </p>
+                    <div class="feature-card-footer">
+                        <a href="javascript:void(0)" onclick="showFeatureDetails(3)">Ver más</a>
+                    </div>
+                </div>
+
+                <!-- Característica 5: Reportes -->
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon">📊</div>
+                        <h3 class="feature-title">Reportes</h3>
+                    </div>
+                    <p class="feature-description">
+                        Análisis en tiempo real.
+                    </p>
+                    <div class="feature-card-footer">
+                        <a href="javascript:void(0)" onclick="showFeatureDetails(4)">Ver más</a>
+                    </div>
+                </div>
+
+                <!-- Característica 6: Activación por Licencia -->
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon">🔐</div>
+                        <h3 class="feature-title">Seguridad</h3>
+                    </div>
+                    <p class="feature-description">
+                        Activación segura por licencia.
+                    </p>
+                    <div class="feature-card-footer">
+                        <a href="javascript:void(0)" onclick="showFeatureDetails(5)">Ver más</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para detalles -->
+            <div id="feature-modal" class="feature-modal">
+                <div class="feature-modal-content">
+                    <span class="feature-modal-close" onclick="closeFeatureModal()">&times;</span>
+                    <div class="feature-modal-icon">📦</div>
+                    <h2 id="modal-title" class="feature-modal-title">Característica</h2>
+                    <p id="modal-description" class="feature-modal-description">
+                        Descripción detallada
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN: DEMO GRATUITA -->
+    <section class="demo" id="demo">
+        <div class="container">
+            <h2 class="section-title">Prueba Gratis Nuestra Demo</h2>
+            
+            <div class="demo-content">
+                <div class="demo-info">
+                    <h3>¿Cómo funciona la demo?</h3>
+                    <p>
+                        Descarga la demo completamente <strong>gratuita</strong> y prueba todas las funcionalidades principales del sistema. 
+                        La demo tiene algunas limitaciones (como tiempo de uso o ciertos reportes avanzados), pero es suficiente para que veas 
+                        cómo funciona FULLTECH POS en tu negocio.
+                    </p>
+                    
+                    <h3 style="margin-top: 20px;">Base de Datos Local</h3>
+                    <p>
+                        Cada instalación de FULLTECH POS usa su propia base de datos local en tu computadora. 
+                        <strong>Tus datos son completamente suyos</strong> y no se envían a servidores externos. 
+                        Trabaja sin conexión a internet y mantén el control total de tu información.
+                    </p>
+                </div>
+
+                <div class="demo-cta">
+                    <h3>¿Listo para empezar?</h3>
+                    <a id="downloadDemoBtn2" class="btn btn-primary btn-large">⬇ Descargar Demo Ahora</a>
+                    <p class="demo-note">Disponible para Windows 7 en adelante</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN: COMPRAR LICENCIA -->
+    <section class="license" id="license">
+        <div class="container">
+            <h2 class="section-title">Comprar Licencia FULLTECH POS</h2>
+
+            <div class="license-content">
+                <div class="license-info">
+                    <h3>¿Cómo funciona?</h3>
+                    <p>
+                        Una vez que pruebes la demo y estés satisfecho, puedes adquirir una <strong>licencia completa y permanente</strong>.
+                    </p>
+                    
+                    <div class="license-steps">
+                        <div class="step">
+                            <span class="step-number">1</span>
+                            <p><strong>Completa el formulario</strong> con tus datos y negocio</p>
+                        </div>
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <p><strong>Realiza la transferencia</strong> a nuestra cuenta (datos por confirmar)</p>
+                        </div>
+                        <div class="step">
+                            <span class="step-number">3</span>
+                            <p><strong>Recibe tu clave de licencia</strong> vía correo o WhatsApp</p>
+                        </div>
+                        <div class="step">
+                            <span class="step-number">4</span>
+                            <p><strong>Activa el sistema</strong> con tu clave y disfruta sin limitaciones</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="license-form-container">
+                    <form id="license-request-form" class="license-form">
+                        <div class="form-group">
+                            <label for="fullname">Nombre Completo *</label>
+                            <input 
+                                type="text" 
+                                id="fullname" 
+                                name="fullname" 
+                                required 
+                                placeholder="Tu nombre completo"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="business-name">Nombre del Negocio *</label>
+                            <input 
+                                type="text" 
+                                id="business-name" 
+                                name="business-name" 
+                                required 
+                                placeholder="Ej: Colmado Don Carlos"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Teléfono / WhatsApp *</label>
+                            <input 
+                                type="tel" 
+                                id="phone" 
+                                name="phone" 
+                                required 
+                                placeholder="Ej: +1-809-123-4567"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Correo Electrónico *</label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                required 
+                                placeholder="tu@correo.com"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message">Mensaje (opcional)</label>
+                            <textarea 
+                                id="message" 
+                                name="message" 
+                                rows="4" 
+                                placeholder="Cuéntanos sobre tu negocio o cualquier pregunta..."
+                            ></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+                            Enviar Solicitud
+                        </button>
+                    </form>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER PROFESIONAL -->
+    <footer class="footer">
+        <div class="footer-content">
+            <!-- Sección: Sobre la Empresa -->
+            <div class="footer-section">
+                <h4>Sobre FULLTECH</h4>
+                <p>
+                    Soluciones de punto de venta diseñadas especialmente para negocios dominicanos. Gestiona tu inventario, ventas y clientes con facilidad.
+                </p>
+            </div>
+
+            <!-- Sección: Productos y Servicios -->
+            <div class="footer-section">
+                <h4>Productos</h4>
+                <p>
+                    • Sistema POS Profesional<br>
+                    • Gestión de Inventario<br>
+                    • Reportes Avanzados<br>
+                    • Soporte 24/7<br>
+                    • Demo Gratuita
+                </p>
+            </div>
+
+            <!-- Sección: Contacto -->
+            <div class="footer-section">
+                <h4>Contacto</h4>
+                <p>
+                    📧 <a href="mailto:fulltechsd@gmail.com">fulltechsd@gmail.com</a><br>
+                    📱 <a href="https://wa.me/18295319442">(829) 531-9442</a><br>
+                    💬 <a href="https://wa.me/18295319442">WhatsApp Directo</a><br>
+                    📍 Higüey, RD
+                </p>
+            </div>
+
+            <!-- Sección: Enlaces Rápidos -->
+            <div class="footer-section">
+                <h4>Enlaces Útiles</h4>
+                <p>
+                    <a href="#about">Características</a><br>
+                    <a href="#demo">Demo en Vivo</a><br>
+                    <a href="#license">Solicitar Licencia</a><br>
+                    <a href="https://wa.me/18295319442">Soporte</a>
+                </p>
+            </div>
+        </div>
+
+            <div class="footer-bottom">
+                <p>© 2025 FULLTECH, SRL. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Datos de características detalladas
+        const featuresDetails = [
+            {
+                icon: '📦',
+                title: 'Gestión de Inventario',
+                description: 'Controla tu stock en tiempo real. Recibe alertas cuando los productos están bajos, visualiza reportes detallados de existencias, y sincroniza automáticamente los cambios en tu inventario con cada venta.'
+            },
+            {
+                icon: '⚡',
+                title: 'Ventas Rápidas y Eficientes',
+                description: 'Procesa ventas en segundos con búsqueda instantánea de productos, lectura de códigos de barras, aplicación de descuentos automáticos y selección de métodos de pago. Maximiza tu productividad.'
+            },
+            {
+                icon: '📄',
+                title: 'Facturación y Cotizaciones',
+                description: 'Genera facturas profesionales y cotizaciones personalizadas al instante. Control total de documentos fiscales, numeración automática, y envío directo a tus clientes por correo o WhatsApp.'
+            },
+            {
+                icon: '👥',
+                title: 'Gestión de Clientes',
+                description: 'Mantén un registro completo de tus clientes con historial de compras, datos de contacto, niveles de crédito y preferencias. Mejora tu relación con los clientes y aumenta la fidelización.'
+            },
+            {
+                icon: '📊',
+                title: 'Reportes y Análisis',
+                description: 'Genera reportes detallados de ventas, ganancias, productos más vendidos, clientes frecuentes y análisis de tu negocio en tiempo real. Toma decisiones mejor informadas.'
+            },
+            {
+                icon: '🔐',
+                title: 'Activación por Licencia',
+                description: 'Sistema seguro con activación por licencia. Prueba la demo con funciones limitadas sin costo. Una vez satisfecho, activa tu licencia para disfrutar de todas las funcionalidades sin restricciones.'
+            }
+        ];
+
+        // Función para mostrar detalles de característica
+        function showFeatureDetails(index) {
+            const feature = featuresDetails[index];
+            const modal = document.getElementById('feature-modal');
+            const modalIcon = modal.querySelector('.feature-modal-icon');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
+
+            modalIcon.textContent = feature.icon;
+            modalTitle.textContent = feature.title;
+            modalDescription.textContent = feature.description;
+
+            modal.classList.add('show');
+        }
+
+        // Función para cerrar modal
+        function closeFeatureModal() {
+            const modal = document.getElementById('feature-modal');
+            modal.classList.remove('show');
+        }
+
+        // Cerrar modal al hacer clic fuera del contenido
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('feature-modal');
+            if (event.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+
+        // Función para scroll suave a secciones
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // ==========================================
+        // FORMULARIO -> WHATSAPP (VÍA BACKEND)
+        // Nota: El API Key de Evolution NO debe ir en el frontend.
+        // Cada cliente envía la solicitud, y el backend la reenvía al WhatsApp del dueño.
+        // ==========================================
+        const BACKEND_API_BASE = 'http://127.0.0.1:3000';
+
+        // Link al panel admin (login)
+        const adminLoginLink = document.getElementById('adminLoginLink');
+        if (adminLoginLink) {
+            const returnTo = encodeURIComponent(window.location.href);
+            adminLoginLink.href = `${BACKEND_API_BASE}/admin/login.html?returnTo=${returnTo}`;
+        }
+
+        const licenseForm = document.getElementById('license-request-form');
+        if (licenseForm) {
+            licenseForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn ? submitBtn.textContent : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Enviando...';
+                }
+
+                try {
+                    const payload = {
+                        nombre: (document.getElementById('fullname')?.value || '').trim(),
+                        negocio: (document.getElementById('business-name')?.value || '').trim(),
+                        telefono: (document.getElementById('phone')?.value || '').trim(),
+                        email: (document.getElementById('email')?.value || '').trim(),
+                        mensaje: (document.getElementById('message')?.value || '').trim()
+                    };
+
+                    if (!payload.nombre || !payload.telefono || !payload.email) {
+                        throw new Error('Completa los campos requeridos (Nombre, Teléfono, Email).');
+                    }
+
+                    const confirmMessage =
+                        `Antes de enviar, verifica que tu número de teléfono/WhatsApp esté correcto, ya que por ahí te contactaremos.\n\n` +
+                        `📱 Teléfono: ${payload.telefono}\n\n` +
+                        `Te responderemos en un plazo de 0 a 24 horas.\n\n` +
+                        `¿Deseas enviar la solicitud ahora?`;
+
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+
+                    const response = await fetch(`${BACKEND_API_BASE}/api/send-license-request`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'No se pudo enviar la solicitud');
+                    }
+
+                    alert('✅ Solicitud enviada. Te contactaremos al número indicado en un plazo de 0 a 24 horas.');
+                    this.reset();
+                } catch (error) {
+                    alert(`❌ Error enviando la solicitud: ${error.message}`);
+                    console.error('Error enviando solicitud de licencia:', error);
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalBtnText;
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // DESCARGA DINÁMICA DEL ÚLTIMO INSTALADOR
+        // Nota: Cada cliente descargará directo desde /descargas/...
+        // ==========================================
+        async function wireLatestInstaller() {
+            const btn1 = document.getElementById('downloadDemoBtn');
+            const btn2 = document.getElementById('downloadDemoBtn2');
+
+            if (!btn1 && !btn2) return;
+
+            try {
+                const response = await fetch(`${BACKEND_API_BASE}/api/latest-installer`);
+                const data = await response.json();
+
+                if (!data.success || !data.version || !data.version.ruta) {
+                    throw new Error('No hay instalador disponible');
+                }
+
+                const downloadUrl = `${BACKEND_API_BASE}/${data.version.ruta}`;
+
+                [btn1, btn2].filter(Boolean).forEach(btn => {
+                    btn.href = downloadUrl;
+                    btn.target = '_blank';
+                    btn.rel = 'noopener';
+                });
+            } catch (e) {
+                // Si no hay versión todavía, deshabilitar visualmente
+                [btn1, btn2].filter(Boolean).forEach(btn => {
+                    btn.href = '#';
+                    btn.style.opacity = '0.7';
+                    btn.style.pointerEvents = 'none';
+                    btn.textContent = 'Demo no disponible aún';
+                });
+            }
+        }
+
+        wireLatestInstaller();
+
+        // Animación de entrada para elementos al scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'slideInUp 0.6s ease-out forwards';
+                }
+            });
+        }, observerOptions);
+
+        // Observar elementos con clase animable
+        document.querySelectorAll('.feature-card, .section-title').forEach(el => {
+            observer.observe(el);
+        });
+
+        // ==========================================
+        // FUNCIONES PARA MODAL DE IMÁGENES
+        // ==========================================
+        function openImageModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('imageModalImg');
+            modalImg.src = imageSrc;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevenir scroll
+        }
+
+        function closeImageModal(event) {
+            const modal = document.getElementById('imageModal');
+            // Cerrar solo si hace click fuera de la imagen o en la X
+            if (event && event.target !== modal && event.target.className !== 'image-modal-close') {
+                return;
+            }
+            modal.classList.remove('show');
+            document.body.style.overflow = 'auto'; // Permitir scroll
+        }
+
+        // Cerrar modal con tecla ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('imageModal');
+                if (modal.classList.contains('show')) {
+                    closeImageModal();
+                }
+            }
+        });
+
+        // Cerrar modal al hacer click fuera de la imagen
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+const express = require('express');
+const isAdmin = require('../middleware/isAdmin');
+const adminLicensesController = require('../controllers/adminLicensesController');
+
+const router = express.Router();
+
+// POST /api/admin/licenses
+router.post('/', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.createLicense(req, res)).catch(next);
+});
+
+// GET /api/admin/licenses
+router.get('/', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.listLicenses(req, res)).catch(next);
+});
+
+// GET /api/admin/licenses/:id
+router.get('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.getLicenseDetail(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/:id
+router.patch('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.updateLicense(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/:id/bloquear
+router.patch('/:id/bloquear', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.bloquearLicense(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/:id/activar-manual
+router.patch('/:id/activar-manual', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.activarManual(req, res)).catch(next);
+});
+
+module.exports = router;

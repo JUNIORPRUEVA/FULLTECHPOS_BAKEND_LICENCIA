@@ -1,0 +1,373 @@
+/**
+ * FULLTECH POS WEB - Backend Server
+ * Servidor Express con panel administrativo para gestionar descargas de instaladores
+ * 
+ * Puerto: 3000 (admin + API)
+ * Puerto: 8000 (archivos estáticos públicos - continúa con Python HTTP server)
+ */
+
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const bodyParser = require('body-parser');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const sessions = require('./auth/sessions');
+const uploadRoutes = require('./routes/uploads');
+const adminCustomersRoutes = require('./routes/adminCustomersRoutes');
+const adminLicensesRoutes = require('./routes/adminLicensesRoutes');
+const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
+const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
+const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
+
+const app = express();
+const ADMIN_PORT = 3000;
+
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// CORS básico para permitir que la landing (ej. :8000) llame a la API (:3000)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, x-session-id, apikey');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// Servir archivos estáticos de admin
+app.use('/admin', express.static(path.join(__dirname, '../admin')));
+
+// Servir archivos públicos (landing + assets) para que el sitio pueda funcionar como PWA
+// Nota: evitamos exponer toda la raíz del repo; sólo servimos lo necesario.
+app.use('/assets', express.static(path.join(__dirname, '../assets')));
+
+app.get(['/', '/index.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+app.get('/manifest.webmanifest', (req, res) => {
+  res.type('application/manifest+json');
+  res.sendFile(path.join(__dirname, '../manifest.webmanifest'));
+});
+
+app.get('/sw.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, '../sw.js'));
+});
+
+app.get('/offline.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../offline.html'));
+});
+
+// Servir descargas públicamente
+app.use('/descargas', express.static(path.join(__dirname, '../descargas')));
+
+// ==========================================
+// RUTAS DE AUTENTICACIÓN
+// ==========================================
+
+// Credenciales fijas (MUY BÁSICO - para desarrollo)
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'fulltechsd@gmail.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ayleen10';
+
+// POST /api/login - Verificar credenciales
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const sessionId = sessions.createSession(username);
+
+    res.json({
+      success: true,
+      sessionId: sessionId,
+      message: 'Login exitoso'
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: 'Credenciales inválidas'
+    });
+  }
+});
+
+// ==========================================
+// RUTAS DE UPLOAD
+// ==========================================
+// Nota: protegemos únicamente el endpoint de subida con sesión válida.
+// El resto de endpoints públicos (ej. /api/latest-installer) siguen abiertos.
+app.use('/api', (req, res, next) => {
+  if (req.path === '/upload-installer') {
+    return sessions.verifySessionMiddleware(req, res, next);
+  }
+  next();
+}, uploadRoutes);
+
+// ==========================================
+// MÓDULO DE LICENCIAS (PostgreSQL)
+// ==========================================
+// ADMIN (panel web)
+app.use('/api/admin/customers', adminCustomersRoutes);
+app.use('/api/admin/licenses', adminLicensesRoutes);
+app.use('/api/admin/license-config', adminLicenseConfigRoutes);
+app.use('/api/admin/activations', adminActivationsRoutes);
+
+// APP ESCRITORIO
+app.use('/api/licenses', licensesPublicRoutes);
+
+// POST /api/logout - Cerrar sesión
+app.post('/api/logout', sessions.verifySessionMiddleware, (req, res) => {
+  sessions.destroySession(req.sessionId);
+  res.json({
+    success: true,
+    message: 'Sesión cerrada'
+  });
+});
+
+// GET /api/verify-session - Verificar si la sesión es válida
+app.get('/api/verify-session', (req, res) => {
+  const sessionId = req.headers['x-session-id'] || req.query.sessionId;
+
+  const result = sessions.verifySessionId(sessionId);
+  if (result.ok) {
+    return res.json({ success: true, username: result.session.username });
+  }
+
+  return res.status(401).json({ success: false, message: 'No autenticado' });
+});
+
+// ==========================================
+// RUTAS DE VERSIONES
+// ==========================================
+
+// GET /api/versions - Obtener todas las versiones (protegido)
+app.get('/api/versions', sessions.verifySessionMiddleware, (req, res) => {
+  try {
+    const versionsPath = path.join(__dirname, 'versions.json');
+    const versions = JSON.parse(fs.readFileSync(versionsPath, 'utf8'));
+    res.json({
+      success: true,
+      versions: versions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener versiones',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/latest-installer - Obtener el último instalador (público)
+app.get('/api/latest-installer', (req, res) => {
+  try {
+    const versionsPath = path.join(__dirname, 'versions.json');
+    const versions = JSON.parse(fs.readFileSync(versionsPath, 'utf8'));
+
+    if (versions.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay versiones disponibles'
+      });
+    }
+
+    // Retornar la última versión (la más reciente)
+    const latest = versions[versions.length - 1];
+    res.json({
+      success: true,
+      version: latest
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el instalador',
+      error: error.message
+    });
+  }
+});
+
+// ==========================================
+// EVOLUTION API (WHATSAPP) - ENV BASED
+// ==========================================
+
+function normalizePhoneToE164Like(raw) {
+  if (!raw) return '';
+  const digits = String(raw).replace(/[^0-9]/g, '');
+  // Para RD normalmente: 1 + 10 dígitos (ej: 18295319442)
+  if (digits.length === 10) return `1${digits}`;
+  return digits;
+}
+
+async function sendEvolutionText({ toNumber, message }) {
+  const baseUrl = (process.env.EVOLUTION_API_URL || '').replace(/\/$/, '');
+  const instanceName = process.env.EVOLUTION_API_INSTANCE_NAME;
+  const apiKey = process.env.EVOLUTION_API_KEY;
+
+  if (!baseUrl || !instanceName || !apiKey) {
+    throw new Error('Faltan variables en .env: EVOLUTION_API_URL, EVOLUTION_API_INSTANCE_NAME, EVOLUTION_API_KEY');
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    apikey: apiKey
+  };
+
+  // Intento 1: /message/sendText con instance en body
+  let response = await fetch(`${baseUrl}/message/sendText`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      number: toNumber,
+      text: message,
+      instance: instanceName
+    })
+  });
+
+  // Fallback: /message/sendText/:instance
+  if (response.status === 404) {
+    response = await fetch(`${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        number: toNumber,
+        text: message
+      })
+    });
+  }
+
+  const text = await response.text().catch(() => '');
+  if (!response.ok) {
+    throw new Error(`Evolution API error ${response.status}: ${text || response.statusText}`);
+  }
+
+  return text;
+}
+
+// POST /api/send-license-request - Recibe datos del formulario y envía al WhatsApp del dueño
+app.post('/api/send-license-request', async (req, res) => {
+  try {
+    const ownerRaw = process.env.EVOLUTION_OWNER_NUMBER;
+    if (!ownerRaw) {
+      return res.status(500).json({
+        success: false,
+        message: 'Falta EVOLUTION_OWNER_NUMBER en el archivo .env'
+      });
+    }
+
+    const ownerNumber = normalizePhoneToE164Like(ownerRaw);
+    const nombre = (req.body.nombre || '').trim();
+    const telefono = (req.body.telefono || '').trim();
+    const email = (req.body.email || '').trim();
+    const negocio = (req.body.negocio || '').trim();
+    const mensaje = (req.body.mensaje || '').trim();
+
+    if (!nombre || !telefono || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos requeridos (nombre, teléfono, email)'
+      });
+    }
+
+    const whatsappMessage =
+      `📋 *NUEVA SOLICITUD DE LICENCIA - FULLTECH POS*\n\n` +
+      `👤 *Nombre:* ${nombre}\n` +
+      `📱 *Teléfono:* ${telefono}\n` +
+      `📧 *Email:* ${email}\n` +
+      `🏪 *Negocio:* ${negocio || '-'}\n` +
+      `💬 *Mensaje:* ${mensaje || '-'}\n\n` +
+      `⏰ *Fecha:* ${new Date().toLocaleString('es-DO')}`;
+
+    await sendEvolutionText({
+      toNumber: ownerNumber,
+      message: whatsappMessage
+    });
+
+    res.json({
+      success: true,
+      message: 'Solicitud enviada por WhatsApp al dueño'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error enviando a WhatsApp',
+      error: error.message
+    });
+  }
+});
+
+// DELETE /api/delete-installer/:id - Eliminar una versión (protegido)
+app.delete('/api/delete-installer/:id', sessions.verifySessionMiddleware, (req, res) => {
+  try {
+    const versionId = req.params.id;
+    const versionsPath = path.join(__dirname, 'versions.json');
+    let versions = JSON.parse(fs.readFileSync(versionsPath, 'utf8'));
+
+    // Encontrar versión a eliminar
+    const versionIndex = versions.findIndex(v => v.id === versionId);
+    if (versionIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Versión no encontrada'
+      });
+    }
+
+    const version = versions[versionIndex];
+
+    // Eliminar archivo
+    const filePath = path.join(__dirname, '..', version.ruta);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Eliminar de JSON
+    versions.splice(versionIndex, 1);
+    fs.writeFileSync(versionsPath, JSON.stringify(versions, null, 2));
+
+    res.json({
+      success: true,
+      message: 'Versión eliminada correctamente'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar versión',
+      error: error.message
+    });
+  }
+});
+
+// ==========================================
+// RUTAS PRINCIPALES
+// ==========================================
+
+// GET / - Redirigir a la landing (que está en 8000)
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>FULLTECH POS - Panel Administrativo</h1>
+    <p>Panel de administración disponible en <a href="/admin/login.html">/admin/login.html</a></p>
+    <p>Landing pública: <a href="http://localhost:8000" target="_blank">localhost:8000</a></p>
+  `);
+});
+
+// GET /admin/login - Servir login.html
+app.get('/admin/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin/login.html'));
+});
+
+// GET /admin/dashboard - Servir dashboard.html
+app.get('/admin/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin/dashboard.html'));
+});
+
+// ==========================================
+// INICIAR SERVIDOR
+// ==========================================
+
+app.listen(ADMIN_PORT, () => {
+  console.log(`\n✅ FULLTECH POS Admin Server ejecutándose en puerto ${ADMIN_PORT}`);
+  console.log(`   Admin Panel: http://localhost:${ADMIN_PORT}/admin/login.html`);
+  console.log(`   API: http://localhost:${ADMIN_PORT}/api`);
+  console.log(`   Landing Pública: http://localhost:8000\n`);
+});

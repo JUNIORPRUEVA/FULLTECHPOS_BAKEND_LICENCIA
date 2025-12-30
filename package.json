@@ -1,0 +1,28 @@
+{
+  "name": "fulltech-pos-web",
+  "version": "1.0.0",
+  "description": "Landing page de FULLTECH POS con panel administrativo de descargas",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "migrate": "node backend/db/runMigrations.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.12.0"
+  },
+  "keywords": [
+    "pos",
+    "fulltech",
+    "landing"
+  ],
+  "author": "FULLTECH",
+  "license": "MIT",
+  "devDependencies": {
+    "jimp": "^1.6.0"
+  }
+}

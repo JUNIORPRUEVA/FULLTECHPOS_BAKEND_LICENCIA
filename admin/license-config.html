@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Licencias - FULLTECH POS</title>
+    <meta name="theme-color" content="#05422C">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
+    <link rel="icon" href="../assets/img/pwa/icon-192.png">
+    <script defer src="../assets/js/pwa.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #F3F4F6;
+            color: #1F2937;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .navbar-user p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #05422C;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            animation: slideInUp 0.6s ease;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #05422C;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .section-subtitle {
+            font-size: 0.95rem;
+            color: #6B7280;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #05422C;
+            margin-bottom: 8px;
+            letter-spacing: -0.2px;
+        }
+
+        input[type="number"] {
+            padding: 12px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background-color: #F9FAFB;
+            color: #1F2937;
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #10B981;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        input[type="number"]:disabled {
+            background-color: #F3F4F6;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 66, 44, 0.05) 100%);
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #10B981;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #05422C;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 35px;
+        }
+
+        button {
+            border: none;
+            padding: 14px 32px;
+            border-radius: 9px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-save:hover:not(:disabled) {
+            box-shadow: 0 10px 30px rgba(5, 66, 44, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-reset {
+            background: #E5E7EB;
+            color: #1F2937;
+        }
+
+        .btn-reset:hover:not(:disabled) {
+            background: #D1D5DB;
+        }
+
+        .message {
+            padding: 15px 20px;
+            border-radius: 9px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: none;
+            animation: slideInDown 0.3s ease;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background-color: #D1FAE5;
+            color: #065F46;
+            border-left: 4px solid #10B981;
+        }
+
+        .message.error {
+            background-color: #FEE2E2;
+            color: #991B1B;
+            border-left: 4px solid #EF4444;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6B7280;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #E5E7EB;
+            border-top-color: #10B981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background-color: #DBEAFE;
+            border-left: 4px solid #3B82F6;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            color: #1E40AF;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .navbar-user {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <div style="display:flex; align-items:center; gap: 16px;">
+            <a href="admin-hub.html" class="back-link">← Volver</a>
+            <h1>🚀 FULLTECH POS - Panel Admin</h1>
+        </div>
+        <div class="navbar-user">
+            <p>Bienvenido, <strong id="userName">Admin</strong></p>
+            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- SECCIÓN PRINCIPAL -->
+        <div class="section">
+            <h2 class="section-title">⚙️ Configuración de Licencias</h2>
+            <p class="section-subtitle">
+                Desde aquí puedes definir cuántos días dura la demo y las licencias de pago, 
+                y cuántos dispositivos puede activar cada plan. Estos valores se usarán como 
+                predeterminados cuando crees nuevas licencias. Siempre podrás personalizar 
+                los valores de forma individual para cada licencia.
+            </p>
+
+            <div id="message" class="message"></div>
+
+            <div id="loadingContainer" class="loading" style="display: none;">
+                <div class="spinner"></div> Cargando configuración...
+            </div>
+
+            <form id="configForm" style="display: none;">
+                <div class="info-box">
+                    <strong>ℹ️ Nota importante:</strong>
+                    Estos valores se aplicarán como predeterminados al crear nuevas licencias. 
+                    Puedes cambiarlos en cualquier momento, pero los cambios solo afectarán a 
+                    las licencias que crees en el futuro, no a las ya existentes.
+                </div>
+
+                <div class="grid-2">
+                    <!-- CARD DEMO -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="card-icon">🧪</span>
+                            Licencia DEMO
+                        </div>
+
+                        <div class="form-group">
+                            <label for="demo_dias_validez">Días de prueba (DEMO)</label>
+                            <input 
+                                type="number" 
+                                id="demo_dias_validez" 
+                                name="demo_dias_validez"
+                                min="1" 
+                                max="999"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="demo_max_dispositivos">Máximo de dispositivos para DEMO</label>
+                            <input 
+                                type="number" 
+                                id="demo_max_dispositivos" 
+                                name="demo_max_dispositivos"
+                                min="1" 
+                                max="99"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <!-- CARD FULL -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="card-icon">⭐</span>
+                            Licencia FULL / ANUAL
+                        </div>
+
+                        <div class="form-group">
+                            <label for="full_dias_validez">Días de validez (FULL)</label>
+                            <input 
+                                type="number" 
+                                id="full_dias_validez" 
+                                name="full_dias_validez"
+                                min="1" 
+                                max="9999"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="full_max_dispositivos">Máximo de dispositivos para FULL</label>
+                            <input 
+                                type="number" 
+                                id="full_max_dispositivos" 
+                                name="full_max_dispositivos"
+                                min="1" 
+                                max="99"
+                                required
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="reset" class="btn-reset" onclick="resetForm()">Cancelar</button>
+                    <button type="submit" class="btn-save" id="submitBtn">Guardar Configuración</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '';
+        let sessionId = localStorage.getItem('sessionId');
+        let originalConfig = {};
+
+        // Verificar autenticación al cargar
+        window.addEventListener('load', () => {
+            if (!sessionId) {
+                window.location.href = '/admin/login.html';
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlSessionId = urlParams.get('sessionId');
+            if (urlSessionId) {
+                sessionId = urlSessionId;
+                localStorage.setItem('sessionId', sessionId);
+            }
+
+            verifySession();
+            loadConfiguration();
+        });
+
+        /**
+         * Cargar configuración actual desde el backend
+         */
+        async function loadConfiguration() {
+            const loadingContainer = document.getElementById('loadingContainer');
+            const configForm = document.getElementById('configForm');
+
+            loadingContainer.style.display = 'block';
+            configForm.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/license-config`, {
+                    method: 'GET',
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+
+                const data = await response.json();
+
+                loadingContainer.style.display = 'none';
+
+                if (data.ok && data.config) {
+                    originalConfig = { ...data.config };
+                    
+                    document.getElementById('demo_dias_validez').value = data.config.demo_dias_validez;
+                    document.getElementById('demo_max_dispositivos').value = data.config.demo_max_dispositivos;
+                    document.getElementById('full_dias_validez').value = data.config.full_dias_validez;
+                    document.getElementById('full_max_dispositivos').value = data.config.full_max_dispositivos;
+
+                    configForm.style.display = 'block';
+                } else {
+                    showMessage('Error al cargar la configuración', 'error');
+                }
+            } catch (error) {
+                loadingContainer.style.display = 'none';
+                configForm.style.display = 'block';
+                showMessage('Error de conexión: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Manejar envío del formulario
+         */
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="spinner" style="display: inline-block; margin-right: 8px;"></div> Guardando...';
+
+            try {
+                const payload = {
+                    demo_dias_validez: parseInt(document.getElementById('demo_dias_validez').value),
+                    demo_max_dispositivos: parseInt(document.getElementById('demo_max_dispositivos').value),
+                    full_dias_validez: parseInt(document.getElementById('full_dias_validez').value),
+                    full_max_dispositivos: parseInt(document.getElementById('full_max_dispositivos').value)
+                };
+
+                const response = await fetch(`${API_URL}/api/admin/license-config`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.ok) {
+                    originalConfig = { ...payload };
+                    showMessage('✅ Configuración de licencias guardada correctamente', 'success');
+                    
+                    // Auto-cerrar el mensaje después de 5 segundos
+                    setTimeout(() => {
+                        document.getElementById('message').classList.remove('show');
+                    }, 5000);
+                } else {
+                    showMessage('❌ ' + (data.message || 'Error al guardar la configuración'), 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Error de conexión: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Guardar Configuración';
+            }
+        });
+
+        /**
+         * Mostrar mensaje
+         */
+        function showMessage(message, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = message;
+            messageEl.className = `message show ${type}`;
+        }
+
+        /**
+         * Resetear el formulario
+         */
+        function resetForm() {
+            document.getElementById('demo_dias_validez').value = originalConfig.demo_dias_validez;
+            document.getElementById('demo_max_dispositivos').value = originalConfig.demo_max_dispositivos;
+            document.getElementById('full_dias_validez').value = originalConfig.full_dias_validez;
+            document.getElementById('full_max_dispositivos').value = originalConfig.full_max_dispositivos;
+            document.getElementById('message').classList.remove('show');
+        }
+
+        /**
+         * Verificar sesión
+         */
+        async function verifySession() {
+            try {
+                const response = await fetch(`${API_URL}/api/verify-session?sessionId=${sessionId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('userName').textContent = data.username;
+                } else {
+                    logout();
+                }
+            } catch (error) {
+                logout();
+            }
+        }
+
+        /**
+         * Cerrar sesión
+         */
+        async function logout() {
+            try {
+                await fetch(`${API_URL}/api/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'x-session-id': sessionId,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (e) {}
+
+            localStorage.removeItem('sessionId');
+            window.location.href = '/admin/login.html';
+        }
+    </script>
+</body>
+</html>

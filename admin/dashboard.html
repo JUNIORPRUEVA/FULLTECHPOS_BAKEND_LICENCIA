@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Administrativo - FULLTECH POS | Control Total de Licencias</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #F3F4F6;
+            color: #1F2937;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .navbar-user p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #05422C;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            animation: slideInUp 0.6s ease;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #05422C;
+            margin-bottom: 25px;
+            letter-spacing: -0.5px;
+        }
+
+        .upload-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #05422C;
+            margin-bottom: 10px;
+            letter-spacing: -0.2px;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        textarea {
+            padding: 14px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background-color: #F9FAFB;
+            color: #1F2937;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="file"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #10B981;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 9px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+
+        button:hover {
+            box-shadow: 0 10px 30px rgba(5, 66, 44, 0.3);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            margin-bottom: 20px;
+            animation: slideInUp 0.3s ease;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .error {
+            background-color: #FEE2E2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+        }
+
+        .success {
+            background-color: #DCFCE7;
+            border: 1px solid #BBF7D0;
+            color: #166534;
+        }
+
+        .versions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .versions-table thead {
+            background-color: #F3F4F6;
+        }
+
+        .versions-table th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 700;
+            color: #05422C;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        .versions-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 0.9rem;
+        }
+
+        .versions-table tbody tr:hover {
+            background-color: #F9FAFB;
+        }
+
+        .download-link {
+            color: #10B981;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            color: #05422C;
+            text-decoration: underline;
+        }
+
+        .delete-btn {
+            background: #EF4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #DC2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6B7280;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px 0;
+            color: #6B7280;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #E5E7EB;
+            border-top-color: #10B981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .file-input-label {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            padding: 14px 20px;
+            border-radius: 9px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            box-shadow: 0 10px 30px rgba(5, 66, 44, 0.3);
+            transform: translateY(-2px);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-name {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #10B981;
+            font-weight: 600;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .navbar-user {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .versions-table {
+                font-size: 0.8rem;
+            }
+
+            .versions-table th,
+            .versions-table td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <meta name="theme-color" content="#05422C">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
+    <link rel="icon" href="../assets/img/pwa/icon-192.png">
+    <script defer src="../assets/js/pwa.js"></script>
+    <div class="navbar">
+        <div style="display:flex; align-items:center; gap: 16px;">
+            <a href="admin-hub.html" class="back-link">← Volver</a>
+            <h1>🚀 FULLTECH POS - Panel Admin</h1>
+        </div>
+        <div class="navbar-user">
+            <p>Bienvenido, <strong id="userName">Admin</strong></p>
+            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- SECCIÓN DE UPLOAD -->
+        <div class="section">
+            <h2 class="section-title">📤 Subir Nuevo Instalador</h2>
+            
+            <div id="uploadMessage" class="message"></div>
+
+            <form id="uploadForm" class="upload-form">
+                <div class="form-group">
+                    <label for="versionInput">Versión (ej: 1.0.0)</label>
+                    <input 
+                        type="text" 
+                        id="versionInput" 
+                        placeholder="1.0.0"
+                        value="1.0.0"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="descriptionInput">Descripción (opcional)</label>
+                    <textarea 
+                        id="descriptionInput" 
+                        placeholder="Describe los cambios o características principales..."
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Seleccionar Archivo</label>
+                    <label class="file-input-label" for="installerFile">
+                        Selecciona el instalador
+                    </label>
+                    <input 
+                        type="file" 
+                        id="installerFile" 
+                        accept=".zip,.exe,.msi,.tar,.gz"
+                        required
+                    >
+                    <div class="file-name" id="fileName"></div>
+                </div>
+
+                <button type="submit" id="uploadBtn">Subir Instalador</button>
+            </form>
+        </div>
+
+        <!-- SECCIÓN DE VERSIONES -->
+        <div class="section">
+            <h2 class="section-title">📦 Versiones Disponibles</h2>
+            
+            <div id="versionsLoading" class="loading" style="display: none;">
+                <div class="spinner"></div> Cargando versiones...
+            </div>
+
+            <div id="versionsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '';
+        let sessionId = localStorage.getItem('sessionId');
+
+        function getReturnTo() {
+            const params = new URLSearchParams(window.location.search);
+            const rt = params.get('returnTo') || localStorage.getItem('returnTo') || '';
+            return rt;
+        }
+
+        // Verificar si está autenticado
+        window.addEventListener('load', () => {
+            if (!sessionId) {
+                window.location.href = '/admin/login.html';
+                return;
+            }
+
+            // Obtener parámetro de URL si existe
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlSessionId = urlParams.get('sessionId');
+            if (urlSessionId) {
+                sessionId = urlSessionId;
+                localStorage.setItem('sessionId', sessionId);
+            }
+
+            const returnTo = urlParams.get('returnTo');
+            if (returnTo) {
+                localStorage.setItem('returnTo', returnTo);
+            }
+
+            // Verificar sesión
+            verifySession();
+            loadVersions();
+        });
+
+        // Mostrar nombre de archivo seleccionado
+        document.getElementById('installerFile').addEventListener('change', (e) => {
+            const fileName = e.target.files[0]?.name || '';
+            document.getElementById('fileName').textContent = fileName ? `✓ ${fileName}` : '';
+        });
+
+        // Manejar formulario de upload
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const installerFile = document.getElementById('installerFile').files[0];
+            if (!installerFile) {
+                showUploadMessage('❌ Por favor selecciona un archivo', 'error');
+                return;
+            }
+
+            const version = document.getElementById('versionInput').value;
+            const description = document.getElementById('descriptionInput').value;
+
+            const formData = new FormData();
+            formData.append('installer', installerFile);
+            formData.append('version', version);
+            formData.append('description', description);
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<div class="spinner" style="display: inline-block;"></div> Subiendo...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/upload-installer`, {
+                    method: 'POST',
+                    headers: {
+                        'x-session-id': sessionId
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showUploadMessage('✅ ' + data.message, 'success');
+                    document.getElementById('uploadForm').reset();
+                    document.getElementById('fileName').textContent = '';
+                    setTimeout(loadVersions, 1000);
+                } else {
+                    showUploadMessage('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showUploadMessage('❌ Error: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = 'Subir Instalador';
+            }
+        });
+
+        // Cargar versiones
+        async function loadVersions() {
+            const container = document.getElementById('versionsContainer');
+            const loading = document.getElementById('versionsLoading');
+
+            loading.style.display = 'block';
+            container.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_URL}/api/versions?sessionId=${sessionId}`);
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.success && data.versions.length > 0) {
+                    const html = `
+                        <table class="versions-table">
+                            <thead>
+                                <tr>
+                                    <th>Archivo</th>
+                                    <th>Versión</th>
+                                    <th>Tamaño</th>
+                                    <th>Fecha de Subida</th>
+                                    <th>Descripción</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.versions.map(v => `
+                                    <tr>
+                                        <td><a href="/${v.ruta}" class="download-link" target="_blank">${v.nombre}</a></td>
+                                        <td><strong>${v.version}</strong></td>
+                                        <td>${v.tamaño}</td>
+                                        <td>${new Date(v.fechaSubida).toLocaleDateString('es-DO')}</td>
+                                        <td>${v.descripcion || '-'}</td>
+                                        <td>
+                                            <button class="delete-btn" onclick="deleteVersion('${v.id}')">
+                                                🗑 Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>No hay versiones subidas aún.</p>
+                            <p style="font-size: 0.85rem; margin-top: 10px; opacity: 0.7;">Sube tu primer instalador usando el formulario de arriba.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>Error al cargar las versiones: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Eliminar versión
+        async function deleteVersion(versionId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta versión?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/delete-installer/${versionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showUploadMessage('✅ Versión eliminada correctamente', 'success');
+                    setTimeout(loadVersions, 500);
+                } else {
+                    showUploadMessage('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showUploadMessage('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        // Mostrar mensaje
+        function showUploadMessage(message, type) {
+            const messageEl = document.getElementById('uploadMessage');
+            messageEl.textContent = message;
+            messageEl.className = `message show ${type}`;
+
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 5000);
+        }
+
+        // Verificar sesión
+        async function verifySession() {
+            try {
+                const response = await fetch(`${API_URL}/api/verify-session?sessionId=${sessionId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('userName').textContent = data.username;
+                } else {
+                    logout();
+                }
+            } catch (error) {
+                logout();
+            }
+        }
+
+        // Cerrar sesión
+        async function logout() {
+            try {
+                await fetch(`${API_URL}/api/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'x-session-id': sessionId,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (e) {}
+
+            localStorage.removeItem('sessionId');
+            const rt = getReturnTo();
+            if (rt && rt.startsWith('http')) {
+                window.location.href = rt;
+                return;
+            }
+            // Fallback seguro: al menos no queda en blanco
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
