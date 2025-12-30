@@ -314,6 +314,11 @@ body {
 
 /* Responsive Navbar */
 @media (max-width: 768px) {
+    /* Hide top demo button on mobile (keeps appbar clean) */
+    #downloadDemoBtnTop {
+        display: none;
+    }
+
     .navbar-toggle {
         display: inline-flex;
         align-items: center;
