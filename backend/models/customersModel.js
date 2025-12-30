@@ -30,8 +30,42 @@ async function getCustomerById(customerId) {
   return result.rows[0] || null;
 }
 
+function normalizeEmail(email) {
+  const value = String(email || '').trim();
+  return value ? value.toLowerCase() : '';
+}
+
+function normalizePhone(phone) {
+  return String(phone || '').replace(/[^0-9]/g, '');
+}
+
+async function findCustomerByContact({ contacto_email, contacto_telefono }) {
+  const email = normalizeEmail(contacto_email);
+  const phone = normalizePhone(contacto_telefono);
+
+  if (!email && !phone) return null;
+
+  const clauses = [];
+  const params = [];
+
+  if (email) {
+    params.push(email);
+    clauses.push(`lower(contacto_email) = $${params.length}`);
+  }
+
+  if (phone) {
+    params.push(phone);
+    clauses.push(`regexp_replace(coalesce(contacto_telefono, ''), '[^0-9]', '', 'g') = $${params.length}`);
+  }
+
+  const sql = `SELECT * FROM customers WHERE ${clauses.join(' OR ')} ORDER BY created_at ASC LIMIT 1`;
+  const res = await pool.query(sql, params);
+  return res.rows[0] || null;
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
-  getCustomerById
+  getCustomerById,
+  findCustomerByContact
 };
