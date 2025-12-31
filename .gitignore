@@ -1,26 +1,15 @@
-# Dependencies
+﻿# Node
 node_modules/
 
-# Environment / secrets
+# Env
 .env
-.env.*
-!.env.example
-!.env.easypanel.example
+.env.local
 
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# OS / editor
-.DS_Store
-Thumbs.db
-.vscode/
-
-# Runtime uploads / downloads (keep folder, ignore contents)
-descargas/*
-!descargas/.gitkeep
-
-# Optional local data
-downloads/
+# Tests / docs artifacts
+**/*test*.js
+backend/modules/sync/*_test.js
+backend/modules/sync/SQLITE_TABLES_DETECTED.md
+docs/
