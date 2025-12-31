@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+﻿const { Pool } = require('pg');
 
 function createPool() {
   const connectionString = process.env.DATABASE_URL;
@@ -33,4 +33,9 @@ function createPool() {
 
 const pool = createPool();
 
-module.exports = { pool };
+// Compat: soporta ambos estilos de importación en el código:
+//   const pool = require('../db/pool')
+//   const { pool } = require('../db/pool')
+module.exports = pool;
+module.exports.pool = pool;
+
