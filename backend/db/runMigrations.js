@@ -1,6 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+const dotenvLocalPath = path.join(__dirname, '../../.env.local');
+const dotenvPath = fs.existsSync(dotenvLocalPath)
+  ? dotenvLocalPath
+  : path.join(__dirname, '../../.env');
+require('dotenv').config({ path: dotenvPath });
 const { pool } = require('./pool');
 
 async function run() {

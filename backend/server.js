@@ -10,7 +10,14 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+// Permite alternar fácil entre EasyPanel y local sin tocar .env:
+// - Si existe .env.local, se usa.
+// - Si no, se usa .env.
+const dotenvLocalPath = path.join(__dirname, '../.env.local');
+const dotenvPath = fs.existsSync(dotenvLocalPath)
+  ? dotenvLocalPath
+  : path.join(__dirname, '../.env');
+require('dotenv').config({ path: dotenvPath });
 const sessions = require('./auth/sessions');
 const uploadRoutes = require('./routes/uploads');
 const adminCustomersRoutes = require('./routes/adminCustomersRoutes');
@@ -18,6 +25,9 @@ const adminLicensesRoutes = require('./routes/adminLicensesRoutes');
 const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
+const syncRoutes = require('./modules/sync/sync.routes');
+const backupRoutes = require('./modules/backup/backup.routes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
@@ -25,14 +35,18 @@ const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
 // ==========================================
 // MIDDLEWARE
 // ==========================================
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Backups pueden ser grandes (JSON + cifrado). Subimos el límite de forma moderada.
+app.use(bodyParser.json({ limit: '25mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '25mb' }));
 
 // CORS básico para permitir que la landing (ej. :8000) llame a la API (:3000)
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, x-session-id, apikey');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, x-session-id, apikey, x-license-key, x-device-id'
+  );
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -93,6 +107,9 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+// Auth app (JWT) - multi-company login
+app.use('/api/auth', authRoutes);
+
 // ==========================================
 // RUTAS DE UPLOAD
 // ==========================================
@@ -116,6 +133,12 @@ app.use('/api/admin/activations', adminActivationsRoutes);
 
 // APP ESCRITORIO
 app.use('/api/licenses', licensesPublicRoutes);
+
+// SINCRONIZACIÓN (nube ⇆ local)
+app.use('/api/sync', syncRoutes);
+
+// BACKUPS (nube ⇆ local)
+app.use('/api/backup', backupRoutes);
 
 // POST /api/logout - Cerrar sesión
 app.post('/api/logout', sessions.verifySessionMiddleware, (req, res) => {

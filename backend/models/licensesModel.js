@@ -175,13 +175,22 @@ async function activateLicenseManually(licenseId) {
     }
 
     const now = new Date();
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysRaw = Number(license.dias_validez);
+    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? daysRaw : 1;
+
     let fecha_inicio = license.fecha_inicio;
     let fecha_fin = license.fecha_fin;
 
-    if (!fecha_inicio) {
+    const fechaFinMs = fecha_fin ? new Date(fecha_fin).getTime() : NaN;
+    const isFechaFinValid = Number.isFinite(fechaFinMs);
+    const isExpiredByDate = isFechaFinValid ? fechaFinMs < now.getTime() : false;
+
+    // Activación/Desbloqueo manual debe dejar la licencia utilizable.
+    // Si no tiene fechas o ya venció por fecha, rearmar un nuevo período desde ahora.
+    if (!fecha_inicio || !fecha_fin || isExpiredByDate) {
       fecha_inicio = now;
-      const days = Number(license.dias_validez);
-      fecha_fin = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      fecha_fin = new Date(now.getTime() + days * msPerDay);
     }
 
     const updRes = await client.query(
@@ -212,6 +221,71 @@ async function markLicenseExpired(licenseId) {
   await pool.query(`UPDATE licenses SET estado = 'VENCIDA' WHERE id = $1`, [licenseId]);
 }
 
+async function extendLicenseDays(licenseId, extraDays) {
+  const days = Math.floor(Number(extraDays));
+  if (!Number.isFinite(days) || days <= 0) {
+    throw new Error('extraDays inválido');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const licRes = await client.query('SELECT * FROM licenses WHERE id = $1 FOR UPDATE', [licenseId]);
+    const license = licRes.rows[0];
+    if (!license) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    const now = new Date();
+
+    // Si aún no se ha iniciado (PENDIENTE sin fecha_inicio), solo aumentamos dias_validez.
+    if (!license.fecha_inicio) {
+      const updRes = await client.query(
+        `UPDATE licenses
+         SET dias_validez = dias_validez + $2
+         WHERE id = $1
+         RETURNING *`,
+        [licenseId, days]
+      );
+
+      await client.query('COMMIT');
+      return updRes.rows[0] || null;
+    }
+
+    const currentFin = license.fecha_fin ? new Date(license.fecha_fin) : null;
+    const base = currentFin && currentFin.getTime() > now.getTime() ? currentFin : now;
+    const nextFin = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+
+    // Mantener consistencia: dias_validez debe reflejar (fecha_fin - fecha_inicio).
+    const inicio = new Date(license.fecha_inicio);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const nextDiasValidez = Math.max(1, Math.ceil((nextFin.getTime() - inicio.getTime()) / msPerDay));
+
+    // Si estaba vencida y ahora la fecha_fin queda en el futuro, reactivar.
+    const nextEstado = license.estado === 'VENCIDA' ? 'ACTIVA' : license.estado;
+
+    const updRes = await client.query(
+      `UPDATE licenses
+       SET fecha_fin = $2,
+           dias_validez = $3,
+           estado = $4
+       WHERE id = $1
+       RETURNING *`,
+      [licenseId, nextFin, nextDiasValidez, nextEstado]
+    );
+
+    await client.query('COMMIT');
+    return updRes.rows[0] || null;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   createLicenseWithKey,
   listLicenses,
@@ -220,5 +294,6 @@ module.exports = {
   updateLicense,
   activateLicenseManually,
   findLicenseByKey,
-  markLicenseExpired
+  markLicenseExpired,
+  extendLicenseDays
 };

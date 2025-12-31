@@ -155,6 +155,11 @@ async function activarManual(req, res) {
   }
 }
 
+async function desbloquearLicense(req, res) {
+  // Alias explícito de activarManual para UX/semántica del panel
+  return activarManual(req, res);
+}
+
 async function updateLicense(req, res) {
   try {
     const licenseId = req.params.id;
@@ -219,11 +224,33 @@ async function updateLicense(req, res) {
   }
 }
 
+async function extenderDias(req, res) {
+  try {
+    const licenseId = req.params.id;
+    const dias = Number((req.body || {}).dias);
+    if (!Number.isFinite(dias) || dias <= 0) {
+      return res.status(400).json({ ok: false, message: 'dias debe ser un número entero > 0' });
+    }
+
+    const updated = await licensesModel.extendLicenseDays(licenseId, Math.floor(dias));
+    if (!updated) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    return res.json({ ok: true, license: updated });
+  } catch (error) {
+    console.error('extenderDias error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   createLicense,
   listLicenses,
   getLicenseDetail,
   bloquearLicense,
   activarManual,
-  updateLicense
+  desbloquearLicense,
+  updateLicense,
+  extenderDias
 };

@@ -34,4 +34,14 @@ router.patch('/:id/activar-manual', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensesController.activarManual(req, res)).catch(next);
 });
 
+// PATCH /api/admin/licenses/:id/desbloquear
+router.patch('/:id/desbloquear', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.desbloquearLicense(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/:id/extender-dias
+router.patch('/:id/extender-dias', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.extenderDias(req, res)).catch(next);
+});
+
 module.exports = router;
