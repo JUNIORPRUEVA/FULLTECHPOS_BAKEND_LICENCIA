@@ -1,13 +1,27 @@
 const { pool } = require('../db/pool');
 
-async function createCustomer({ nombre_negocio, contacto_nombre, contacto_telefono, contacto_email }) {
-  const result = await pool.query(
-    `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *`,
-    [nombre_negocio, contacto_nombre || null, contacto_telefono || null, contacto_email || null]
-  );
-  return result.rows[0];
+async function createCustomer({ nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio }) {
+  try {
+    const result = await pool.query(
+      `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [nombre_negocio, contacto_nombre || null, contacto_telefono || null, contacto_email || null, rol_negocio || null]
+    );
+    return result.rows[0];
+  } catch (e) {
+    // 42703 = undefined_column (migration pending)
+    if (e && e.code === '42703') {
+      const result = await pool.query(
+        `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [nombre_negocio, contacto_nombre || null, contacto_telefono || null, contacto_email || null]
+      );
+      return result.rows[0];
+    }
+    throw e;
+  }
 }
 
 async function listCustomers({ limit, offset }) {

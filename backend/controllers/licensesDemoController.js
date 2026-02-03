@@ -31,6 +31,7 @@ function isExpiredByDate(license, now) {
  */
 async function startDemo(req, res) {
   const nombre_negocio = asTrimmed(req.body?.nombre_negocio);
+  const rol_negocio = asTrimmed(req.body?.rol_negocio ?? req.body?.business_role);
   const contacto_nombre = asTrimmed(req.body?.contacto_nombre);
   const contacto_email = normalizeEmail(req.body?.contacto_email);
   const contacto_telefono = normalizePhone(req.body?.contacto_telefono);
@@ -45,8 +46,22 @@ async function startDemo(req, res) {
     return res.status(400).json({ ok: false, message: 'device_id es requerido' });
   }
 
-  if (!contacto_email && !contacto_telefono) {
-    return res.status(400).json({ ok: false, message: 'contacto_email o contacto_telefono es requerido' });
+  // FULLPOS: requerimos datos completos para iniciar prueba.
+  const projectCodeGuess = String(project_code_raw || '').toUpperCase();
+  if (projectCodeGuess === 'FULLPOS') {
+    if (!rol_negocio) {
+      return res.status(400).json({ ok: false, message: 'rol_negocio es requerido' });
+    }
+    if (!contacto_nombre) {
+      return res.status(400).json({ ok: false, message: 'contacto_nombre es requerido' });
+    }
+    if (!contacto_telefono) {
+      return res.status(400).json({ ok: false, message: 'contacto_telefono es requerido' });
+    }
+  } else {
+    if (!contacto_email && !contacto_telefono) {
+      return res.status(400).json({ ok: false, message: 'contacto_email o contacto_telefono es requerido' });
+    }
   }
 
   const now = new Date();
@@ -87,18 +102,62 @@ async function startDemo(req, res) {
     });
 
     if (!customer) {
-      const createdRes = await client.query(
-        `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email)
-         VALUES ($1, $2, $3, $4)
-         RETURNING *`,
-        [
-          nombre_negocio,
-          contacto_nombre || null,
-          contacto_telefono || null,
-          contacto_email || null
-        ]
-      );
-      customer = createdRes.rows[0];
+      try {
+        const createdRes = await client.query(
+          `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING *`,
+          [
+            nombre_negocio,
+            contacto_nombre || null,
+            contacto_telefono || null,
+            contacto_email || null,
+            rol_negocio || null
+          ]
+        );
+        customer = createdRes.rows[0];
+      } catch (e) {
+        // 42703 = undefined_column (migration pending)
+        if (e && e.code === '42703') {
+          const createdRes = await client.query(
+            `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [
+              nombre_negocio,
+              contacto_nombre || null,
+              contacto_telefono || null,
+              contacto_email || null
+            ]
+          );
+          customer = createdRes.rows[0];
+        } else {
+          throw e;
+        }
+      }
+    } else {
+      // Actualizar campos si viene información nueva (sin borrar data existente).
+      try {
+        await client.query(
+          `UPDATE customers
+           SET nombre_negocio = COALESCE(NULLIF($2,''), nombre_negocio),
+               contacto_nombre = COALESCE(NULLIF($3,''), contacto_nombre),
+               contacto_telefono = COALESCE(NULLIF($4,''), contacto_telefono),
+               contacto_email = COALESCE(NULLIF($5,''), contacto_email),
+               rol_negocio = COALESCE(NULLIF($6,''), rol_negocio)
+           WHERE id = $1`,
+          [
+            customer.id,
+            nombre_negocio,
+            contacto_nombre,
+            contacto_telefono,
+            contacto_email,
+            rol_negocio
+          ]
+        );
+      } catch (_) {
+        // Si la columna aún no existe (migración pendiente), no bloqueamos el flujo.
+      }
     }
 
     // 2) Si ya existe una DEMO activa para este device, devolverla (idempotente)
