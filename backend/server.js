@@ -29,9 +29,29 @@ const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const syncRoutes = require('./modules/sync/sync.routes');
 const backupRoutes = require('./modules/backup/backup.routes');
 const authRoutes = require('./routes/authRoutes');
+const { pool } = require('./db/pool');
 
 const app = express();
 const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
+
+// ==========================================
+// HEALTH CHECKS (containers / EasyPanel)
+// ==========================================
+// Nota: algunos orquestadores reinician el contenedor si el healthcheck devuelve 404.
+// Mantenerlo simple y rápido.
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, status: 'up', ts: new Date().toISOString() });
+});
+
+// Diagnóstico opcional de DB. No usar como healthcheck estricto.
+app.get('/api/health/db', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    return res.json({ ok: true, db: 'up', ts: new Date().toISOString() });
+  } catch (e) {
+    return res.status(200).json({ ok: true, db: 'down', error: e?.code || e?.message || 'DB_ERROR' });
+  }
+});
 
 // ==========================================
 // MIDDLEWARE
