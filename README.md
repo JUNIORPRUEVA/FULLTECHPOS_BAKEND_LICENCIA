@@ -33,6 +33,26 @@ Licencias (app escritorio):
 - `POST /api/licenses/activate` body admite `project_code` o `project_id`.
 - `POST /api/licenses/check` body admite `project_code` o `project_id`.
 
+## Prueba (DEMO) automática
+Endpoint público para crear/recuperar una licencia DEMO y activarla en un dispositivo.
+
+- `POST /api/licenses/start-demo`
+
+Body mínimo:
+```json
+{
+	"nombre_negocio": "Mi Empresa",
+	"contacto_email": "cliente@correo.com",
+	"contacto_telefono": "8290000000",
+	"device_id": "MI-PC-001",
+	"project_code": "FULLPOS"
+}
+```
+
+Notas:
+- Si envías `project_code` y no existe el proyecto, se auto-crea.
+- `FULLPOS` entrega una prueba fija de **5 días** (máx. 1 dispositivo).
+
 Si no se envía proyecto, el backend usa `DEFAULT`.
 
 ## Archivo de licencia offline (sin internet)

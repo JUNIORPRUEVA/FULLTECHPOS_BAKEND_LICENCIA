@@ -2,6 +2,7 @@ const { pool } = require('../db/pool');
 const customersModel = require('../models/customersModel');
 const licenseConfigService = require('../services/licenseConfigService');
 const { generateLicenseKey } = require('../utils/licenseKey');
+const projectsModel = require('../models/projectsModel');
 
 function normalizePhone(phone) {
   return String(phone || '').replace(/[^0-9]/g, '');
@@ -24,7 +25,9 @@ function isExpiredByDate(license, now) {
 
 /**
  * POST /api/licenses/start-demo
- * Crea/encuentra cliente, crea licencia DEMO con config y activa inmediatamente en el device.
+ * Crea/encuentra cliente, crea licencia DEMO y activa inmediatamente en el device.
+ * - Opcional: project_code (ej: FULLPOS). Si no existe el proyecto, se auto-crea.
+ * - FULLPOS: trial fijo de 5 días (max 1 dispositivo).
  */
 async function startDemo(req, res) {
   const nombre_negocio = asTrimmed(req.body?.nombre_negocio);
@@ -32,6 +35,7 @@ async function startDemo(req, res) {
   const contacto_email = normalizeEmail(req.body?.contacto_email);
   const contacto_telefono = normalizePhone(req.body?.contacto_telefono);
   const device_id = asTrimmed(req.body?.device_id);
+  const project_code_raw = asTrimmed(req.body?.project_code ?? req.body?.projectCode);
 
   if (!nombre_negocio) {
     return res.status(400).json({ ok: false, message: 'nombre_negocio es requerido' });
@@ -46,6 +50,31 @@ async function startDemo(req, res) {
   }
 
   const now = new Date();
+
+  // Resolver proyecto (multi-proyecto). Si FULLPOS, forzamos trial de 5 días.
+  let project = null;
+  if (project_code_raw) {
+    project = await projectsModel.getProjectByCode(project_code_raw);
+    if (!project) {
+      project = await projectsModel.createProject({
+        code: project_code_raw,
+        name: project_code_raw,
+        description: 'Auto-created by start-demo'
+      });
+    }
+  }
+  if (!project) {
+    project = await projectsModel.getDefaultProject();
+  }
+  if (!project) {
+    project = await projectsModel.createProject({
+      code: 'DEFAULT',
+      name: 'DEFAULT',
+      description: 'Auto-created by start-demo'
+    });
+  }
+
+  const projectCode = String(project.code || '').toUpperCase();
 
   const client = await pool.connect();
   try {
@@ -79,11 +108,12 @@ async function startDemo(req, res) {
        JOIN license_activations a ON a.license_id = l.id
        WHERE l.tipo = 'DEMO'
          AND l.customer_id = $1
+         AND l.project_id = $3
          AND a.device_id = $2
          AND a.estado = 'ACTIVA'
        ORDER BY l.created_at DESC
        LIMIT 1`,
-      [customer.id, device_id]
+      [customer.id, device_id, project.id]
     );
 
     const existing = existingRes.rows[0];
@@ -104,9 +134,14 @@ async function startDemo(req, res) {
     }
 
     // 3) Config DEMO
-    const config = await licenseConfigService.getLicenseConfig();
-    const dias = Math.max(1, Number(config.demo_dias_validez) || 15);
-    const maxDisp = Math.max(1, Number(config.demo_max_dispositivos) || 1);
+    // FULLPOS: trial fijo de 5 días (requerimiento del producto).
+    let dias = 5;
+    let maxDisp = 1;
+    if (projectCode !== 'FULLPOS') {
+      const config = await licenseConfigService.getLicenseConfig();
+      dias = Math.max(1, Number(config.demo_dias_validez) || 15);
+      maxDisp = Math.max(1, Number(config.demo_max_dispositivos) || 1);
+    }
 
     // 4) Crear licencia DEMO (key único)
     let license;
@@ -114,10 +149,10 @@ async function startDemo(req, res) {
       const key = generateLicenseKey('DEMO');
       try {
         const licRes = await client.query(
-          `INSERT INTO licenses (customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
-           VALUES ($1, $2, 'DEMO', $3, $4, 'PENDIENTE', $5)
+          `INSERT INTO licenses (project_id, customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
+           VALUES ($1, $2, $3, 'DEMO', $4, $5, 'PENDIENTE', $6)
            RETURNING *`,
-          [customer.id, key, dias, maxDisp, 'Auto DEMO (start-demo)']
+          [project.id, customer.id, key, dias, maxDisp, `Auto DEMO (start-demo) project=${projectCode}`]
         );
         license = licRes.rows[0];
         break;
@@ -149,11 +184,11 @@ async function startDemo(req, res) {
     license = updRes.rows[0];
 
     await client.query(
-      `INSERT INTO license_activations (license_id, device_id, estado)
-       VALUES ($1, $2, 'ACTIVA')
+      `INSERT INTO license_activations (license_id, project_id, device_id, estado)
+       VALUES ($1, $2, $3, 'ACTIVA')
        ON CONFLICT (license_id, device_id)
-       DO UPDATE SET estado = 'ACTIVA', activated_at = now(), last_check_at = now()`,
-      [license.id, device_id]
+       DO UPDATE SET estado = 'ACTIVA', project_id = EXCLUDED.project_id, activated_at = now(), last_check_at = now()`,
+      [license.id, project.id, device_id]
     );
 
     await client.query('COMMIT');
@@ -161,6 +196,7 @@ async function startDemo(req, res) {
       ok: true,
       customer,
       license_key: license.license_key,
+      project_code: projectCode,
       tipo: license.tipo,
       fecha_inicio: license.fecha_inicio,
       fecha_fin: license.fecha_fin,
