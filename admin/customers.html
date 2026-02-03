@@ -383,7 +383,7 @@
                                 </tr>
                             </thead>
                             <tbody id="customersBody">
-                                <tr><td colspan="5" style="color:#6B7280;">Cargando...</td></tr>
+                                <tr><td colspan="6" style="color:#6B7280;">Cargando...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -565,12 +565,42 @@
                             <td class="actions">
                                 <button class="link-btn" type="button" onclick="copyText('${escapeAttr(customerId)}')">Copiar ID</button>
                                 <button class="link-btn" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
+                                <button class="link-btn" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')" style="color:#991B1B;">Eliminar</button>
                             </td>
                         </tr>
                     `;
                 }).join('');
             } catch (err) {
                 body.innerHTML = '<tr><td colspan="6" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
+            }
+        }
+
+        async function deleteCustomer(customerId, negocio) {
+            const id = String(customerId || '').trim();
+            if (!id) return;
+
+            const name = String(negocio || '').trim();
+            const msg = `¿Eliminar el cliente${name ? ' "' + name + '"' : ''}?\n\nEsto eliminará también sus licencias y activaciones.`;
+            const ok = window.confirm(msg);
+            if (!ok) return;
+
+            clearMessage();
+
+            try {
+                const res = await apiFetch(`/api/admin/customers/${encodeURIComponent(id)}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showMessage('err', data?.message || `Error eliminando cliente (${res.status})`);
+                    return;
+                }
+
+                const count = Number(data.deletedLicensesCount || 0);
+                showMessage('ok', `✅ Cliente eliminado. Licencias eliminadas: ${count}`);
+                await loadCustomers(currentPage);
+            } catch (e) {
+                showMessage('err', 'No se pudo conectar con el servidor');
             }
         }
 

@@ -77,9 +77,44 @@ async function findCustomerByContact({ contacto_email, contacto_telefono }) {
   return res.rows[0] || null;
 }
 
+async function deleteCustomerCascade(customerId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Delete licenses first (licenses.customer_id is RESTRICT). Activations cascade from licenses.
+    const delLicensesRes = await client.query(
+      'DELETE FROM licenses WHERE customer_id = $1 RETURNING id',
+      [customerId]
+    );
+    const deletedLicensesCount = (delLicensesRes.rows || []).length;
+
+    const delCustomerRes = await client.query(
+      'DELETE FROM customers WHERE id = $1 RETURNING *',
+      [customerId]
+    );
+
+    if (!delCustomerRes.rows || !delCustomerRes.rows[0]) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    await client.query('COMMIT');
+    return { deletedCustomer: delCustomerRes.rows[0], deletedLicensesCount };
+  } catch (e) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
   getCustomerById,
-  findCustomerByContact
+  findCustomerByContact,
+  deleteCustomerCascade
 };

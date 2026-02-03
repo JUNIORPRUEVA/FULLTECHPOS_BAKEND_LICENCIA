@@ -482,6 +482,7 @@
             try {
                 const response = await fetch(`${API_URL}/api/admin/license-config`, {
                     method: 'GET',
+                    cache: 'no-store',
                     headers: {
                         'x-session-id': sessionId
                     }

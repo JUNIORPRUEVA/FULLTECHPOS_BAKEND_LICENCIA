@@ -13,6 +13,7 @@ async function loadLicenseConfig() {
   try {
     const response = await fetch(LICENSE_CONFIG_API, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'x-session-id': sessionId
       }

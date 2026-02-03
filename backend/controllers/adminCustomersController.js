@@ -58,7 +58,39 @@ async function listCustomers(req, res) {
   }
 }
 
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
+async function deleteCustomer(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ ok: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ ok: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const result = await customersModel.deleteCustomerCascade(customerId);
+    if (!result) {
+      return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+    }
+
+    return res.json({
+      ok: true,
+      deletedCustomer: result.deletedCustomer,
+      deletedLicensesCount: result.deletedLicensesCount
+    });
+  } catch (error) {
+    console.error('deleteCustomer error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   createCustomer,
-  listCustomers
+  listCustomers,
+  deleteCustomer
 };

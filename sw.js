@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE = `fulltech-pos-static-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -36,6 +36,17 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
+
+  // Never cache API requests (avoids stale admin data like license-config).
+  try {
+    const url = new URL(request.url);
+    if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+      event.respondWith(fetch(request));
+      return;
+    }
+  } catch (_) {
+    // ignore URL parse errors and continue
+  }
 
   // Navigation: network-first, fallback to cache, then offline page.
   if (request.mode === 'navigate') {
