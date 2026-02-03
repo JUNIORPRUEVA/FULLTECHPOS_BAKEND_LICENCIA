@@ -20,7 +20,7 @@ function parsePagination(req) {
 
 async function createLicense(req, res) {
   try {
-    const { customer_id, tipo, dias_validez, max_dispositivos, notas, project_id, project_code } = req.body || {};
+    const { customer_id, tipo, dias_validez, max_dispositivos, notas, project_id, project_code, auto_activate, estado } = req.body || {};
 
     let project = null;
     if (project_id) {
@@ -94,7 +94,19 @@ async function createLicense(req, res) {
           max_dispositivos: Math.floor(maxDisp),
           notas: notas ? String(notas) : null
         });
-        return res.status(201).json({ ok: true, license });
+
+        const autoActivate =
+          auto_activate === true ||
+          String(auto_activate || '').trim() === '1' ||
+          String(auto_activate || '').trim().toLowerCase() === 'true' ||
+          String(estado || '').trim().toUpperCase() === 'ACTIVA';
+
+        if (!autoActivate) {
+          return res.status(201).json({ ok: true, license });
+        }
+
+        const activated = await licensesModel.updateLicense(license.id, { estado: 'ACTIVA' });
+        return res.status(201).json({ ok: true, license: activated, auto_activated: true });
       } catch (e) {
         // 23505 = unique_violation
         if (e && e.code === '23505') continue;

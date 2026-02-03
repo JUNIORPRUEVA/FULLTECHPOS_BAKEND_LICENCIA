@@ -6,7 +6,13 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
-    "migrate": "node backend/db/runMigrations.js"
+    "migrate": "node backend/db/runMigrations.js",
+    "db:cleanup:preview": "node backend/db/cleanupLicenseDb.js preview",
+    "db:cleanup:list": "node backend/db/cleanupLicenseDb.js list",
+    "db:cleanup:move": "node backend/db/cleanupLicenseDb.js move --yes",
+    "db:cleanup:drop": "node backend/db/cleanupLicenseDb.js drop --yes",
+    "db:reset:preview": "node backend/db/resetLicensingData.js preview",
+    "db:reset:licensing": "node backend/db/resetLicensingData.js reset --yes"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

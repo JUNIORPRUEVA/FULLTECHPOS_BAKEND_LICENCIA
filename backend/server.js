@@ -10,14 +10,27 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
-// Permite alternar fácil entre EasyPanel y local sin tocar .env:
-// - Si existe .env.local, se usa.
-// - Si no, se usa .env.
-const dotenvLocalPath = path.join(__dirname, '../.env.local');
-const dotenvPath = fs.existsSync(dotenvLocalPath)
-  ? dotenvLocalPath
-  : path.join(__dirname, '../.env');
+// Load env (SAFER DEFAULT): use .env unless explicitly told otherwise.
+// This avoids accidentally connecting to localhost when .env.local contains placeholders.
+const rootDir = path.join(__dirname, '..');
+
+function resolveDotenvPath() {
+  const override = process.env.DOTENV_PATH;
+  if (override) {
+    return path.isAbsolute(override) ? override : path.join(rootDir, override);
+  }
+
+  const useLocal = String(process.env.USE_DOTENV_LOCAL || '').trim() === '1';
+  const envLocal = path.join(rootDir, '.env.local');
+  const env = path.join(rootDir, '.env');
+
+  if (useLocal && fs.existsSync(envLocal)) return envLocal;
+  return env;
+}
+
+const dotenvPath = resolveDotenvPath();
 require('dotenv').config({ path: dotenvPath });
+console.log(`Using env file: ${dotenvPath}`);
 
 const LICENSE_ONLY = String(process.env.LICENSE_ONLY || '').trim() === '1';
 

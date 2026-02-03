@@ -277,6 +277,39 @@
             </div>
 
             <form id="createLicenseForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="project_code">Proyecto *</label>
+                        <select id="project_code" name="project_code" required>
+                            <option value="">-- Selecciona un proyecto --</option>
+                        </select>
+                        <div class="auto-fill-hint">Las licencias se crean por proyecto (ej: <b>FULLPOS</b>). Si no aparece, puedes crearlo aquí mismo.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:10px; font-weight:700; margin-top: 28px;">
+                            <input type="checkbox" id="autoActivate" checked>
+                            Activar automáticamente (inicia la prueba hoy)
+                        </label>
+                        <div class="auto-fill-hint">Recomendado para DEMO: pone estado <b>ACTIVA</b> y calcula fechas.</div>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top:-6px;">
+                    <div class="form-group">
+                        <label for="newProjectCode">Crear proyecto (opcional)</label>
+                        <input type="text" id="newProjectCode" placeholder="Code (ej: FULLPOS)" />
+                        <div class="auto-fill-hint">El <b>code</b> se usa para asignar licencias por proyecto.</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="newProjectName">&nbsp;</label>
+                        <input type="text" id="newProjectName" placeholder="Nombre (ej: FULLTECH POS)" />
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button type="button" onclick="createProjectFromUi()" style="background:#111827;">➕ Crear Proyecto</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="customer_id">Cliente *</label>
                     <select id="customer_id" name="customer_id" required>
@@ -355,6 +388,21 @@
                 Aquí aparecerán todas las licencias creadas. Podrás filtrar por cliente, tipo o estado.
             </p>
 
+            <div class="form-row" style="margin-bottom: 16px;">
+                <div class="form-group">
+                    <label for="projectFilter">Filtrar por proyecto</label>
+                    <select id="projectFilter">
+                        <option value="ALL">Todos</option>
+                    </select>
+                    <div class="auto-fill-hint">Tip: si seleccionas un proyecto, la lista mostrará solo sus licencias.</div>
+                </div>
+
+                <div class="form-group">
+                    <label style="opacity:0;">.</label>
+                    <button type="button" onclick="loadLicenses()" style="width: fit-content;">🔎 Aplicar filtro</button>
+                </div>
+            </div>
+
             <div id="licensesList">
                 <div style="text-align: center; padding: 40px; color: #6B7280;">
                     <p>⏳ Cargando licencias...</p>
@@ -395,6 +443,9 @@
                 await window.loadLicenseConfig();
             }
 
+            // Cargar proyectos
+            await loadProjects();
+
             // Cargar clientes
             await loadCustomers();
 
@@ -402,6 +453,13 @@
             const tipoSelect = document.getElementById('licenseType');
             tipoSelect.addEventListener('change', (e) => {
                 const tipo = e.target.value.toUpperCase();
+
+                // Activación automática: por defecto sí para DEMO, no para FULL
+                const autoActivate = document.getElementById('autoActivate');
+                if (autoActivate) {
+                    autoActivate.checked = (tipo === 'DEMO');
+                }
+
                 if (tipo === 'DEMO' || tipo === 'FULL') {
                     const defaults = window.getDefaultsForLicenseType ? 
                         window.getDefaultsForLicenseType(tipo) : null;
@@ -469,7 +527,12 @@
          */
         async function loadLicenses() {
             try {
-                const response = await fetch(`${API_URL}/api/admin/licenses?limit=100`, {
+                const filter = document.getElementById('projectFilter')?.value || 'ALL';
+                const qs = new URLSearchParams();
+                qs.set('limit', '100');
+                if (filter && filter !== 'ALL') qs.set('project_code', filter);
+
+                const response = await fetch(`${API_URL}/api/admin/licenses?${qs.toString()}`, {
                     method: 'GET',
                     headers: {
                         'x-session-id': sessionId
@@ -485,6 +548,7 @@
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
                                 <tr style="background: #F3F4F6; border-bottom: 2px solid #E5E7EB;">
+                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Proyecto</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Cliente</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Clave</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Tipo</th>
@@ -512,6 +576,7 @@
 
                         html += `
                             <tr style="border-bottom: 1px solid #E5E7EB;">
+                                <td style="padding: 12px; font-weight: 900;">${(license.project_code || 'DEFAULT')}</td>
                                 <td style="padding: 12px; font-weight: 600;">${license.nombre_negocio || '—'}</td>
                                 <td style="padding: 12px;">${license.license_key}</td>
                                 <td style="padding: 12px;">${icon} ${license.tipo}</td>
@@ -577,11 +642,13 @@
                 const ensureActive = document.getElementById('offlineEnsureActive')?.checked !== false;
 
                 const payload = {
+                    project_code: document.getElementById('project_code').value,
                     customer_id: document.getElementById('customer_id').value,
                     tipo: document.getElementById('licenseType').value.toUpperCase(),
                     dias_validez: parseInt(document.getElementById('diasValidez').value),
                     max_dispositivos: parseInt(document.getElementById('maxDispositivos').value),
-                    notas: document.getElementById('notas').value || null
+                    notas: document.getElementById('notas').value || null,
+                    auto_activate: document.getElementById('autoActivate')?.checked !== false
                 };
 
                 const response = await fetch(`${API_URL}/api/admin/licenses`, {
@@ -713,6 +780,112 @@
                 }
             } catch (error) {
                 logout();
+            }
+        }
+
+        /**
+         * Cargar lista de proyectos
+         */
+        async function loadProjects() {
+            const projectSelect = document.getElementById('project_code');
+            const projectFilter = document.getElementById('projectFilter');
+
+            // Reset UI
+            if (projectSelect) projectSelect.innerHTML = '<option value="">-- Selecciona un proyecto --</option>';
+            if (projectFilter) projectFilter.innerHTML = '<option value="ALL">Todos</option>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/projects`, {
+                    method: 'GET',
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+
+                const data = await response.json();
+                const projects = (data && data.ok && Array.isArray(data.projects)) ? data.projects : [];
+
+                // Guardar selección anterior
+                const last = localStorage.getItem('selectedProjectCode') || '';
+
+                for (const p of projects) {
+                    const code = String(p.code || '').trim();
+                    if (!code) continue;
+
+                    if (projectSelect) {
+                        const opt = document.createElement('option');
+                        opt.value = code;
+                        opt.textContent = `${code} — ${p.name || code}`;
+                        projectSelect.appendChild(opt);
+                    }
+
+                    if (projectFilter) {
+                        const opt2 = document.createElement('option');
+                        opt2.value = code;
+                        opt2.textContent = `${code}`;
+                        projectFilter.appendChild(opt2);
+                    }
+                }
+
+                // Default: FULLPOS si existe, si no DEFAULT, si no el primero
+                const codes = projects.map(p => String(p.code || '').trim()).filter(Boolean);
+                const preferred = last || (codes.includes('FULLPOS') ? 'FULLPOS' : (codes.includes('DEFAULT') ? 'DEFAULT' : (codes[0] || '')));
+
+                if (projectSelect && preferred) projectSelect.value = preferred;
+                if (projectFilter && preferred) projectFilter.value = preferred;
+
+                const remember = () => {
+                    const v = projectSelect?.value || '';
+                    if (v) localStorage.setItem('selectedProjectCode', v);
+                };
+                if (projectSelect) projectSelect.addEventListener('change', remember);
+                if (projectFilter) projectFilter.addEventListener('change', () => {
+                    // Si filtras por un proyecto, sincronizamos el selector de creación
+                    const v = projectFilter.value;
+                    if (v && v !== 'ALL' && projectSelect) {
+                        projectSelect.value = v;
+                        localStorage.setItem('selectedProjectCode', v);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            }
+        }
+
+        async function createProjectFromUi() {
+            const codeRaw = document.getElementById('newProjectCode')?.value || '';
+            const nameRaw = document.getElementById('newProjectName')?.value || '';
+            const code = String(codeRaw).trim().toUpperCase();
+            const name = String(nameRaw).trim() || code;
+
+            if (!code) {
+                showMessage('❌ Debes escribir el code del proyecto (ej: FULLPOS)', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/projects`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify({ code, name })
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.ok) {
+                    showMessage('❌ ' + (data.message || 'No se pudo crear el proyecto'), 'error');
+                    return;
+                }
+
+                showMessage('✅ Proyecto creado: ' + code, 'success');
+                document.getElementById('newProjectCode').value = '';
+                document.getElementById('newProjectName').value = '';
+                localStorage.setItem('selectedProjectCode', code);
+                await loadProjects();
+            } catch (e) {
+                showMessage('❌ Error creando proyecto: ' + e.message, 'error');
             }
         }
 

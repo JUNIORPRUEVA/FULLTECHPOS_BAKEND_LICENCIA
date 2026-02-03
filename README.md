@@ -30,6 +30,8 @@ Incluye una migración que crea `projects` y agrega `project_id` a licencias.
 ## Multi-proyecto (Projects)
 - Proyecto por defecto: `DEFAULT` (compatibilidad con clientes viejos).
 
+Este backend es **multi-proyecto**: cada licencia pertenece a un `project_id` (y se puede resolver por `project_code`).
+
 Endpoints (admin):
 - `GET /api/admin/projects`
 - `POST /api/admin/projects` body: `{ "code": "POS", "name": "FULLTECH POS" }`
@@ -81,3 +83,14 @@ El backend puede exportar un archivo JSON firmado con **Ed25519**. El cliente (a
 - Opcional (si está PENDIENTE y no tiene fechas): `GET /api/admin/licenses/:id/license-file?ensure_active=true&download=1`
 
 Nota: la revocación/bloqueo no se puede “forzar” offline; el archivo fija el período de validez (fecha_inicio/fecha_fin).
+
+## Reset de datos (pruebas limpias)
+Si quieres dejar las tablas de licencias vacías para probar desde cero (sin borrar el esquema):
+
+- Preview (solo lectura): `npm run db:reset:preview`
+- Reset (borra filas de licencias): `npm run db:reset:licensing`
+
+Esto borra datos de `license_activations`, `licenses`, `customers`.
+
+Opcional (dejar solo el proyecto `DEFAULT`):
+- `node backend/db/resetLicensingData.js reset --yes --drop-nondefault-projects`
