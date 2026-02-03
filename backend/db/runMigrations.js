@@ -35,6 +35,20 @@ async function run() {
 }
 
 run().catch(err => {
-  console.error('❌ Error corriendo migraciones:', err.message);
+  const code = err && (err.code || err.name) ? String(err.code || err.name) : '';
+  const msg = err && err.message ? String(err.message) : '';
+  console.error('❌ Error corriendo migraciones:', code ? `[${code}]` : '', msg);
+  if (err) {
+    // AggregateError (ECONNREFUSED) puede venir con details en err.errors
+    if (Array.isArray(err.errors) && err.errors.length) {
+      for (const e of err.errors) {
+        const eCode = e && e.code ? String(e.code) : '';
+        const eMsg = e && e.message ? String(e.message) : '';
+        console.error('  -', eCode ? `[${eCode}]` : '', eMsg);
+      }
+    } else {
+      console.error(err);
+    }
+  }
   process.exit(1);
 });

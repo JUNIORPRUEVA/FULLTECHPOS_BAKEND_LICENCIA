@@ -287,6 +287,31 @@
 
                 <div class="form-row">
                     <div class="form-group">
+                        <label for="deliveryMode">Modo de uso *</label>
+                        <select id="deliveryMode" name="delivery_mode" required>
+                            <option value="ONLINE">🌐 Online (requiere internet)</option>
+                            <option value="OFFLINE">💾 Offline (archivo local firmado)</option>
+                        </select>
+                        <div class="auto-fill-hint">Offline descarga un archivo <b>.lic.json</b> para validar sin internet.</div>
+                    </div>
+
+                    <div class="form-group" id="offlineDeviceWrap" style="display:none;">
+                        <label for="offlineDeviceId">Device ID (opcional)</label>
+                        <input type="text" id="offlineDeviceId" name="offline_device_id" placeholder="Ej: PC-CAJA-01">
+                        <div class="auto-fill-hint">Si lo llenas, el archivo queda amarrado a ese equipo.</div>
+                    </div>
+                </div>
+
+                <div class="form-group" id="offlineEnsureActiveWrap" style="display:none;">
+                    <label style="display:flex; align-items:center; gap:10px; font-weight:700;">
+                        <input type="checkbox" id="offlineEnsureActive" checked>
+                        Activar licencia automáticamente para exportar (recomendado)
+                    </label>
+                    <div class="auto-fill-hint">Si la licencia está PENDIENTE y no tiene fechas, el backend la inicia para poder firmar el archivo.</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
                         <label for="licenseType">Tipo de Licencia *</label>
                         <select id="licenseType" name="tipo" required>
                             <option value="">-- Selecciona un tipo --</option>
@@ -393,6 +418,22 @@
                     }
                 }
             });
+
+            // Configurar modo Online/Offline
+            const deliveryMode = document.getElementById('deliveryMode');
+            deliveryMode.addEventListener('change', () => {
+                applyDeliveryModeUi();
+            });
+            applyDeliveryModeUi();
+        }
+
+        function applyDeliveryModeUi() {
+            const mode = (document.getElementById('deliveryMode')?.value || 'ONLINE').toUpperCase();
+            const isOffline = mode === 'OFFLINE';
+            const deviceWrap = document.getElementById('offlineDeviceWrap');
+            const ensureWrap = document.getElementById('offlineEnsureActiveWrap');
+            if (deviceWrap) deviceWrap.style.display = isOffline ? 'block' : 'none';
+            if (ensureWrap) ensureWrap.style.display = isOffline ? 'block' : 'none';
         }
 
         /**
@@ -487,6 +528,7 @@
                                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                         <button onclick="openDetailModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#3B82F6; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Ver</button>
                                         <button onclick="openEditModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#10B981; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
+                                        <button onclick="promptOfflineDownload('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#111827; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">💾 Offline</button>
                                         ${license.estado === 'BLOQUEADA'
                                             ? `<button onclick="activarManual('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#F59E0B; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Desbloquear</button>`
                                             : `<button onclick="bloquearLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#EF4444; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Bloquear</button>`
@@ -528,6 +570,12 @@
             submitBtn.innerHTML = '⏳ Creando...';
 
             try {
+                const deliveryMode = (document.getElementById('deliveryMode')?.value || 'ONLINE').toUpperCase();
+                const isOffline = deliveryMode === 'OFFLINE';
+                const offlineDeviceIdRaw = document.getElementById('offlineDeviceId')?.value;
+                const offlineDeviceId = offlineDeviceIdRaw ? String(offlineDeviceIdRaw).trim() : '';
+                const ensureActive = document.getElementById('offlineEnsureActive')?.checked !== false;
+
                 const payload = {
                     customer_id: document.getElementById('customer_id').value,
                     tipo: document.getElementById('licenseType').value.toUpperCase(),
@@ -548,8 +596,17 @@
                 const data = await response.json();
 
                 if (response.ok && data.ok) {
-                    showMessage('✅ Licencia creada correctamente', 'success');
+                    showMessage(isOffline ? '✅ Licencia creada. Descargando archivo offline…' : '✅ Licencia creada correctamente', 'success');
                     document.getElementById('createLicenseForm').reset();
+                    applyDeliveryModeUi();
+
+                    if (isOffline && data.license && data.license.id) {
+                        // Descargar el archivo firmado (requiere headers, por eso usamos fetch+blob)
+                        await downloadOfflineLicenseFile(data.license.id, {
+                            deviceId: offlineDeviceId || null,
+                            ensureActive
+                        });
+                    }
                     
                     // Recargar lista
                     setTimeout(() => {
@@ -566,6 +623,71 @@
                 submitBtn.innerHTML = '✅ Crear Licencia';
             }
         });
+
+        function parseFilenameFromContentDisposition(cd) {
+            if (!cd) return null;
+            // filename="..." o filename=...
+            const match = /filename\*=UTF-8''([^;]+)|filename="([^"]+)"|filename=([^;]+)/i.exec(cd);
+            const raw = match ? (match[1] || match[2] || match[3]) : null;
+            if (!raw) return null;
+            try {
+                return decodeURIComponent(String(raw).trim());
+            } catch {
+                return String(raw).trim();
+            }
+        }
+
+        async function downloadOfflineLicenseFile(licenseId, { deviceId = null, ensureActive = true } = {}) {
+            const params = new URLSearchParams();
+            params.set('download', '1');
+            if (ensureActive) params.set('ensure_active', 'true');
+            if (deviceId) params.set('device_id', String(deviceId).trim());
+
+            const url = `${API_URL}/api/admin/licenses/${licenseId}/license-file?${params.toString()}`;
+
+            let response;
+            try {
+                response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'x-session-id': sessionId }
+                });
+            } catch (e) {
+                showMessage('❌ No se pudo descargar (red): ' + e.message, 'error');
+                return;
+            }
+
+            if (!response.ok) {
+                try {
+                    const err = await response.json();
+                    showMessage('❌ ' + (err.message || 'No se pudo generar la licencia offline'), 'error');
+                } catch {
+                    showMessage('❌ No se pudo generar la licencia offline', 'error');
+                }
+                return;
+            }
+
+            const blob = await response.blob();
+            const filename = parseFilenameFromContentDisposition(response.headers.get('content-disposition')) || 'license.lic.json';
+
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 2500);
+        }
+
+        async function promptOfflineDownload(licenseId) {
+            const raw = prompt('Device ID (opcional).\n\nDeja vacío si no quieres amarrar a un equipo:', '');
+            if (raw === null) return;
+            const deviceId = String(raw).trim();
+            await downloadOfflineLicenseFile(licenseId, {
+                deviceId: deviceId || null,
+                ensureActive: true
+            });
+        }
 
         /**
          * Mostrar mensaje
@@ -727,6 +849,14 @@
                     <div><div style="color:#6B7280; font-size:0.85rem;">Fecha inicio</div><div style="font-weight:800;">${fechaInicio}</div></div>
                     <div><div style="color:#6B7280; font-size:0.85rem;">Fecha fin</div><div style="font-weight:800;">${fechaFin}</div></div>
                     <div style="grid-column:1 / -1;"><div style="color:#6B7280; font-size:0.85rem;">Notas</div><div style="font-weight:700;">${l.notas ? l.notas : '—'}</div></div>
+
+                    <div style="grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+                        <button onclick="promptOfflineDownload('${licenseId}')" style="padding:10px 14px; border-radius:8px; border:none; background:#111827; color:#fff; cursor:pointer; font-weight:900;">💾 Descargar licencia offline</button>
+                        <button onclick="activarManual('${licenseId}')" style="padding:10px 14px; border-radius:8px; border:none; background:#F59E0B; color:#fff; cursor:pointer; font-weight:900;">Iniciar/Activar</button>
+                    </div>
+                    <div style="grid-column:1 / -1; color:#6B7280; font-size:0.85rem; margin-top:-4px;">
+                        Offline genera un archivo firmado. Si sale “no configurada”, configura <b>LICENSE_SIGN_PRIVATE_KEY</b> y <b>LICENSE_SIGN_PUBLIC_KEY</b> en el backend.
+                    </div>
                 `;
 
                 const activations = Array.isArray(l.activations) ? l.activations : [];

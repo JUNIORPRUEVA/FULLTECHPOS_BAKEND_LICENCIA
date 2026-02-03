@@ -338,7 +338,7 @@ async function exportLicenseFile(req, res) {
       if (e && e.code === 'MISSING_ENV') {
         return res.status(501).json({
           ok: false,
-          message: 'Exportación offline no configurada. Configure LICENSE_SIGN_PRIVATE_KEY y LICENSE_SIGN_PUBLIC_KEY.'
+          message: 'Exportación offline no configurada. Configure LICENSE_SIGN_PRIVATE_KEY y LICENSE_SIGN_PUBLIC_KEY (o use LICENSE_SIGN_PRIVATE_KEY_FILE y LICENSE_SIGN_PUBLIC_KEY_FILE).'
         });
       }
       if (e && e.code === 'LICENSE_NOT_STARTED') {

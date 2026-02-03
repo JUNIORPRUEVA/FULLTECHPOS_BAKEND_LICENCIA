@@ -1,8 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$out = Join-Path $root 'backend.out.log'
-$err = Join-Path $root 'backend.err.log'
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$workspaceRoot = Split-Path -Parent $scriptDir
+$out = Join-Path $scriptDir 'backend.out.log'
+$err = Join-Path $scriptDir 'backend.err.log'
 
 # Si ya hay algo escuchando en 3000, lo detenemos
 try {
@@ -16,7 +17,7 @@ try {
 if (Test-Path $out) { Remove-Item $out -Force }
 if (Test-Path $err) { Remove-Item $err -Force }
 
-Start-Process -FilePath node -WorkingDirectory $root -ArgumentList @('backend\server.js') -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
+Start-Process -FilePath node -WorkingDirectory $workspaceRoot -ArgumentList @('backend\server.js') -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
 Start-Sleep -Seconds 1
 
 $conn2 = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1

@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const fs = require('fs');
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -8,6 +9,33 @@ function requireEnv(name) {
     throw err;
   }
   return String(value);
+}
+
+function normalizePem(value) {
+  if (!value) return '';
+  const raw = String(value).trim();
+  // dotenv suele dejar \n literal en env vars; crypto espera saltos reales.
+  return raw.replace(/\\n/g, '\n');
+}
+
+function readPemFromFileEnv(fileEnvName) {
+  const filePath = process.env[fileEnvName];
+  if (!filePath || !String(filePath).trim()) return null;
+  const fullPath = String(filePath).trim();
+  return fs.readFileSync(fullPath, 'utf8');
+}
+
+function getPrivateKeyPem() {
+  // Preferimos *_FILE para evitar problemas con PEM multiline.
+  const fromFile = readPemFromFileEnv('LICENSE_SIGN_PRIVATE_KEY_FILE');
+  if (fromFile && String(fromFile).trim()) return normalizePem(fromFile);
+  return normalizePem(requireEnv('LICENSE_SIGN_PRIVATE_KEY'));
+}
+
+function getPublicKeyPem() {
+  const fromFile = readPemFromFileEnv('LICENSE_SIGN_PUBLIC_KEY_FILE');
+  if (fromFile && String(fromFile).trim()) return normalizePem(fromFile);
+  return normalizePem(requireEnv('LICENSE_SIGN_PUBLIC_KEY'));
 }
 
 function buildPayload({
@@ -75,7 +103,7 @@ function createLicenseFileFromDbRows({ license, project, customer, device_id }) 
     throw err;
   }
 
-  const privateKeyPem = requireEnv('LICENSE_SIGN_PRIVATE_KEY');
+  const privateKeyPem = getPrivateKeyPem();
 
   const payload = buildPayload({
     project_code: project.code,
@@ -92,14 +120,11 @@ function createLicenseFileFromDbRows({ license, project, customer, device_id }) 
   return signLicensePayload(payload, privateKeyPem);
 }
 
-function getPublicKeyPem() {
-  return requireEnv('LICENSE_SIGN_PUBLIC_KEY');
-}
-
 module.exports = {
   buildPayload,
   signLicensePayload,
   verifyLicenseFile,
   createLicenseFileFromDbRows,
-  getPublicKeyPem
+  getPublicKeyPem,
+  getPrivateKeyPem
 };
