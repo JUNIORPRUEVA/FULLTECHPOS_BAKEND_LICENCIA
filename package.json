@@ -12,7 +12,9 @@
     "db:cleanup:move": "node backend/db/cleanupLicenseDb.js move --yes",
     "db:cleanup:drop": "node backend/db/cleanupLicenseDb.js drop --yes",
     "db:reset:preview": "node backend/db/resetLicensingData.js preview",
-    "db:reset:licensing": "node backend/db/resetLicensingData.js reset --yes"
+    "db:reset:licensing": "node backend/db/resetLicensingData.js reset --yes",
+    "db:reset:fullpos:preview": "node backend/db/resetProjectLicenses.js preview --project FULLPOS",
+    "db:reset:fullpos": "node backend/db/resetProjectLicenses.js reset --project FULLPOS --yes"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
