@@ -125,6 +125,125 @@
             gap: 10px;
         }
 
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 20px;
+            background: #FFFFFF;
+        }
+
+        .card h3 {
+            margin-bottom: 12px;
+            color: #05422C;
+            font-weight: 800;
+            font-size: 1.05rem;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .field label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .field input {
+            padding: 10px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 10px;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .field input:focus {
+            border-color: #0d5a3b;
+            box-shadow: 0 0 0 3px rgba(13, 90, 59, 0.15);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: #6B7280;
+        }
+
+        .msg {
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .msg.ok {
+            display: block;
+            background: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            color: #065F46;
+        }
+
+        .msg.err {
+            display: block;
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #991B1B;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #E5E7EB;
+            text-align: left;
+            font-size: 0.92rem;
+            vertical-align: top;
+        }
+
+        th {
+            background: #F3F4F6;
+            font-weight: 800;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            background: #F3F4F6;
+            border: 1px solid #E5E7EB;
+            color: #374151;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .secondary-btn {
+            background: #FFFFFF;
+            color: #05422C;
+            border: 2px solid #05422C;
+        }
+
+        .secondary-btn:hover {
+            background: #05422C;
+            color: #FFFFFF;
+        }
+
         button {
             background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
             color: white;
@@ -156,6 +275,10 @@
             .container {
                 padding: 20px;
             }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -177,24 +300,80 @@
             <h2 class="section-title">Gestión de Clientes</h2>
 
             <div class="alert">
-                ℹ️ Esta página de clientes te permite crear y gestionar los clientes a los que asignarás licencias. 
-                Para implementación completa, se integraría con los endpoints: GET /api/admin/customers y POST /api/admin/customers
+                ℹ️ Aquí creas los clientes a los que asignarás licencias.
             </div>
 
-            <p style="margin-bottom: 30px; color: #6B7280; line-height: 1.6;">
-                En esta sección podrías:
-            </p>
-            <ul style="margin-left: 20px; color: #6B7280; line-height: 1.8; margin-bottom: 30px;">
-                <li>📋 Ver lista de todos los clientes registrados</li>
-                <li>➕ Agregar nuevos clientes (negocio, contacto, teléfono, email)</li>
-                <li>✏️ Editar información de clientes existentes</li>
-                <li>🗑️ Eliminar clientes (si no tienen licencias asignadas)</li>
-                <li>🔗 Ver las licencias asignadas a cada cliente</li>
-            </ul>
+            <div id="msg" class="msg"></div>
 
-            <div class="button-group">
-                <button onclick="alert('Función en desarrollo')">➕ Nuevo Cliente</button>
-                <button onclick="alert('Función en desarrollo')">📊 Ver Lista</button>
+            <div class="grid">
+                <div class="card">
+                    <h3>➕ Nuevo Cliente</h3>
+                    <form id="createForm">
+                        <div class="field">
+                            <label for="nombre_negocio">Nombre del negocio *</label>
+                            <input id="nombre_negocio" name="nombre_negocio" placeholder="Ej: Colmado La Esquina" required />
+                        </div>
+
+                        <div class="field">
+                            <label for="contacto_nombre">Nombre de contacto</label>
+                            <input id="contacto_nombre" name="contacto_nombre" placeholder="Ej: Juan Pérez" />
+                        </div>
+
+                        <div class="field">
+                            <label for="contacto_telefono">Teléfono *</label>
+                            <input id="contacto_telefono" name="contacto_telefono" placeholder="Ej: 8290000000" required />
+                            <div class="hint">Debe coincidir con el teléfono que usarás para soporte/activación.</div>
+                        </div>
+
+                        <div class="field">
+                            <label for="contacto_email">Email</label>
+                            <input id="contacto_email" name="contacto_email" placeholder="Ej: cliente@correo.com" />
+                        </div>
+
+                        <div class="field">
+                            <label for="rol_negocio">Rol del negocio</label>
+                            <input id="rol_negocio" name="rol_negocio" placeholder="Ej: Ferretería, Colmado, Restaurante" />
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit">Crear cliente</button>
+                            <button type="button" class="secondary-btn" onclick="resetForm()">Limpiar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <h3 style="margin:0;">📋 Clientes</h3>
+                        <div class="row-actions">
+                            <span class="pill" id="totalPill">Total: 0</span>
+                            <button type="button" class="secondary-btn" onclick="loadCustomers(1)">Refrescar</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 12px; overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Negocio</th>
+                                    <th>Contacto</th>
+                                    <th>Teléfono</th>
+                                    <th>Email</th>
+                                    <th>Creado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersBody">
+                                <tr><td colspan="5" style="color:#6B7280;">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top: 12px;">
+                        <button type="button" class="secondary-btn" id="prevBtn" onclick="prevPage()">← Anterior</button>
+                        <div style="color:#6B7280; font-weight:600;" id="pageInfo">Página 1</div>
+                        <button type="button" class="secondary-btn" id="nextBtn" onclick="nextPage()">Siguiente →</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -202,6 +381,9 @@
     <script>
         const API_URL = '';
         let sessionId = localStorage.getItem('sessionId');
+
+        let currentPage = 1;
+        const limit = 20;
 
         window.addEventListener('load', () => {
             if (!sessionId) {
@@ -217,7 +399,31 @@
             }
 
             verifySession();
+
+            const form = document.getElementById('createForm');
+            form.addEventListener('submit', createCustomer);
+
+            loadCustomers(1);
         });
+
+        function showMessage(type, text) {
+            const el = document.getElementById('msg');
+            el.className = 'msg ' + (type === 'ok' ? 'ok' : 'err');
+            el.textContent = text;
+        }
+
+        function clearMessage() {
+            const el = document.getElementById('msg');
+            el.className = 'msg';
+            el.textContent = '';
+        }
+
+        async function apiFetch(path, options = {}) {
+            const headers = Object.assign({}, options.headers || {}, {
+                'x-session-id': sessionId
+            });
+            return fetch(`${API_URL}${path}`, Object.assign({}, options, { headers }));
+        }
 
         async function verifySession() {
             try {
@@ -232,6 +438,133 @@
             } catch (error) {
                 logout();
             }
+        }
+
+        function resetForm() {
+            document.getElementById('createForm').reset();
+            clearMessage();
+        }
+
+        async function createCustomer(e) {
+            e.preventDefault();
+            clearMessage();
+
+            const nombre_negocio = (document.getElementById('nombre_negocio').value || '').trim();
+            const contacto_nombre = (document.getElementById('contacto_nombre').value || '').trim();
+            const contacto_telefono = (document.getElementById('contacto_telefono').value || '').trim();
+            const contacto_email = (document.getElementById('contacto_email').value || '').trim();
+            const rol_negocio = (document.getElementById('rol_negocio').value || '').trim();
+
+            if (!nombre_negocio) {
+                showMessage('err', 'nombre_negocio es requerido');
+                return;
+            }
+
+            if (!contacto_telefono) {
+                showMessage('err', 'contacto_telefono es requerido');
+                return;
+            }
+
+            try {
+                const res = await apiFetch('/api/admin/customers', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        nombre_negocio,
+                        contacto_nombre: contacto_nombre || null,
+                        contacto_telefono,
+                        contacto_email: contacto_email || null,
+                        rol_negocio: rol_negocio || null
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showMessage('err', data?.message || `Error creando cliente (${res.status})`);
+                    return;
+                }
+                showMessage('ok', '✅ Cliente creado correctamente');
+                document.getElementById('createForm').reset();
+                await loadCustomers(1);
+            } catch (err) {
+                showMessage('err', 'No se pudo conectar con el servidor');
+            }
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            try {
+                const d = new Date(value);
+                return d.toLocaleString();
+            } catch {
+                return String(value);
+            }
+        }
+
+        async function loadCustomers(page) {
+            currentPage = Math.max(1, Number(page || 1) || 1);
+            const body = document.getElementById('customersBody');
+            body.innerHTML = '<tr><td colspan="5" style="color:#6B7280;">Cargando...</td></tr>';
+
+            try {
+                const res = await apiFetch(`/api/admin/customers?page=${encodeURIComponent(currentPage)}&limit=${encodeURIComponent(limit)}`);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    body.innerHTML = `<tr><td colspan="5" style="color:#991B1B;">${data?.message || 'Error cargando clientes'}</td></tr>`;
+                    return;
+                }
+
+                const customers = data.customers || [];
+                const total = Number(data.total || 0);
+                document.getElementById('totalPill').textContent = `Total: ${total}`;
+                document.getElementById('pageInfo').textContent = `Página ${data.page || currentPage}`;
+
+                const hasPrev = currentPage > 1;
+                const hasNext = (currentPage * limit) < total;
+                document.getElementById('prevBtn').disabled = !hasPrev;
+                document.getElementById('nextBtn').disabled = !hasNext;
+
+                if (!customers.length) {
+                    body.innerHTML = '<tr><td colspan="5" style="color:#6B7280;">No hay clientes aún.</td></tr>';
+                    return;
+                }
+
+                body.innerHTML = customers.map(c => {
+                    const negocio = c.nombre_negocio || '';
+                    const contacto = c.contacto_nombre || '';
+                    const tel = c.contacto_telefono || '';
+                    const email = c.contacto_email || '';
+                    const created = formatDate(c.created_at);
+                    return `
+                        <tr>
+                            <td><strong>${escapeHtml(negocio)}</strong><div class="hint">${escapeHtml(c.rol_negocio || '')}</div></td>
+                            <td>${escapeHtml(contacto)}</td>
+                            <td>${escapeHtml(tel)}</td>
+                            <td>${escapeHtml(email)}</td>
+                            <td>${escapeHtml(created)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                body.innerHTML = '<tr><td colspan="5" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
+            }
+        }
+
+        function prevPage() {
+            if (currentPage <= 1) return;
+            loadCustomers(currentPage - 1);
+        }
+
+        function nextPage() {
+            loadCustomers(currentPage + 1);
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         async function logout() {

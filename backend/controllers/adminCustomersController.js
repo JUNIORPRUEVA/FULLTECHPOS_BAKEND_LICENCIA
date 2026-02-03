@@ -31,6 +31,18 @@ async function createCustomer(req, res) {
     return res.status(201).json({ ok: true, customer });
   } catch (error) {
     console.error('createCustomer error:', error);
+    // 23505 = unique_violation
+    if (error && error.code === '23505') {
+      const constraint = String(error.constraint || '');
+      if (constraint.includes('contacto_telefono')) {
+        return res.status(409).json({ ok: false, message: 'Ya existe un cliente con ese contacto_telefono' });
+      }
+      if (constraint.includes('contacto_email')) {
+        return res.status(409).json({ ok: false, message: 'Ya existe un cliente con ese contacto_email' });
+      }
+      return res.status(409).json({ ok: false, message: 'Ya existe un cliente con esos datos (duplicado)' });
+    }
+
     return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
   }
 }
