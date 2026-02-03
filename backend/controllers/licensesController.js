@@ -1,5 +1,7 @@
 const { pool } = require('../db/pool');
 const projectsModel = require('../models/projectsModel');
+const crypto = require('crypto');
+const { verifyLicenseFile, getPublicKeyPem } = require('../utils/licenseFile');
 
 function nowDate() {
   return new Date();
@@ -8,6 +10,87 @@ function nowDate() {
 function isExpiredByDate(license, now) {
   if (!license.fecha_fin) return false;
   return new Date(license.fecha_fin).getTime() < now.getTime();
+}
+
+function normalizeTrim(value) {
+  const v = String(value || '').trim();
+  return v ? v : '';
+}
+
+function safeIsoDate(value) {
+  try {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  } catch (_) {
+    return null;
+  }
+}
+
+function isExpiredByPayloadDate(payload, now) {
+  if (!payload || !payload.fecha_fin) return false;
+  const d = new Date(payload.fecha_fin);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getTime() < now.getTime();
+}
+
+async function verifyOfflineFile(req, res) {
+  try {
+    const licenseFile = req.body;
+    const deviceToCheck = normalizeTrim(req.query?.device_id || req.body?.device_id_check);
+
+    const publicKeyPem = getPublicKeyPem();
+    const sig = verifyLicenseFile(licenseFile, publicKeyPem);
+
+    const payload = licenseFile && typeof licenseFile === 'object' ? licenseFile.payload : null;
+    const now = nowDate();
+    const expired = isExpiredByPayloadDate(payload, now);
+
+    let device_match = null;
+    if (deviceToCheck && payload && payload.device_id) {
+      device_match = normalizeTrim(payload.device_id) === deviceToCheck;
+    }
+
+    return res.json({
+      ok: true,
+      signature_ok: Boolean(sig.ok),
+      signature_reason: sig.reason,
+      expired,
+      device_match,
+      now: now.toISOString(),
+      payload: {
+        v: payload?.v ?? null,
+        project_code: payload?.project_code ?? null,
+        license_key: payload?.license_key ?? null,
+        tipo: payload?.tipo ?? null,
+        fecha_inicio: safeIsoDate(payload?.fecha_inicio),
+        fecha_fin: safeIsoDate(payload?.fecha_fin),
+        dias_validez: payload?.dias_validez ?? null,
+        max_dispositivos: payload?.max_dispositivos ?? null,
+        device_id: payload?.device_id ?? null,
+        customer: payload?.customer ?? null,
+        issued_at: safeIsoDate(payload?.issued_at)
+      }
+    });
+  } catch (error) {
+    console.error('verifyOfflineFile error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
+async function getPublicSigningKey(req, res) {
+  try {
+    const publicKeyPem = getPublicKeyPem();
+    const keyObject = crypto.createPublicKey(publicKeyPem);
+    const jwk = keyObject.export({ format: 'jwk' });
+
+    // For Ed25519: jwk.kty=OKP, jwk.crv=Ed25519, jwk.x=base64url
+    return res.json({ ok: true, alg: 'Ed25519', jwk });
+  } catch (error) {
+    console.error('getPublicSigningKey error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
 }
 
 async function activate(req, res) {
@@ -271,5 +354,7 @@ async function check(req, res) {
 
 module.exports = {
   activate,
-  check
+  check,
+  verifyOfflineFile,
+  getPublicSigningKey
 };

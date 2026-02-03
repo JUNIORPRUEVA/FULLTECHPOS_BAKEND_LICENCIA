@@ -19,4 +19,14 @@ router.post('/start-demo', (req, res, next) => {
   Promise.resolve(licensesDemoController.startDemo(req, res)).catch(next);
 });
 
+// POST /api/licenses/verify-offline-file
+router.post('/verify-offline-file', (req, res, next) => {
+  Promise.resolve(licensesController.verifyOfflineFile(req, res)).catch(next);
+});
+
+// GET /api/licenses/public-signing-key
+router.get('/public-signing-key', (req, res, next) => {
+  Promise.resolve(licensesController.getPublicSigningKey(req, res)).catch(next);
+});
+
 module.exports = router;
