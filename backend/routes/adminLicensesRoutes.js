@@ -24,6 +24,11 @@ router.patch('/:id', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensesController.updateLicense(req, res)).catch(next);
 });
 
+// DELETE /api/admin/licenses/:id
+router.delete('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.deleteLicense(req, res)).catch(next);
+});
+
 // PATCH /api/admin/licenses/:id/bloquear
 router.patch('/:id/bloquear', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensesController.bloquearLicense(req, res)).catch(next);

@@ -207,6 +207,25 @@ async function desbloquearLicense(req, res) {
   return activarManual(req, res);
 }
 
+async function deleteLicense(req, res) {
+  try {
+    const licenseId = String(req.params.id || '').trim();
+    if (!isUuid(licenseId)) {
+      return res.status(400).json({ ok: false, message: 'id inválido' });
+    }
+
+    const deleted = await licensesModel.deleteLicense(licenseId);
+    if (!deleted) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    return res.json({ ok: true, deleted });
+  } catch (error) {
+    console.error('deleteLicense error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 async function updateLicense(req, res) {
   try {
     const licenseId = req.params.id;
@@ -298,6 +317,7 @@ module.exports = {
   bloquearLicense,
   activarManual,
   desbloquearLicense,
+  deleteLicense,
   updateLicense,
   extenderDias,
   exportLicenseFile

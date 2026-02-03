@@ -101,6 +101,17 @@ async function updateLicenseStatus(licenseId, estado) {
   return res.rows[0] || null;
 }
 
+async function deleteLicense(licenseId) {
+  // Nota: license_activations tiene FK ON DELETE CASCADE hacia licenses.
+  const res = await pool.query(
+    `DELETE FROM licenses
+     WHERE id = $1
+     RETURNING *`,
+    [licenseId]
+  );
+  return res.rows[0] || null;
+}
+
 async function updateLicense(licenseId, patch) {
   const client = await pool.connect();
   try {
@@ -299,6 +310,7 @@ module.exports = {
   listLicenses,
   getLicenseById,
   updateLicenseStatus,
+  deleteLicense,
   updateLicense,
   activateLicenseManually,
   findLicenseByKey,

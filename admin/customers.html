@@ -211,6 +211,25 @@
             vertical-align: top;
         }
 
+        td.actions {
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        .link-btn {
+            background: transparent;
+            border: none;
+            color: #05422C;
+            font-weight: 800;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 8px;
+        }
+
+        .link-btn:hover {
+            background: rgba(5, 66, 44, 0.08);
+        }
+
         th {
             background: #F3F4F6;
             font-weight: 800;
@@ -360,6 +379,7 @@
                                     <th>Teléfono</th>
                                     <th>Email</th>
                                     <th>Creado</th>
+                                    <th style="text-align:right;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="customersBody">
@@ -503,13 +523,13 @@
         async function loadCustomers(page) {
             currentPage = Math.max(1, Number(page || 1) || 1);
             const body = document.getElementById('customersBody');
-            body.innerHTML = '<tr><td colspan="5" style="color:#6B7280;">Cargando...</td></tr>';
+            body.innerHTML = '<tr><td colspan="6" style="color:#6B7280;">Cargando...</td></tr>';
 
             try {
                 const res = await apiFetch(`/api/admin/customers?page=${encodeURIComponent(currentPage)}&limit=${encodeURIComponent(limit)}`);
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
-                    body.innerHTML = `<tr><td colspan="5" style="color:#991B1B;">${data?.message || 'Error cargando clientes'}</td></tr>`;
+                    body.innerHTML = `<tr><td colspan="6" style="color:#991B1B;">${data?.message || 'Error cargando clientes'}</td></tr>`;
                     return;
                 }
 
@@ -524,7 +544,7 @@
                 document.getElementById('nextBtn').disabled = !hasNext;
 
                 if (!customers.length) {
-                    body.innerHTML = '<tr><td colspan="5" style="color:#6B7280;">No hay clientes aún.</td></tr>';
+                    body.innerHTML = '<tr><td colspan="6" style="color:#6B7280;">No hay clientes aún.</td></tr>';
                     return;
                 }
 
@@ -534,6 +554,7 @@
                     const tel = c.contacto_telefono || '';
                     const email = c.contacto_email || '';
                     const created = formatDate(c.created_at);
+                    const customerId = c.id || '';
                     return `
                         <tr>
                             <td><strong>${escapeHtml(negocio)}</strong><div class="hint">${escapeHtml(c.rol_negocio || '')}</div></td>
@@ -541,11 +562,15 @@
                             <td>${escapeHtml(tel)}</td>
                             <td>${escapeHtml(email)}</td>
                             <td>${escapeHtml(created)}</td>
+                            <td class="actions">
+                                <button class="link-btn" type="button" onclick="copyText('${escapeAttr(customerId)}')">Copiar ID</button>
+                                <button class="link-btn" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
+                            </td>
                         </tr>
                     `;
                 }).join('');
             } catch (err) {
-                body.innerHTML = '<tr><td colspan="5" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
+                body.innerHTML = '<tr><td colspan="6" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
             }
         }
 
@@ -565,6 +590,33 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(value) {
+            // Para valores usados dentro de onclick='...'
+            return String(value || '').replace(/'/g, "\\'");
+        }
+
+        async function copyText(text) {
+            try {
+                await navigator.clipboard.writeText(String(text || ''));
+                showMessage('ok', '✅ Copiado al portapapeles');
+            } catch {
+                // Fallback simple
+                const tmp = document.createElement('textarea');
+                tmp.value = String(text || '');
+                document.body.appendChild(tmp);
+                tmp.select();
+                document.execCommand('copy');
+                tmp.remove();
+                showMessage('ok', '✅ Copiado al portapapeles');
+            }
+        }
+
+        function goToLicenses(customerId) {
+            const id = String(customerId || '').trim();
+            if (!id) return;
+            window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(id)}`;
         }
 
         async function logout() {

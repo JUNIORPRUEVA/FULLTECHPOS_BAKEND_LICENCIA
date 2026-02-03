@@ -416,6 +416,10 @@
         const API_URL = '';
         let sessionId = localStorage.getItem('sessionId');
 
+        // Deep-link support: /admin/licenses.html?customer_id=...
+        let deepLinkCustomerId = null;
+        let deepLinkAppliedToList = false;
+
         window.addEventListener('load', () => {
             if (!sessionId) {
                 window.location.href = '/admin/login.html';
@@ -423,6 +427,7 @@
             }
 
             const urlParams = new URLSearchParams(window.location.search);
+            deepLinkCustomerId = urlParams.get('customer_id');
             const urlSessionId = urlParams.get('sessionId');
             if (urlSessionId) {
                 sessionId = urlSessionId;
@@ -448,6 +453,17 @@
 
             // Cargar clientes
             await loadCustomers();
+
+            // Si venimos desde Clientes, preseleccionar customer_id
+            if (deepLinkCustomerId) {
+                const select = document.getElementById('customer_id');
+                if (select) {
+                    const exists = Array.from(select.options || []).some(o => String(o.value) === String(deepLinkCustomerId));
+                    if (exists) {
+                        select.value = String(deepLinkCustomerId);
+                    }
+                }
+            }
 
             // Configurar evento de cambio de tipo
             const tipoSelect = document.getElementById('licenseType');
@@ -532,6 +548,12 @@
                 qs.set('limit', '100');
                 if (filter && filter !== 'ALL') qs.set('project_code', filter);
 
+                // Si venimos con deep-link customer_id, aplicarlo 1 vez al listado.
+                if (deepLinkCustomerId && !deepLinkAppliedToList) {
+                    qs.set('customer_id', String(deepLinkCustomerId));
+                    deepLinkAppliedToList = true;
+                }
+
                 const response = await fetch(`${API_URL}/api/admin/licenses?${qs.toString()}`, {
                     method: 'GET',
                     headers: {
@@ -594,6 +616,7 @@
                                         <button onclick="openDetailModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#3B82F6; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Ver</button>
                                         <button onclick="openEditModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#10B981; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
                                         <button onclick="promptOfflineDownload('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#111827; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">💾 Offline</button>
+                                        <button onclick="deleteLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#6B7280; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">Eliminar</button>
                                         ${license.estado === 'BLOQUEADA'
                                             ? `<button onclick="activarManual('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#F59E0B; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Desbloquear</button>`
                                             : `<button onclick="bloquearLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#EF4444; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Bloquear</button>`
@@ -1208,6 +1231,26 @@
                 }
             } catch (e) {
                 showMessage('❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function deleteLicense(licenseId) {
+            if (!confirm('¿Eliminar esta licencia?\n\nEsto borrará también sus activaciones asociadas.')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/licenses/${licenseId}`, {
+                    method: 'DELETE',
+                    headers: { 'x-session-id': sessionId }
+                });
+                const data = await response.json();
+                if (response.ok && data.ok) {
+                    showMessage('✅ Licencia eliminada', 'success');
+                    loadLicenses();
+                } else {
+                    showMessage('❌ ' + (data.message || 'No se pudo eliminar'), 'error');
+                }
+            } catch (e) {
+                showMessage('❌ Error al eliminar: ' + (e.message || e), 'error');
             }
         }
 
