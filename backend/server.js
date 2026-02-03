@@ -363,19 +363,6 @@ app.delete('/api/delete-installer/:id', sessions.verifySessionMiddleware, (req, 
   }
 });
 
-// ==========================================
-// RUTAS PRINCIPALES
-// ==========================================
-
-// GET / - Redirigir a la landing (que está en 8000)
-app.get('/', (req, res) => {
-  res.send(`
-    <h1>FULLTECH POS - Panel Administrativo</h1>
-    <p>Panel de administración disponible en <a href="/admin/login.html">/admin/login.html</a></p>
-    <p>Landing pública: <a href="http://localhost:8000" target="_blank">localhost:8000</a></p>
-  `);
-});
-
 // GET /admin/login - Servir login.html
 app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin/login.html'));
@@ -394,5 +381,5 @@ app.listen(ADMIN_PORT, () => {
   console.log(`\n✅ FULLTECH POS Admin Server ejecutándose en puerto ${ADMIN_PORT}`);
   console.log(`   Admin Panel: http://localhost:${ADMIN_PORT}/admin/login.html`);
   console.log(`   API: http://localhost:${ADMIN_PORT}/api`);
-  console.log(`   Landing Pública: http://localhost:8000\n`);
+  console.log(`   Landing Pública: http://localhost:${ADMIN_PORT}/\n`);
 });
