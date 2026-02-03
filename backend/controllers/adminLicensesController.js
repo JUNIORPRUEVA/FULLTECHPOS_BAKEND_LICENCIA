@@ -2,6 +2,8 @@ const licensesModel = require('../models/licensesModel');
 const customersModel = require('../models/customersModel');
 const licenseConfigService = require('../services/licenseConfigService');
 const { generateLicenseKey } = require('../utils/licenseKey');
+const projectsModel = require('../models/projectsModel');
+const licenseFile = require('../utils/licenseFile');
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
@@ -18,7 +20,23 @@ function parsePagination(req) {
 
 async function createLicense(req, res) {
   try {
-    const { customer_id, tipo, dias_validez, max_dispositivos, notas } = req.body || {};
+    const { customer_id, tipo, dias_validez, max_dispositivos, notas, project_id, project_code } = req.body || {};
+
+    let project = null;
+    if (project_id) {
+      if (!isUuid(project_id)) {
+        return res.status(400).json({ ok: false, message: 'project_id inválido' });
+      }
+      project = await projectsModel.getProjectById(String(project_id).trim());
+    } else if (project_code) {
+      project = await projectsModel.getProjectByCode(String(project_code));
+    } else {
+      project = await projectsModel.getDefaultProject();
+    }
+
+    if (!project) {
+      return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+    }
 
     if (!customer_id || !String(customer_id).trim()) {
       return res.status(400).json({ ok: false, message: 'customer_id es requerido' });
@@ -68,6 +86,7 @@ async function createLicense(req, res) {
       const key = generateLicenseKey(tipoUpper);
       try {
         const license = await licensesModel.createLicenseWithKey({
+          project_id: project.id,
           customer_id: customer.id,
           license_key: key,
           tipo: tipoUpper,
@@ -94,13 +113,29 @@ async function createLicense(req, res) {
 async function listLicenses(req, res) {
   try {
     const { page, limit, offset } = parsePagination(req);
+    const project_id = req.query.project_id || undefined;
+    const project_code = req.query.project_code || undefined;
     const customer_id = req.query.customer_id || undefined;
     const tipo = req.query.tipo ? String(req.query.tipo).toUpperCase() : undefined;
     const estado = req.query.estado ? String(req.query.estado).toUpperCase() : undefined;
 
+    let resolvedProjectId = project_id;
+    if (!resolvedProjectId && project_code) {
+      const project = await projectsModel.getProjectByCode(String(project_code));
+      if (!project) {
+        return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+      }
+      resolvedProjectId = project.id;
+    }
+
+    if (resolvedProjectId && !isUuid(resolvedProjectId)) {
+      return res.status(400).json({ ok: false, message: 'project_id inválido' });
+    }
+
     const { total, licenses } = await licensesModel.listLicenses({
       limit,
       offset,
+      project_id: resolvedProjectId,
       customer_id,
       tipo,
       estado
@@ -252,5 +287,78 @@ module.exports = {
   activarManual,
   desbloquearLicense,
   updateLicense,
-  extenderDias
+  extenderDias,
+  exportLicenseFile
 };
+
+async function exportLicenseFile(req, res) {
+  try {
+    const licenseId = req.params.id;
+    const deviceId = (req.query.device_id ?? (req.body || {}).device_id ?? null);
+    const ensureActiveRaw = (req.query.ensure_active ?? (req.body || {}).ensure_active ?? 'false');
+    const ensureActive = String(ensureActiveRaw).toLowerCase() === 'true';
+
+    let license = await licensesModel.getLicenseById(licenseId);
+    if (!license) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    if (ensureActive && (!license.fecha_inicio || !license.fecha_fin)) {
+      const updated = await licensesModel.activateLicenseManually(licenseId);
+      if (!updated) {
+        return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+      }
+      license = await licensesModel.getLicenseById(licenseId);
+    }
+
+    const project = license.project_code
+      ? await projectsModel.getProjectByCode(license.project_code)
+      : await projectsModel.getProjectById(license.project_id);
+
+    if (!project) {
+      return res.status(500).json({ ok: false, message: 'Proyecto de la licencia no encontrado' });
+    }
+
+    const customer = license.customer_id
+      ? {
+          id: license.customer_id,
+          nombre_negocio: license.nombre_negocio
+        }
+      : null;
+
+    let fileObj;
+    try {
+      fileObj = licenseFile.createLicenseFileFromDbRows({
+        license,
+        project,
+        customer,
+        device_id: deviceId ? String(deviceId).trim() : null
+      });
+    } catch (e) {
+      if (e && e.code === 'MISSING_ENV') {
+        return res.status(501).json({
+          ok: false,
+          message: 'Exportación offline no configurada. Configure LICENSE_SIGN_PRIVATE_KEY y LICENSE_SIGN_PUBLIC_KEY.'
+        });
+      }
+      if (e && e.code === 'LICENSE_NOT_STARTED') {
+        return res.status(400).json({ ok: false, message: e.message });
+      }
+      console.error('exportLicenseFile error:', e);
+      return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+    }
+
+    const download = String(req.query.download || '').toLowerCase() === '1' || String(req.query.download || '').toLowerCase() === 'true';
+    if (download) {
+      const fileName = `license_${project.code}_${license.license_key}${deviceId ? '_' + String(deviceId).trim() : ''}.lic.json`;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      return res.status(200).send(JSON.stringify(fileObj, null, 2));
+    }
+
+    return res.json({ ok: true, license_file: fileObj });
+  } catch (error) {
+    console.error('exportLicenseFile outer error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}

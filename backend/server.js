@@ -24,6 +24,7 @@ const adminCustomersRoutes = require('./routes/adminCustomersRoutes');
 const adminLicensesRoutes = require('./routes/adminLicensesRoutes');
 const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
+const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const syncRoutes = require('./modules/sync/sync.routes');
 const backupRoutes = require('./modules/backup/backup.routes');
@@ -130,6 +131,7 @@ app.use('/api/admin/customers', adminCustomersRoutes);
 app.use('/api/admin/licenses', adminLicensesRoutes);
 app.use('/api/admin/license-config', adminLicenseConfigRoutes);
 app.use('/api/admin/activations', adminActivationsRoutes);
+app.use('/api/admin/projects', adminProjectsRoutes);
 
 // APP ESCRITORIO
 app.use('/api/licenses', licensesPublicRoutes);

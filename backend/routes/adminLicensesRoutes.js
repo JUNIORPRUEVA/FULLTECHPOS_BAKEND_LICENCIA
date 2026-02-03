@@ -44,4 +44,14 @@ router.patch('/:id/extender-dias', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensesController.extenderDias(req, res)).catch(next);
 });
 
+// GET /api/admin/licenses/:id/license-file?device_id=...&download=1
+router.get('/:id/license-file', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.exportLicenseFile(req, res)).catch(next);
+});
+
+// POST /api/admin/licenses/:id/license-file  { device_id?, ensure_active? }
+router.post('/:id/license-file', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.exportLicenseFile(req, res)).catch(next);
+});
+
 module.exports = router;

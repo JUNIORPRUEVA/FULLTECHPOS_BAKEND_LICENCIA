@@ -2,9 +2,53 @@
 
 Backend Node/Express + PostgreSQL para licencias, multi-empresa, sync y backups.
 
+## Novedades
+- Soporte **multi-proyecto**: una misma instalación puede manejar licencias de varios productos/proyectos.
+- Exportación de **archivo de licencia offline** firmado (para clientes sin internet).
+
 ## Run
 - `npm install`
 - `npm run start`
 
+## Migraciones
+- `npm run migrate`
+
+Incluye una migración que crea `projects` y agrega `project_id` a licencias.
+
 ## Port
 - Default: `3000` (override with `PORT`)
+
+## Multi-proyecto (Projects)
+- Proyecto por defecto: `DEFAULT` (compatibilidad con clientes viejos).
+
+Endpoints (admin):
+- `GET /api/admin/projects`
+- `POST /api/admin/projects` body: `{ "code": "POS", "name": "FULLTECH POS" }`
+
+Licencias (admin):
+- `POST /api/admin/licenses` body admite `project_code` o `project_id`.
+- `GET /api/admin/licenses?project_code=POS` filtra por proyecto.
+
+Licencias (app escritorio):
+- `POST /api/licenses/activate` body admite `project_code` o `project_id`.
+- `POST /api/licenses/check` body admite `project_code` o `project_id`.
+
+Si no se envía proyecto, el backend usa `DEFAULT`.
+
+## Archivo de licencia offline (sin internet)
+El backend puede exportar un archivo JSON firmado con **Ed25519**. El cliente (app) puede validar la firma usando sólo la **clave pública**.
+
+### Configurar llaves
+1) Generar llaves:
+- `node scripts/generate-license-signing-keys.js`
+
+2) Ponerlas en `.env.local` (recomendado) o `.env`:
+- `LICENSE_SIGN_PUBLIC_KEY` (PEM)
+- `LICENSE_SIGN_PRIVATE_KEY` (PEM)
+
+### Descargar archivo (.lic.json)
+- `GET /api/admin/licenses/:id/license-file?download=1`
+- Opcional (atar a un equipo): `GET /api/admin/licenses/:id/license-file?device_id=MI-PC&download=1`
+- Opcional (si está PENDIENTE y no tiene fechas): `GET /api/admin/licenses/:id/license-file?ensure_active=true&download=1`
+
+Nota: la revocación/bloqueo no se puede “forzar” offline; el archivo fija el período de validez (fecha_inicio/fecha_fin).

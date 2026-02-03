@@ -1,6 +1,7 @@
 const { pool } = require('../db/pool');
 
 async function createLicenseWithKey({
+  project_id,
   customer_id,
   license_key,
   tipo,
@@ -9,17 +10,22 @@ async function createLicenseWithKey({
   notas
 }) {
   const result = await pool.query(
-    `INSERT INTO licenses (customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
-     VALUES ($1, $2, $3, $4, $5, 'PENDIENTE', $6)
+    `INSERT INTO licenses (project_id, customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
+     VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7)
      RETURNING *`,
-    [customer_id || null, license_key, tipo, dias_validez, max_dispositivos, notas || null]
+    [project_id, customer_id || null, license_key, tipo, dias_validez, max_dispositivos, notas || null]
   );
   return result.rows[0];
 }
 
-async function listLicenses({ limit, offset, customer_id, tipo, estado }) {
+async function listLicenses({ limit, offset, project_id, customer_id, tipo, estado }) {
   const where = [];
   const params = [];
+
+  if (project_id) {
+    params.push(project_id);
+    where.push(`l.project_id = $${params.length}`);
+  }
 
   if (customer_id) {
     params.push(customer_id);
@@ -48,9 +54,10 @@ async function listLicenses({ limit, offset, customer_id, tipo, estado }) {
   params.push(offset);
 
   const rowsRes = await pool.query(
-    `SELECT l.*, c.nombre_negocio
+    `SELECT l.*, c.nombre_negocio, p.code AS project_code, p.name AS project_name
      FROM licenses l
      LEFT JOIN customers c ON c.id = l.customer_id
+     LEFT JOIN projects p ON p.id = l.project_id
      ${whereSql}
      ORDER BY l.created_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -62,9 +69,10 @@ async function listLicenses({ limit, offset, customer_id, tipo, estado }) {
 
 async function getLicenseById(licenseId) {
   const licRes = await pool.query(
-    `SELECT l.*, c.nombre_negocio
+    `SELECT l.*, c.nombre_negocio, p.code AS project_code, p.name AS project_name
      FROM licenses l
      LEFT JOIN customers c ON c.id = l.customer_id
+     LEFT JOIN projects p ON p.id = l.project_id
      WHERE l.id = $1`,
     [licenseId]
   );

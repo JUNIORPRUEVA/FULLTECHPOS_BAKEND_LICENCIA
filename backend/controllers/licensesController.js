@@ -1,4 +1,5 @@
 const { pool } = require('../db/pool');
+const projectsModel = require('../models/projectsModel');
 
 function nowDate() {
   return new Date();
@@ -11,7 +12,7 @@ function isExpiredByDate(license, now) {
 
 async function activate(req, res) {
   try {
-    const { license_key, device_id } = req.body || {};
+    const { license_key, device_id, project_id, project_code } = req.body || {};
     const key = String(license_key || '').trim();
     const device = String(device_id || '').trim();
 
@@ -19,11 +20,27 @@ async function activate(req, res) {
       return res.status(400).json({ ok: false, message: 'license_key y device_id son requeridos' });
     }
 
+    let project = null;
+    if (project_id) {
+      project = await projectsModel.getProjectById(String(project_id).trim());
+    } else if (project_code) {
+      project = await projectsModel.getProjectByCode(String(project_code));
+    } else {
+      project = await projectsModel.getDefaultProject();
+    }
+
+    if (!project) {
+      return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+    }
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
-      const licRes = await client.query('SELECT * FROM licenses WHERE license_key = $1 FOR UPDATE', [key]);
+      const licRes = await client.query(
+        'SELECT * FROM licenses WHERE license_key = $1 AND project_id = $2 FOR UPDATE',
+        [key, project.id]
+      );
       const license = licRes.rows[0];
 
       if (!license) {
@@ -123,9 +140,9 @@ async function activate(req, res) {
         );
       } else {
         await client.query(
-          `INSERT INTO license_activations (license_id, device_id, estado)
-           VALUES ($1, $2, 'ACTIVA')`,
-          [license.id, device]
+          `INSERT INTO license_activations (license_id, project_id, device_id, estado)
+           VALUES ($1, $2, $3, 'ACTIVA')`,
+          [license.id, project.id, device]
         );
       }
 
@@ -155,7 +172,7 @@ async function activate(req, res) {
 
 async function check(req, res) {
   try {
-    const { license_key, device_id } = req.body || {};
+    const { license_key, device_id, project_id, project_code } = req.body || {};
     const key = String(license_key || '').trim();
     const device = String(device_id || '').trim();
 
@@ -163,11 +180,27 @@ async function check(req, res) {
       return res.status(400).json({ ok: false, message: 'license_key y device_id son requeridos' });
     }
 
+    let project = null;
+    if (project_id) {
+      project = await projectsModel.getProjectById(String(project_id).trim());
+    } else if (project_code) {
+      project = await projectsModel.getProjectByCode(String(project_code));
+    } else {
+      project = await projectsModel.getDefaultProject();
+    }
+
+    if (!project) {
+      return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+    }
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
-      const licRes = await client.query('SELECT * FROM licenses WHERE license_key = $1 FOR UPDATE', [key]);
+      const licRes = await client.query(
+        'SELECT * FROM licenses WHERE license_key = $1 AND project_id = $2 FOR UPDATE',
+        [key, project.id]
+      );
       const license = licRes.rows[0];
 
       if (!license) {
