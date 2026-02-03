@@ -36,7 +36,8 @@ async function run() {
     '001_create_license_tables.sql',
     '002_create_license_config.sql',
     '007_create_projects_and_project_scoping.sql',
-    '008_add_customer_business_role.sql'
+    '008_add_customer_business_role.sql',
+    '009_create_demo_trials.sql'
   ]);
 
   const selectedFiles = licenseOnly

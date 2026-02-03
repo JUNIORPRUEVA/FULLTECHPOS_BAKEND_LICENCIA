@@ -18,6 +18,11 @@ function asTrimmed(value) {
   return v ? v : '';
 }
 
+function nullIfEmpty(value) {
+  const v = String(value || '').trim();
+  return v ? v : null;
+}
+
 function isExpiredByDate(license, now) {
   if (!license.fecha_fin) return false;
   return new Date(license.fecha_fin).getTime() < now.getTime();
@@ -192,6 +197,36 @@ async function startDemo(req, res) {
       }
     }
 
+    // 2.1) Si el cliente ya consumió DEMO antes (por contacto + proyecto), NO permitir otra.
+    // Esto sigue aplicando aunque se borre el cliente/licencia luego.
+    const phoneKey = nullIfEmpty(contacto_telefono);
+    const emailKey = nullIfEmpty(contacto_email);
+
+    if (phoneKey || emailKey) {
+      const trialRes = await client.query(
+        `SELECT id, started_at
+         FROM demo_trials
+         WHERE project_id = $1
+           AND (
+             ($2::text IS NOT NULL AND contacto_telefono_norm = $2)
+             OR ($3::text IS NOT NULL AND contacto_email_norm = $3)
+           )
+         ORDER BY started_at ASC
+         LIMIT 1`,
+        [project.id, phoneKey, emailKey]
+      );
+
+      const trial = trialRes.rows[0];
+      if (trial) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          ok: false,
+          code: 'DEMO_ALREADY_USED',
+          message: 'La prueba DEMO ya fue utilizada para este cliente. Debe activar una licencia FULL.'
+        });
+      }
+    }
+
     // 3) Config DEMO (controlado desde Admin)
     const config = await licenseConfigService.getLicenseConfig();
     const dias = Math.max(1, Number(config.demo_dias_validez) || 15);
@@ -243,6 +278,15 @@ async function startDemo(req, res) {
        ON CONFLICT (license_id, device_id)
        DO UPDATE SET estado = 'ACTIVA', project_id = EXCLUDED.project_id, activated_at = now(), last_check_at = now()`,
       [license.id, project.id, device_id]
+    );
+
+    // 6) Registrar consumo de DEMO (bloquea futuras demos para este contacto + proyecto)
+    // NOTA: se guarda aunque el cliente o la licencia se eliminen luego.
+    await client.query(
+      `INSERT INTO demo_trials (project_id, contacto_telefono_norm, contacto_email_norm, customer_id, license_id)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT DO NOTHING`,
+      [project.id, phoneKey, emailKey, customer.id, license.id]
     );
 
     await client.query('COMMIT');
