@@ -18,6 +18,9 @@ const dotenvPath = fs.existsSync(dotenvLocalPath)
   ? dotenvLocalPath
   : path.join(__dirname, '../.env');
 require('dotenv').config({ path: dotenvPath });
+
+const LICENSE_ONLY = String(process.env.LICENSE_ONLY || '').trim() === '1';
+
 const sessions = require('./auth/sessions');
 const uploadRoutes = require('./routes/uploads');
 const adminCustomersRoutes = require('./routes/adminCustomersRoutes');
@@ -26,9 +29,11 @@ const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
-const syncRoutes = require('./modules/sync/sync.routes');
-const backupRoutes = require('./modules/backup/backup.routes');
-const authRoutes = require('./routes/authRoutes');
+
+// Módulos opcionales (solo cuando se usa el backend completo)
+const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
+const syncRoutes = LICENSE_ONLY ? null : require('./modules/sync/sync.routes');
+const backupRoutes = LICENSE_ONLY ? null : require('./modules/backup/backup.routes');
 const { pool } = require('./db/pool');
 
 const app = express();
@@ -129,7 +134,9 @@ app.post('/api/login', (req, res) => {
 });
 
 // Auth app (JWT) - multi-company login
-app.use('/api/auth', authRoutes);
+if (!LICENSE_ONLY) {
+  app.use('/api/auth', authRoutes);
+}
 
 // ==========================================
 // RUTAS DE UPLOAD
@@ -157,10 +164,14 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 app.use('/api/licenses', licensesPublicRoutes);
 
 // SINCRONIZACIÓN (nube ⇆ local)
-app.use('/api/sync', syncRoutes);
+if (!LICENSE_ONLY) {
+  app.use('/api/sync', syncRoutes);
+}
 
 // BACKUPS (nube ⇆ local)
-app.use('/api/backup', backupRoutes);
+if (!LICENSE_ONLY) {
+  app.use('/api/backup', backupRoutes);
+}
 
 // POST /api/logout - Cerrar sesión
 app.post('/api/logout', sessions.verifySessionMiddleware, (req, res) => {

@@ -27,7 +27,7 @@ function isExpiredByDate(license, now) {
  * POST /api/licenses/start-demo
  * Crea/encuentra cliente, crea licencia DEMO y activa inmediatamente en el device.
  * - Opcional: project_code (ej: FULLPOS). Si no existe el proyecto, se auto-crea.
- * - FULLPOS: trial fijo de 5 días (max 1 dispositivo).
+ * - La duración/limites DEMO se controlan desde /admin/license-config.
  */
 async function startDemo(req, res) {
   const nombre_negocio = asTrimmed(req.body?.nombre_negocio);
@@ -66,7 +66,7 @@ async function startDemo(req, res) {
 
   const now = new Date();
 
-  // Resolver proyecto (multi-proyecto). Si FULLPOS, forzamos trial de 5 días.
+  // Resolver proyecto (multi-proyecto). La DEMO se controla desde license_config.
   let project = null;
   if (project_code_raw) {
     project = await projectsModel.getProjectByCode(project_code_raw);
@@ -192,15 +192,10 @@ async function startDemo(req, res) {
       }
     }
 
-    // 3) Config DEMO
-    // FULLPOS: trial fijo de 5 días (requerimiento del producto).
-    let dias = 5;
-    let maxDisp = 1;
-    if (projectCode !== 'FULLPOS') {
-      const config = await licenseConfigService.getLicenseConfig();
-      dias = Math.max(1, Number(config.demo_dias_validez) || 15);
-      maxDisp = Math.max(1, Number(config.demo_max_dispositivos) || 1);
-    }
+    // 3) Config DEMO (controlado desde Admin)
+    const config = await licenseConfigService.getLicenseConfig();
+    const dias = Math.max(1, Number(config.demo_dias_validez) || 15);
+    const maxDisp = Math.max(1, Number(config.demo_max_dispositivos) || 1);
 
     // 4) Crear licencia DEMO (key único)
     let license;

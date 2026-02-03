@@ -14,14 +14,33 @@ async function run() {
     .filter(f => f.toLowerCase().endsWith('.sql'))
     .sort();
 
+  const licenseOnly = String(process.env.LICENSE_ONLY || '').trim() === '1';
+  const allowlist = new Set([
+    '001_create_license_tables.sql',
+    '002_create_license_config.sql',
+    '007_create_projects_and_project_scoping.sql',
+    '008_add_customer_business_role.sql'
+  ]);
+
+  const selectedFiles = licenseOnly
+    ? files.filter(f => allowlist.has(f))
+    : files;
+
   if (files.length === 0) {
     console.log('No hay migraciones .sql en', migrationsDir);
     return;
   }
 
+  if (licenseOnly) {
+    const skipped = files.filter(f => !allowlist.has(f));
+    console.log('ℹ️ LICENSE_ONLY=1: ejecutando solo migraciones de licencias.');
+    console.log('   Incluidas:', selectedFiles.join(', ') || '(ninguna)');
+    if (skipped.length) console.log('   Omitidas:', skipped.join(', '));
+  }
+
   const client = await pool.connect();
   try {
-    for (const file of files) {
+    for (const file of selectedFiles) {
       const fullPath = path.join(migrationsDir, file);
       const sql = fs.readFileSync(fullPath, 'utf8');
       console.log('Ejecutando migración:', file);

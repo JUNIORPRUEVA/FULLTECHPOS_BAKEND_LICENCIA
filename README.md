@@ -2,6 +2,15 @@
 
 Backend Node/Express + PostgreSQL para licencias, multi-empresa, sync y backups.
 
+## Modo solo licencias (recomendado para evitar “sancocho”)
+Si este deploy/DB es únicamente para licenciamiento (sin POS/sync/backups), puedes activar:
+
+- `LICENSE_ONLY=1`
+
+Efectos:
+- No monta rutas `/api/auth`, `/api/sync`, `/api/backup`.
+- `npm run migrate` ejecuta solo migraciones de licencias (allowlist).
+
 ## Novedades
 - Soporte **multi-proyecto**: una misma instalación puede manejar licencias de varios productos/proyectos.
 - Exportación de **archivo de licencia offline** firmado (para clientes sin internet).
@@ -51,7 +60,7 @@ Body mínimo:
 
 Notas:
 - Si envías `project_code` y no existe el proyecto, se auto-crea.
-- `FULLPOS` entrega una prueba fija de **5 días** (máx. 1 dispositivo).
+- La duración y el máximo de dispositivos de la DEMO se controlan desde `license_config` (panel admin: “License Config”).
 
 Si no se envía proyecto, el backend usa `DEFAULT`.
 
