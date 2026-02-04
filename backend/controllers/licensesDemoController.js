@@ -202,6 +202,30 @@ async function startDemo(req, res) {
     const phoneKey = nullIfEmpty(contacto_telefono);
     const emailKey = nullIfEmpty(contacto_email);
 
+    // 2.1.a) Además: solo 1 DEMO por dispositivo + proyecto.
+    // Requisito FULLPOS: cuando termina la prueba, no debe poder iniciar otra desde el mismo equipo.
+    const deviceKey = nullIfEmpty(device_id);
+    if (deviceKey) {
+      const deviceTrialRes = await client.query(
+        `SELECT id, started_at
+         FROM demo_trials
+         WHERE project_id = $1
+           AND device_id = $2
+         ORDER BY started_at ASC
+         LIMIT 1`,
+        [project.id, deviceKey]
+      );
+      const deviceTrial = deviceTrialRes.rows[0];
+      if (deviceTrial) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          ok: false,
+          code: 'DEMO_ALREADY_USED',
+          message: 'La prueba DEMO ya fue utilizada en este equipo. Debe activar una licencia FULL.'
+        });
+      }
+    }
+
     if (phoneKey || emailKey) {
       const trialRes = await client.query(
         `SELECT id, started_at
@@ -280,14 +304,28 @@ async function startDemo(req, res) {
       [license.id, project.id, device_id]
     );
 
-    // 6) Registrar consumo de DEMO (bloquea futuras demos para este contacto + proyecto)
+    // 6) Registrar consumo de DEMO (bloquea futuras demos por contacto + proyecto y por dispositivo + proyecto)
     // NOTA: se guarda aunque el cliente o la licencia se eliminen luego.
-    await client.query(
-      `INSERT INTO demo_trials (project_id, contacto_telefono_norm, contacto_email_norm, customer_id, license_id)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT DO NOTHING`,
-      [project.id, phoneKey, emailKey, customer.id, license.id]
-    );
+    // IMPORTANTE: no usamos ON CONFLICT DO NOTHING. Si hay conflicto por UNIQUE,
+    // debe fallar y revertir la transacción completa (no crear otra DEMO).
+    try {
+      await client.query(
+        `INSERT INTO demo_trials (project_id, device_id, contacto_telefono_norm, contacto_email_norm, customer_id, license_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [project.id, deviceKey, phoneKey, emailKey, customer.id, license.id]
+      );
+    } catch (e) {
+      // 23505 = unique_violation
+      if (e && e.code === '23505') {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          ok: false,
+          code: 'DEMO_ALREADY_USED',
+          message: 'La prueba DEMO ya fue utilizada. Debe activar una licencia FULL.'
+        });
+      }
+      throw e;
+    }
 
     await client.query('COMMIT');
     return res.status(201).json({
