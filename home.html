@@ -60,17 +60,13 @@
 
           <div class="jr-hero-copy">
             <h1 id="heroTitle" style="margin:0;">JR Digital</h1>
-            <p id="heroSubtitle">Soluciones digitales, productos y proyectos listos para tu negocio.</p>
-
-            <div class="jr-lead" id="heroLead">
-              Creamos software profesional para empresas: sistemas listos para implementar o desarrollos a la medida. Adquiere uno de nuestros sistemas ya hecho o cotiza uno desde cero con nosotros.
-            </div>
+            <p id="heroSubtitle">Vendemos y construimos software a la medida: apps, web, escritorio, automatización e inteligencia artificial.</p>
           </div>
 
           <div class="jr-hero-actionsArea">
             <div class="jr-hero-actions">
               <a class="jr-btn primary" href="/products.html">Ver catálogo</a>
-              <a id="whatsappHero" class="jr-btn ghost" href="#" target="_blank" rel="noopener">Contactar por WhatsApp</a>
+              <a id="whatsappHero" class="jr-btn ghost" href="#" target="_blank" rel="noopener">Cotizar por WhatsApp</a>
             </div>
           </div>
         </div>
@@ -78,12 +74,14 @@
         <div class="jr-hero-card">
           <div class="jr-hero-card-title">Lo que hacemos</div>
           <div style="opacity:0.92; line-height:1.75;">
-            • Productos listos para usar<br />
-            • Proyectos a la medida<br />
-            • Soporte y mantenimiento<br />
+            • Venta de productos digitales listos<br />
+            • Desarrollo a la medida (Web, Android, iOS, Windows)<br />
+            • IA aplicada: bots, agentes y automatizaciones<br />
+            • Integraciones: pagos, facturación, WhatsApp y más<br />
+            • Soporte, mantenimiento y mejoras continuas<br />
           </div>
           <div class="divider" style="margin: 14px 0;"></div>
-          <div class="muted" style="color: rgba(255,255,255,0.86);">Escríbenos y te recomendamos la mejor opción.</div>
+          <div class="muted" style="color: rgba(255,255,255,0.86);">Mira nuestros productos disponibles o escríbenos para cotizar tu sistema a la medida.</div>
         </div>
       </div>
     </div>
@@ -249,7 +247,9 @@
       const wa = settings?.whatsapp || '';
       const phone = (wa || DEFAULT_PHONE);
       const email = (settings?.email || DEFAULT_EMAIL);
-      const waText = `Hola, quiero información sobre ${brandName}`;
+      const waText = `Hola ${brandName}, quiero cotizar un software a la medida. ` +
+        `Me interesa: Web / Android / iOS / Windows, automatizaciones e IA (bot/agente WhatsApp). ` +
+        `También quiero ver el catálogo de productos.`;
       const waLink = StorePublic.e164ToWaLink(phone, waText);
       ['whatsappTop','whatsappMobile','whatsappHero','footerWhatsapp'].forEach((id) => {
         const el = document.getElementById(id);

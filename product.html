@@ -392,7 +392,11 @@
       const wa = settings?.whatsapp || '';
       const phone = (wa || DEFAULT_PHONE);
       const email = (settings?.email || DEFAULT_EMAIL);
-      const waLinkGlobal = StorePublic.e164ToWaLink(phone, `Hola, quiero información sobre ${brandName}`);
+      const waLinkGlobal = StorePublic.e164ToWaLink(
+        phone,
+        `Hola ${brandName}, quiero cotizar un software a la medida (Web/Android/iOS/Windows) y/o IA/automatizaciones. ` +
+          `Estoy viendo su catálogo.`
+      );
       ['whatsappTop','whatsappMobile'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.href = waLinkGlobal;
@@ -491,7 +495,8 @@
           }).join('');
         }
 
-        const waText = `Hola, quiero información sobre: ${product.name || product.slug}`;
+        const waText = `Hola ${brandName}, quiero cotizar el producto: ${product.name || product.slug}. ` +
+          `También me interesa un desarrollo a la medida / IA / automatizaciones.`;
         const waLink = StorePublic.e164ToWaLink(product.contact_whatsapp || settings?.whatsapp || phone || '', waText);
         document.getElementById('whatsappCta').href = waLink;
 

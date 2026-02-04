@@ -236,7 +236,8 @@
       const wa = settings?.whatsapp || '';
       const phone = (wa || DEFAULT_PHONE);
       const email = (settings?.email || DEFAULT_EMAIL);
-      const waText = `Hola, quiero cotizar un producto de ${brandName}`;
+      const waText = `Hola ${brandName}, quiero cotizar un producto del catálogo. ` +
+        `También me interesa software a la medida (Web / Android / iOS / Windows) e IA/automatizaciones.`;
       const waLink = StorePublic.e164ToWaLink(phone, waText);
       ['whatsappTop','whatsappMobile','whatsappCta'].forEach((id) => {
         const el = document.getElementById(id);
