@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0A6CFF" />
+  <title>Productos - JR Digital</title>
+  <meta name="description" content="Catálogo de productos JR Digital: instaladores, manuales y recursos." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Productos - JR Digital" />
+  <meta property="og:description" content="Explora el catálogo de productos publicados." />
+  <meta property="og:image" content="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/img/pwa/icon-180.png" />
+  <link rel="icon" href="/assets/img/pwa/icon-192.png" />
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <link rel="shortcut icon" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/jr.css" />
+  <script defer src="/assets/js/pwa.js"></script>
+  <script defer src="/assets/js/storePublic.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a class="navbar-logo" href="/home.html" style="text-decoration:none;">
+        <img id="brandLogo" src="" alt="Logo" class="navbar-logo-img" style="display:none;" />
+        <span class="navbar-brand" id="brandName">JR Digital</span>
+      </a>
+
+      <div class="navbar-actions">
+        <a class="navbar-download" href="/products.html" aria-label="Ver productos">
+          <span class="nav-icon" aria-hidden="true">🧩</span>
+          <span class="nav-text">Productos</span>
+        </a>
+        <a id="whatsappTop" href="#" class="navbar-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <span class="nav-icon" aria-hidden="true">💬</span>
+          <span class="nav-text">WhatsApp</span>
+        </a>
+        <button id="navbarToggle" class="navbar-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
+        <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+      </div>
+    </div>
+
+    <div id="navbarMobile" class="navbar-mobile" aria-label="Menú móvil">
+      <a class="navbar-mobile-btn" href="/home.html">Inicio</a>
+      <a class="navbar-mobile-btn" href="/products.html">Productos</a>
+      <a id="whatsappMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a id="adminLoginLinkMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">Admin</a>
+    </div>
+  </nav>
+
+  <header class="jr-section" style="padding-top: 26px;">
+    <div class="jr-container">
+      <h2 id="pageTitle">Productos</h2>
+      <p class="sub">Busca y filtra por plataforma.</p>
+
+      <div class="jr-filterbar">
+        <input id="q" class="jr-input" type="text" placeholder="Buscar por nombre o palabra clave" />
+        <select id="platform" class="jr-select">
+          <option value="">Todas las plataformas</option>
+          <option value="windows">Windows</option>
+          <option value="android">Android</option>
+          <option value="web">Web</option>
+          <option value="pwa">PWA</option>
+          <option value="manual">Manual</option>
+          <option value="other">Other</option>
+        </select>
+        <a id="whatsappCta" class="jr-btn primary" href="#" target="_blank" rel="noopener">Cotizar por WhatsApp</a>
+      </div>
+
+      <div id="list" class="jr-grid"></div>
+      <div id="empty" class="jr-empty" style="display:none;">No hay productos publicados con ese filtro.</div>
+    </div>
+  </header>
+
+  <footer class="jr-footer">
+    <div class="jr-container">
+      <div class="jr-footer-grid">
+        <div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <img id="footerLogo" src="" alt="JR Digital" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
+            <h4 id="footerBrand">JR Digital</h4>
+          </div>
+          <div style="opacity:0.9; margin-top:10px;">Productos, instaladores, manuales y recursos.</div>
+        </div>
+
+        <div>
+          <h4>Enlaces</h4>
+          <div style="opacity:0.9; line-height:1.9;">
+            <a href="/home.html">Inicio</a><br />
+            <a href="/products.html">Catálogo</a><br />
+            <a href="/admin/login.html" target="_blank" rel="noopener">Admin</a>
+          </div>
+        </div>
+
+        <div>
+          <h4>Contacto</h4>
+          <div class="muted" style="color: rgba(255,255,255,0.86);" id="footerContact">WhatsApp</div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px; opacity:0.85;">© 2026 <span id="footerBrand2">JR Digital</span></div>
+    </div>
+  </footer>
+
+  <script>
+    function wireMobileNavbar() {
+      const navbar = document.querySelector('.navbar');
+      const toggle = document.getElementById('navbarToggle');
+      const mobileMenu = document.getElementById('navbarMobile');
+      if (!navbar || !toggle || !mobileMenu) return;
+
+      function closeMenu() {
+        navbar.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+      function openMenu() {
+        navbar.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (navbar.classList.contains('is-open')) closeMenu();
+        else openMenu();
+      });
+
+      mobileMenu.querySelectorAll('a,button').forEach((el) => {
+        el.addEventListener('click', () => closeMenu());
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!navbar.classList.contains('is-open')) return;
+        if (navbar.contains(e.target)) return;
+        closeMenu();
+      });
+
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) closeMenu();
+      });
+    }
+
+    function render(products) {
+      const listEl = document.getElementById('list');
+      const emptyEl = document.getElementById('empty');
+
+      if (!products.length) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      listEl.innerHTML = products.map((p) => {
+        const cover = p.cover_url ? `<img src="${StorePublic.esc(p.cover_url)}" alt="${StorePublic.esc(p.name)}" />` : `<div>${StorePublic.esc(p.name)}</div>`;
+        const price = StorePublic.moneyText(p);
+        const tags = (p.platforms || []).slice(0, 3).map(t => `<span class="jr-badge">${StorePublic.esc(t)}</span>`).join(' ');
+
+        return `
+          <a class="jr-card" href="/product.html?slug=${encodeURIComponent(p.slug)}" style="text-decoration:none; color:inherit;">
+            <div class="jr-card-cover">${cover}</div>
+            <div class="jr-card-body">
+              <div class="jr-card-title">${StorePublic.esc(p.name)}</div>
+              <div class="jr-card-desc">${StorePublic.esc(p.summary || '')}</div>
+              <div class="jr-card-meta">
+                <div>${tags}</div>
+                <div>${StorePublic.esc(price)}</div>
+              </div>
+            </div>
+          </a>
+        `;
+      }).join('');
+    }
+
+    async function load() {
+      const q = document.getElementById('q').value.trim();
+      const platform = document.getElementById('platform').value;
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (platform) params.set('platform', platform);
+      params.set('limit', '60');
+      params.set('offset', '0');
+
+      const data = await StorePublic.fetchJson(`/api/public/products?${params.toString()}`);
+      render(data.products || []);
+
+      // update URL
+      const url = new URL(window.location.href);
+      url.search = params.toString();
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    async function init() {
+      wireMobileNavbar();
+
+      const OFFICIAL_LOGO_URL = 'https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png';
+      const DEFAULT_PHONE = '8295319442';
+      const DEFAULT_EMAIL = 'jrdigitalrd@gmail.com';
+
+      // Admin login links
+      [document.getElementById('adminLoginLink'), document.getElementById('adminLoginLinkMobile')]
+        .filter(Boolean)
+        .forEach((link) => {
+          const returnTo = encodeURIComponent(window.location.href);
+          link.href = `${StorePublic.API_BASE}/admin/login.html?returnTo=${returnTo}`;
+        });
+
+      let settings = null;
+      try {
+        const s = await StorePublic.fetchJson('/api/public/store-settings');
+        settings = s.settings || null;
+      } catch (_) {}
+
+      const brandName = settings?.brand_name || 'JR Digital';
+      const logoUrl = settings?.logo_url || OFFICIAL_LOGO_URL;
+      StorePublic.setCssVars(settings?.theme);
+      // Enforce corporate theme (visual only)
+      StorePublic.setCssVars({ primary: '#0A6CFF', accent: '#1EC9FF', light: '#F8FAFC', dark: '#0B3C8C' });
+
+      document.getElementById('brandName').textContent = brandName;
+      document.getElementById('footerBrand').textContent = brandName;
+      document.getElementById('footerBrand2').textContent = brandName;
+      document.title = `Productos - ${brandName}`;
+
+      const logoImg = document.getElementById('brandLogo');
+      if (logoImg && logoUrl) {
+        logoImg.src = logoUrl;
+        logoImg.style.display = 'block';
+      }
+
+      const footerLogo = document.getElementById('footerLogo');
+      if (footerLogo && logoUrl) footerLogo.src = logoUrl;
+
+      const wa = settings?.whatsapp || '';
+      const phone = (wa || DEFAULT_PHONE);
+      const email = (settings?.email || DEFAULT_EMAIL);
+      const waText = `Hola, quiero cotizar un producto de ${brandName}`;
+      const waLink = StorePublic.e164ToWaLink(phone, waText);
+      ['whatsappTop','whatsappMobile','whatsappCta'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.href = waLink;
+      });
+
+      const contactBits = [];
+      contactBits.push(`📧 <a href="mailto:${StorePublic.esc(email)}">${StorePublic.esc(email)}</a>`);
+      contactBits.push(`📱 <a href="${waLink}" target="_blank" rel="noopener">${StorePublic.esc(phone)}</a>`);
+      if (settings?.address) contactBits.push(`📍 ${StorePublic.esc(settings.address)}`);
+      const footerContact = document.getElementById('footerContact');
+      if (footerContact) footerContact.innerHTML = contactBits.join('<br />') || '—';
+
+      // hydrate from query
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || '';
+      const platform = params.get('platform') || '';
+      document.getElementById('q').value = q;
+      document.getElementById('platform').value = platform;
+
+      document.getElementById('q').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') load().catch(() => {});
+      });
+      document.getElementById('platform').addEventListener('change', () => load().catch(() => {}));
+
+      try {
+        await load();
+      } catch (e) {
+        render([]);
+      }
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>

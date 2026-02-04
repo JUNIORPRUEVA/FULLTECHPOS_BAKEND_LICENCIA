@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0A6CFF" />
+  <title>JR Digital - Soluciones y Productos</title>
+  <meta name="description" content="JR Digital: soluciones digitales, productos, instaladores y proyectos listos para tu negocio." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="JR Digital" />
+  <meta property="og:description" content="Soluciones digitales, productos y proyectos listos para tu negocio." />
+  <meta property="og:image" content="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/img/pwa/icon-180.png" />
+  <link rel="icon" href="/assets/img/pwa/icon-192.png" />
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <link rel="shortcut icon" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/jr.css" />
+  <script defer src="/assets/js/pwa.js"></script>
+  <script defer src="/assets/js/storePublic.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a class="navbar-logo" href="/home.html" style="text-decoration:none;">
+        <img id="brandLogo" src="" alt="Logo" class="navbar-logo-img" style="display:none;" />
+        <span class="navbar-brand" id="brandName">JR Digital</span>
+      </a>
+
+      <div class="navbar-actions">
+        <a class="navbar-download" href="/products.html" aria-label="Ver productos">
+          <span class="nav-icon" aria-hidden="true">🧩</span>
+          <span class="nav-text">Productos</span>
+        </a>
+        <a id="whatsappTop" href="#" class="navbar-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <span class="nav-icon" aria-hidden="true">💬</span>
+          <span class="nav-text">WhatsApp</span>
+        </a>
+
+        <button id="navbarToggle" class="navbar-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
+        <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+      </div>
+    </div>
+
+    <div id="navbarMobile" class="navbar-mobile" aria-label="Menú móvil">
+      <a class="navbar-mobile-btn" href="/home.html">Inicio</a>
+      <a class="navbar-mobile-btn" href="/products.html">Productos</a>
+      <a id="whatsappMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a id="adminLoginLinkMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">Admin</a>
+    </div>
+  </nav>
+
+  <header class="jr-hero">
+    <div class="jr-container">
+      <div class="jr-hero-grid">
+        <div>
+          <div class="jr-hero-brand">
+            <img id="heroLogo" class="jr-hero-logo" src="" alt="JR Digital" />
+            <h1 id="heroTitle">JR Digital</h1>
+          </div>
+          <p id="heroSubtitle">Soluciones digitales, productos y proyectos listos para tu negocio.</p>
+          <div class="jr-lead" id="heroLead">
+            Creamos software profesional para empresas: sistemas listos para implementar o desarrollos a la medida. Adquiere uno de nuestros sistemas ya hecho o cotiza uno desde cero con nosotros.
+          </div>
+
+          <div class="jr-contact-chips">
+            <a id="heroPhone" class="jr-chip" href="#">📞 <span>8295319442</span></a>
+            <a id="heroEmail" class="jr-chip" href="#">✉️ <span>jrdigitalrd@gmail.com</span></a>
+          </div>
+
+          <div class="jr-hero-actions">
+            <a class="jr-btn primary" href="/products.html">Ver catálogo</a>
+            <a id="whatsappHero" class="jr-btn ghost" href="#" target="_blank" rel="noopener">Contactar por WhatsApp</a>
+          </div>
+        </div>
+
+        <div class="jr-hero-card">
+          <div class="jr-hero-card-title">¿Qué puedes hacer aquí?</div>
+          <div style="opacity:0.92; line-height:1.7;">
+            • Ver productos publicados<br />
+            • Descargar instaladores / manuales<br />
+            • Solicitar información y cotizaciones<br />
+          </div>
+          <div class="divider" style="margin: 14px 0;"></div>
+          <div class="muted" style="color: rgba(255,255,255,0.86);">Administración: crea productos, sube media y publica.</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="jr-section">
+      <div class="jr-container">
+        <h2>Productos destacados</h2>
+        <p class="sub">Solo mostramos productos en estado <strong>Publicado</strong>.</p>
+
+        <div id="featured" class="jr-grid"></div>
+        <div id="featuredEmpty" class="jr-empty" style="display:none;">
+          Aún no hay productos publicados. Entra al Admin y publica tu primer producto.
+        </div>
+
+        <div style="margin-top: 18px;">
+          <a class="jr-btn primary" href="/products.html">Ver todos los productos</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="jr-section" style="background: white;">
+      <div class="jr-container">
+        <h2>Servicios</h2>
+        <p class="sub">Implementación, soporte, integraciones y personalización.</p>
+
+        <div class="jr-grid">
+          <div class="jr-card">
+            <div class="jr-card-body">
+              <div class="jr-card-title">Implementación</div>
+              <div class="jr-card-desc">Te ayudamos a instalar, configurar y dejar listo tu producto/proyecto.</div>
+            </div>
+          </div>
+          <div class="jr-card">
+            <div class="jr-card-body">
+              <div class="jr-card-title">Soporte</div>
+              <div class="jr-card-desc">Mantenimiento, mejoras y acompañamiento para que todo funcione estable.</div>
+            </div>
+          </div>
+          <div class="jr-card">
+            <div class="jr-card-body">
+              <div class="jr-card-title">Personalización</div>
+              <div class="jr-card-desc">Ajustes a la medida: branding, módulos, reportes e integraciones.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="jr-footer">
+    <div class="jr-container">
+      <div class="jr-footer-grid">
+        <div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <img id="footerLogo" src="" alt="JR Digital" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
+            <h4 id="footerBrand">JR Digital</h4>
+          </div>
+          <div id="footerDesc">Soluciones digitales para negocios.</div>
+        </div>
+        <div>
+          <h4>Contacto</h4>
+          <div id="footerContact" style="line-height:1.8;"></div>
+        </div>
+        <div>
+          <h4>Links</h4>
+          <div style="line-height:1.8;">
+            <a href="/products.html">Productos</a><br />
+            <a id="footerWhatsapp" href="#" target="_blank" rel="noopener">WhatsApp</a><br />
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; opacity:0.85; font-size:0.9rem;">© 2026 <span id="footerBrand2">JR Digital</span>. Todos los derechos reservados.</div>
+    </div>
+  </footer>
+
+  <script>
+    function wireMobileNavbar() {
+      const navbar = document.querySelector('.navbar');
+      const toggle = document.getElementById('navbarToggle');
+      const mobileMenu = document.getElementById('navbarMobile');
+      if (!navbar || !toggle || !mobileMenu) return;
+
+      function closeMenu() {
+        navbar.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+      function openMenu() {
+        navbar.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (navbar.classList.contains('is-open')) closeMenu();
+        else openMenu();
+      });
+
+      mobileMenu.querySelectorAll('a,button').forEach((el) => {
+        el.addEventListener('click', () => closeMenu());
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!navbar.classList.contains('is-open')) return;
+        if (navbar.contains(e.target)) return;
+        closeMenu();
+      });
+
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) closeMenu();
+      });
+    }
+
+    async function init() {
+      wireMobileNavbar();
+
+      const OFFICIAL_LOGO_URL = 'https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png';
+      const DEFAULT_PHONE = '8295319442';
+      const DEFAULT_EMAIL = 'jrdigitalrd@gmail.com';
+
+      // Admin login links
+      [document.getElementById('adminLoginLink'), document.getElementById('adminLoginLinkMobile')]
+        .filter(Boolean)
+        .forEach((link) => {
+          const returnTo = encodeURIComponent(window.location.href);
+          link.href = `${StorePublic.API_BASE}/admin/login.html?returnTo=${returnTo}`;
+        });
+
+      let settings = null;
+      try {
+        const s = await StorePublic.fetchJson('/api/public/store-settings');
+        settings = s.settings || null;
+      } catch (_) {}
+
+      const brandName = settings?.brand_name || 'JR Digital';
+      const logoUrl = settings?.logo_url || OFFICIAL_LOGO_URL;
+      StorePublic.setCssVars(settings?.theme);
+      // Enforce corporate theme (visual only)
+      StorePublic.setCssVars({ primary: '#0A6CFF', accent: '#1EC9FF', light: '#F8FAFC', dark: '#0B3C8C' });
+
+      document.getElementById('brandName').textContent = brandName;
+      document.getElementById('heroTitle').textContent = brandName;
+      document.getElementById('footerBrand').textContent = brandName;
+      document.getElementById('footerBrand2').textContent = brandName;
+
+      const logoImg = document.getElementById('brandLogo');
+      if (logoImg && logoUrl) {
+        logoImg.src = logoUrl;
+        logoImg.style.display = 'block';
+      }
+
+      const heroLogo = document.getElementById('heroLogo');
+      if (heroLogo && logoUrl) {
+        heroLogo.src = logoUrl;
+      }
+
+      const footerLogo = document.getElementById('footerLogo');
+      if (footerLogo && logoUrl) footerLogo.src = logoUrl;
+
+      const wa = settings?.whatsapp || '';
+      const phone = (wa || DEFAULT_PHONE);
+      const email = (settings?.email || DEFAULT_EMAIL);
+      const waText = `Hola, quiero información sobre ${brandName}`;
+      const waLink = StorePublic.e164ToWaLink(phone, waText);
+      ['whatsappTop','whatsappMobile','whatsappHero','footerWhatsapp'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.href = waLink;
+      });
+
+      const heroPhone = document.getElementById('heroPhone');
+      if (heroPhone) heroPhone.href = `tel:${phone}`;
+      const heroEmail = document.getElementById('heroEmail');
+      if (heroEmail) heroEmail.href = `mailto:${email}`;
+
+      const contactBits = [];
+      contactBits.push(`📧 <a href="mailto:${StorePublic.esc(email)}">${StorePublic.esc(email)}</a>`);
+      contactBits.push(`📱 <a href="${waLink}" target="_blank" rel="noopener">${StorePublic.esc(phone)}</a>`);
+      if (settings?.address) contactBits.push(`📍 ${StorePublic.esc(settings.address)}`);
+      document.getElementById('footerContact').innerHTML = contactBits.join('<br />') || '—';
+
+      // Featured products
+      const featuredEl = document.getElementById('featured');
+      const emptyEl = document.getElementById('featuredEmpty');
+
+      try {
+        const data = await StorePublic.fetchJson('/api/public/products?limit=6&offset=0');
+        const products = data.products || [];
+        if (!products.length) {
+          emptyEl.style.display = 'block';
+          featuredEl.innerHTML = '';
+          return;
+        }
+
+        featuredEl.innerHTML = products.map((p) => {
+          const cover = p.cover_url ? `<img src="${StorePublic.esc(p.cover_url)}" alt="${StorePublic.esc(p.name)}" />` : `<div>${StorePublic.esc(p.name)}</div>`;
+          const price = StorePublic.moneyText(p);
+          const tags = (p.platforms || []).slice(0, 2).map(t => `<span class="jr-badge">${StorePublic.esc(t)}</span>`).join(' ');
+
+          return `
+            <a class="jr-card" href="/product.html?slug=${encodeURIComponent(p.slug)}" style="text-decoration:none; color:inherit;">
+              <div class="jr-card-cover">${cover}</div>
+              <div class="jr-card-body">
+                <div class="jr-card-title">${StorePublic.esc(p.name)}</div>
+                <div class="jr-card-desc">${StorePublic.esc(p.summary || '')}</div>
+                <div class="jr-card-meta">
+                  <div>${tags}</div>
+                  <div>${StorePublic.esc(price)}</div>
+                </div>
+              </div>
+            </a>
+          `;
+        }).join('');
+      } catch (e) {
+        emptyEl.style.display = 'block';
+      }
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>

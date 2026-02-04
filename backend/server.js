@@ -42,6 +42,10 @@ const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
+const adminProductsRoutes = require('./routes/adminProductsRoutes');
+const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
+const storePublicRoutes = require('./routes/storePublicRoutes');
+const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 
 // Módulos opcionales (solo cuando se usa el backend completo)
 const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
@@ -117,6 +121,17 @@ app.get('/offline.html', (req, res) => {
 
 // Servir descargas públicamente
 app.use('/descargas', express.static(path.join(__dirname, '../descargas')));
+
+// ==========================================
+// STORE / PRODUCTS (public + admin)
+// ==========================================
+// Public read-only APIs
+app.use('/api/public', storePublicRoutes);
+app.use('/api/public', publicAssetsRoutes);
+
+// Admin APIs (protected by x-session-id)
+app.use('/api/admin', adminProductsRoutes);
+app.use('/api/admin', adminStoreSettingsRoutes);
 
 // ==========================================
 // RUTAS DE AUTENTICACIÓN

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#05422C">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
+    <link rel="icon" href="../assets/img/pwa/icon-192.png">
+    <script defer src="../assets/js/pwa.js"></script>
+    <script defer src="../assets/js/adminCommon.js"></script>
+    <title>Store Settings - Panel Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #F3F4F6;
+            color: #1F2937;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .navbar h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .navbar-user { display: flex; align-items: center; gap: 20px; }
+        .navbar-user p { font-size: 0.9rem; opacity: 0.9; }
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        .logout-btn:hover { background: white; color: #05422C; }
+        .back-link {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .back-link:hover { opacity: 0.85; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            animation: slideInUp 0.6s ease;
+        }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+        .section-title { font-size: 1.5rem; font-weight: 800; color: #05422C; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .section-subtitle { font-size: 0.95rem; color: #6B7280; margin-bottom: 25px; line-height: 1.5; }
+        .message {
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            margin-bottom: 18px;
+        }
+        .message.show { display: block; }
+        .message.success { background-color: #DCFCE7; border: 1px solid #BBF7D0; color: #166534; }
+        .message.error { background-color: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 18px; }
+        label { font-size: 0.95rem; font-weight: 700; color: #05422C; margin-bottom: 8px; }
+        input[type="text"], input[type="email"], textarea {
+            padding: 12px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background-color: #F9FAFB;
+            color: #1F2937;
+            transition: all 0.3s ease;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #10B981;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        textarea { resize: vertical; min-height: 110px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .logo-preview {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-preview img {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            border: 2px solid #E5E7EB;
+            object-fit: contain;
+            background: #fff;
+        }
+        .actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+        button {
+            border: none;
+            padding: 12px 18px;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-save {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+        }
+        .btn-save:hover:not(:disabled) { box-shadow: 0 10px 30px rgba(5,66,44,0.3); transform: translateY(-2px); }
+        .btn-secondary {
+            background: #F3F4F6;
+            color: #05422C;
+            border: 2px solid #E5E7EB;
+        }
+        .btn-secondary:hover:not(:disabled) { border-color: #10B981; background: #fff; }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+        .hint { font-size: 0.85rem; color: #6B7280; margin-top: 6px; }
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 12px; text-align: center; padding: 18px 16px; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div style="display:flex; align-items:center; gap: 16px;">
+            <a href="admin-hub.html" class="back-link">← Volver</a>
+            <h1>⚙️ Store Settings</h1>
+        </div>
+        <div class="navbar-user">
+            <p>Bienvenido, <strong id="userName">Admin</strong></p>
+            <button class="logout-btn" type="button" onclick="AdminCommon.logout()">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2 class="section-title">Branding & Contacto</h2>
+            <p class="section-subtitle">Configura nombre de marca, logo, WhatsApp y datos de contacto del sitio público (JR Digital).</p>
+
+            <div id="message" class="message"></div>
+
+            <form id="settingsForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="brand_name">Nombre de marca</label>
+                        <input type="text" id="brand_name" placeholder="JR Digital" maxlength="120" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="whatsapp">WhatsApp</label>
+                        <input type="text" id="whatsapp" placeholder="18295319442" maxlength="30" />
+                        <div class="hint">Formato recomendado: 1 + 10 dígitos (ej: 1829...)</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="hola@jrdigital.com" maxlength="200" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Dirección</label>
+                        <input type="text" id="address" placeholder="Higüey, RD" maxlength="300" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="logo_url">Logo URL (opcional)</label>
+                    <input type="text" id="logo_url" placeholder="https://.../logo.png" maxlength="2000" />
+                    <div class="logo-preview">
+                        <img id="logoPreview" alt="Logo" src="" style="display:none;" />
+                        <div class="hint">Puedes usar una imagen publicada en algún hosting o un media de un producto publicado.</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="socials">Redes (JSON)</label>
+                    <textarea id="socials" placeholder='{"instagram":"https://...","facebook":"https://..."}'></textarea>
+                    <div class="hint">Debe ser JSON válido. Déjalo vacío para no cambiarlo.</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="theme">Theme (JSON)</label>
+                    <textarea id="theme" placeholder='{"primary":"#05422C","accent":"#10B981"}'></textarea>
+                    <div class="hint">Colores y configuración visual (opcional). JSON válido.</div>
+                </div>
+
+                <div class="actions">
+                    <button class="btn-secondary" type="button" id="reloadBtn">Recargar</button>
+                    <button class="btn-save" type="submit" id="saveBtn">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const msgId = 'message';
+
+        function setLogoPreview(url) {
+            const img = document.getElementById('logoPreview');
+            const u = String(url || '').trim();
+            if (!u) {
+                img.style.display = 'none';
+                img.src = '';
+                return;
+            }
+            img.style.display = 'block';
+            img.src = u;
+        }
+
+        async function loadSettings() {
+            AdminCommon.hideMessage(msgId);
+            const { data } = await AdminCommon.adminFetchJson('/api/admin/store-settings');
+            const s = data.settings || {};
+
+            document.getElementById('brand_name').value = s.brand_name || '';
+            document.getElementById('logo_url').value = s.logo_url || '';
+            document.getElementById('whatsapp').value = s.whatsapp || '';
+            document.getElementById('email').value = s.email || '';
+            document.getElementById('address').value = s.address || '';
+
+            document.getElementById('socials').value = s.socials ? JSON.stringify(s.socials, null, 2) : '';
+            document.getElementById('theme').value = s.theme ? JSON.stringify(s.theme, null, 2) : '';
+            setLogoPreview(s.logo_url);
+        }
+
+        window.addEventListener('load', async () => {
+            const sid = await AdminCommon.ensureAuth({ userNameElId: 'userName' });
+            if (!sid) return;
+
+            await loadSettings();
+
+            document.getElementById('reloadBtn').addEventListener('click', loadSettings);
+
+            document.getElementById('logo_url').addEventListener('input', (e) => {
+                setLogoPreview(e.target.value);
+            });
+
+            document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                AdminCommon.hideMessage(msgId);
+
+                const saveBtn = document.getElementById('saveBtn');
+                saveBtn.disabled = true;
+                const original = saveBtn.textContent;
+                saveBtn.textContent = 'Guardando...';
+
+                try {
+                    const payload = {
+                        brand_name: document.getElementById('brand_name').value.trim() || null,
+                        logo_url: document.getElementById('logo_url').value.trim() || null,
+                        whatsapp: document.getElementById('whatsapp').value.trim() || null,
+                        email: document.getElementById('email').value.trim() || null,
+                        address: document.getElementById('address').value.trim() || null
+                    };
+
+                    const socials = AdminCommon.parseJsonTextarea(document.getElementById('socials').value, { fieldName: 'socials' });
+                    const theme = AdminCommon.parseJsonTextarea(document.getElementById('theme').value, { fieldName: 'theme' });
+                    if (socials !== null) payload.socials = socials;
+                    if (theme !== null) payload.theme = theme;
+
+                    const { data } = await AdminCommon.adminFetchJson('/api/admin/store-settings', {
+                        method: 'PUT',
+                        body: payload
+                    });
+
+                    AdminCommon.showMessage(msgId, '✅ Guardado correctamente', 'success');
+                    const updated = data.settings || {};
+                    setLogoPreview(updated.logo_url);
+                } catch (err) {
+                    AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = original;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

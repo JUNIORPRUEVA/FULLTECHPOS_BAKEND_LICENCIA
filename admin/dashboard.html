@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Administrativo - FULLTECH POS | Control Total de Licencias</title>
+    <title>Dashboard Administrativo - FULLTECH POS</title>
     <style>
         * {
             margin: 0;
@@ -369,58 +369,29 @@
     </div>
 
     <div class="container">
-        <!-- SECCIÓN DE UPLOAD -->
         <div class="section">
-            <h2 class="section-title">📤 Subir Nuevo Instalador</h2>
-            
-            <div id="uploadMessage" class="message"></div>
-
-            <form id="uploadForm" class="upload-form">
-                <div class="form-group">
-                    <label for="versionInput">Versión (ej: 1.0.0)</label>
-                    <input 
-                        type="text" 
-                        id="versionInput" 
-                        placeholder="1.0.0"
-                        value="1.0.0"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="descriptionInput">Descripción (opcional)</label>
-                    <textarea 
-                        id="descriptionInput" 
-                        placeholder="Describe los cambios o características principales..."
-                    ></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Seleccionar Archivo</label>
-                    <label class="file-input-label" for="installerFile">
-                        Selecciona el instalador
-                    </label>
-                    <input 
-                        type="file" 
-                        id="installerFile" 
-                        accept=".zip,.exe,.msi,.tar,.gz"
-                        required
-                    >
-                    <div class="file-name" id="fileName"></div>
-                </div>
-
-                <button type="submit" id="uploadBtn">Subir Instalador</button>
-            </form>
-        </div>
-
-        <!-- SECCIÓN DE VERSIONES -->
-        <div class="section">
-            <h2 class="section-title">📦 Versiones Disponibles</h2>
-            
-            <div id="versionsLoading" class="loading" style="display: none;">
-                <div class="spinner"></div> Cargando versiones...
+            <h2 class="section-title">🧩 Gestión de productos y descargas</h2>
+            <div class="message show success" style="display:block;">
+                ✅ La subida de instaladores por versiones fue reemplazada por el catálogo de <strong>Productos</strong>.
+                Ahora los archivos/descargas se gestionan dentro de cada producto.
             </div>
 
-            <div id="versionsContainer"></div>
+            <div class="grid-2" style="margin-top: 18px;">
+                <div style="background:#F9FAFB; border: 2px solid #E5E7EB; border-radius: 12px; padding: 18px;">
+                    <div style="font-weight: 800; color:#05422C; margin-bottom: 8px;">Ir a Productos</div>
+                    <div style="color:#6B7280; line-height:1.6;">Crea/edita productos, sube media y agrega archivos descargables.</div>
+                    <div style="margin-top: 14px;">
+                        <a href="products.html" style="display:inline-block; text-decoration:none;"><button type="button">Abrir Productos</button></a>
+                    </div>
+                </div>
+                <div style="background:#F9FAFB; border: 2px solid #E5E7EB; border-radius: 12px; padding: 18px;">
+                    <div style="font-weight: 800; color:#05422C; margin-bottom: 8px;">Branding / Contacto</div>
+                    <div style="color:#6B7280; line-height:1.6;">Actualiza nombre de marca, logo, WhatsApp, email y tema visual.</div>
+                    <div style="margin-top: 14px;">
+                        <a href="store-settings.html" style="display:inline-block; text-decoration:none;"><button type="button">Abrir Store Settings</button></a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -456,167 +427,7 @@
 
             // Verificar sesión
             verifySession();
-            loadVersions();
         });
-
-        // Mostrar nombre de archivo seleccionado
-        document.getElementById('installerFile').addEventListener('change', (e) => {
-            const fileName = e.target.files[0]?.name || '';
-            document.getElementById('fileName').textContent = fileName ? `✓ ${fileName}` : '';
-        });
-
-        // Manejar formulario de upload
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const installerFile = document.getElementById('installerFile').files[0];
-            if (!installerFile) {
-                showUploadMessage('❌ Por favor selecciona un archivo', 'error');
-                return;
-            }
-
-            const version = document.getElementById('versionInput').value;
-            const description = document.getElementById('descriptionInput').value;
-
-            const formData = new FormData();
-            formData.append('installer', installerFile);
-            formData.append('version', version);
-            formData.append('description', description);
-
-            const uploadBtn = document.getElementById('uploadBtn');
-            uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<div class="spinner" style="display: inline-block;"></div> Subiendo...';
-
-            try {
-                const response = await fetch(`${API_URL}/api/upload-installer`, {
-                    method: 'POST',
-                    headers: {
-                        'x-session-id': sessionId
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showUploadMessage('✅ ' + data.message, 'success');
-                    document.getElementById('uploadForm').reset();
-                    document.getElementById('fileName').textContent = '';
-                    setTimeout(loadVersions, 1000);
-                } else {
-                    showUploadMessage('❌ ' + data.message, 'error');
-                }
-            } catch (error) {
-                showUploadMessage('❌ Error: ' + error.message, 'error');
-            } finally {
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = 'Subir Instalador';
-            }
-        });
-
-        // Cargar versiones
-        async function loadVersions() {
-            const container = document.getElementById('versionsContainer');
-            const loading = document.getElementById('versionsLoading');
-
-            loading.style.display = 'block';
-            container.innerHTML = '';
-
-            try {
-                const response = await fetch(`${API_URL}/api/versions?sessionId=${sessionId}`);
-                const data = await response.json();
-
-                loading.style.display = 'none';
-
-                if (data.success && data.versions.length > 0) {
-                    const html = `
-                        <table class="versions-table">
-                            <thead>
-                                <tr>
-                                    <th>Archivo</th>
-                                    <th>Versión</th>
-                                    <th>Tamaño</th>
-                                    <th>Fecha de Subida</th>
-                                    <th>Descripción</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.versions.map(v => `
-                                    <tr>
-                                        <td><a href="/${v.ruta}" class="download-link" target="_blank">${v.nombre}</a></td>
-                                        <td><strong>${v.version}</strong></td>
-                                        <td>${v.tamaño}</td>
-                                        <td>${new Date(v.fechaSubida).toLocaleDateString('es-DO')}</td>
-                                        <td>${v.descripcion || '-'}</td>
-                                        <td>
-                                            <button class="delete-btn" onclick="deleteVersion('${v.id}')">
-                                                🗑 Eliminar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📭</div>
-                            <p>No hay versiones subidas aún.</p>
-                            <p style="font-size: 0.85rem; margin-top: 10px; opacity: 0.7;">Sube tu primer instalador usando el formulario de arriba.</p>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                loading.style.display = 'none';
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">⚠️</div>
-                        <p>Error al cargar las versiones: ${error.message}</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Eliminar versión
-        async function deleteVersion(versionId) {
-            if (!confirm('¿Estás seguro de que quieres eliminar esta versión?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/api/delete-installer/${versionId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'x-session-id': sessionId
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showUploadMessage('✅ Versión eliminada correctamente', 'success');
-                    setTimeout(loadVersions, 500);
-                } else {
-                    showUploadMessage('❌ ' + data.message, 'error');
-                }
-            } catch (error) {
-                showUploadMessage('❌ Error: ' + error.message, 'error');
-            }
-        }
-
-        // Mostrar mensaje
-        function showUploadMessage(message, type) {
-            const messageEl = document.getElementById('uploadMessage');
-            messageEl.textContent = message;
-            messageEl.className = `message show ${type}`;
-
-            setTimeout(() => {
-                messageEl.classList.remove('show');
-            }, 5000);
-        }
 
         // Verificar sesión
         async function verifySession() {

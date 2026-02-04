@@ -1,0 +1,496 @@
+/* JR Digital - Store frontend (minimal layer on top of existing variables) */
+
+:root {
+  /* JR Digital corporate palette */
+  --jr-blue: #0A6CFF;
+  --jr-blue-dark: #0B3C8C;
+  --jr-cyan: #1EC9FF;
+  --jr-green: #2ED573;
+  --jr-yellow: #FFC312;
+  --jr-orange: #FF8F1F;
+  --jr-bg: #F8FAFC;
+
+  /* Override base theme variables from styles.css (scoped by load-order) */
+  --color-primary: var(--jr-blue);
+  --color-accent: var(--jr-cyan);
+  --color-light: var(--jr-bg);
+  --color-dark: var(--jr-blue-dark);
+  --color-text: #0F172A;
+  --color-subtle: #475569;
+  --color-border: rgba(15, 23, 42, 0.12);
+  --shadow-soft: 0 6px 22px rgba(2, 6, 23, 0.08);
+  --transition: all 0.25s ease;
+
+  --jr-grad-blue: linear-gradient(135deg, var(--jr-blue) 0%, var(--jr-cyan) 100%);
+  --jr-grad-warm: linear-gradient(90deg, var(--jr-green) 0%, var(--jr-yellow) 52%, var(--jr-orange) 100%);
+
+  /* JR navbar height (override styles.css fixed 70px on JR pages) */
+  --jr-nav-h: 86px;
+}
+
+body {
+  background: var(--jr-bg);
+}
+
+body {
+  padding-top: var(--jr-nav-h);
+}
+
+.jr-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.jr-hero {
+  padding: 70px 0 40px;
+  background:
+    radial-gradient(900px 420px at 10% 10%, rgba(30, 201, 255, 0.28), transparent 62%),
+    radial-gradient(1000px 460px at 95% 0%, rgba(10, 108, 255, 0.22), transparent 60%),
+    radial-gradient(900px 520px at 40% 120%, rgba(46, 213, 115, 0.18), transparent 55%),
+    linear-gradient(135deg, var(--jr-blue-dark) 0%, var(--jr-blue) 55%, var(--jr-cyan) 120%);
+  color: white;
+}
+
+.jr-hero-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  padding: 8px;
+  box-shadow: 0 14px 40px rgba(2, 6, 23, 0.28);
+}
+
+.jr-hero-brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.jr-hero-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 30px;
+  align-items: center;
+}
+
+.jr-hero h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+
+.jr-hero p {
+  margin-top: 12px;
+  font-size: 1.05rem;
+  opacity: 0.92;
+}
+
+.jr-hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.jr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 2px solid rgba(255,255,255,0.18);
+}
+
+.jr-btn.primary {
+  background: var(--jr-grad-blue);
+  color: white;
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 14px 38px rgba(10, 108, 255, 0.26);
+}
+
+.jr-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 48px rgba(10, 108, 255, 0.32);
+}
+
+.jr-btn.ghost {
+  background: rgba(255,255,255,0.12);
+  color: white;
+}
+
+.jr-btn.ghost:hover {
+  background: rgba(255,255,255,0.18);
+  transform: translateY(-2px);
+}
+
+.jr-hero-card {
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 16px;
+  padding: 18px;
+  backdrop-filter: blur(10px);
+}
+
+.jr-hero-card .divider {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--jr-grad-warm);
+  opacity: 0.9;
+}
+
+.jr-hero-card-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.jr-section {
+  padding: 44px 0;
+}
+
+.jr-section h2 {
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  letter-spacing: -0.6px;
+}
+
+.jr-section p.sub {
+  margin-top: 8px;
+  color: var(--color-subtle);
+}
+
+.jr-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
+
+.jr-card {
+  background: white;
+  border: 2px solid var(--color-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  transition: var(--transition);
+}
+
+.jr-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 18px 48px rgba(10, 108, 255, 0.12);
+  transform: translateY(-4px);
+}
+
+.jr-card-cover {
+  height: 160px;
+  width: 100%;
+  background:
+    radial-gradient(380px 140px at 20% 10%, rgba(30, 201, 255, 0.20), transparent 65%),
+    linear-gradient(135deg, rgba(10, 108, 255, 0.10) 0%, rgba(30, 201, 255, 0.08) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-weight: 900;
+}
+
+.jr-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jr-card-body {
+  padding: 14px 14px 16px;
+}
+
+.jr-card-title {
+  font-weight: 900;
+  color: var(--color-primary);
+  margin-bottom: 6px;
+}
+
+.jr-card-desc {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  min-height: 44px;
+}
+
+.jr-card-meta {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: var(--color-subtle);
+  font-size: 0.9rem;
+}
+
+.jr-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: rgba(248, 250, 252, 0.9);
+  color: #0F172A;
+  font-weight: 900;
+  font-size: 0.78rem;
+}
+
+.jr-footer {
+  background:
+    radial-gradient(900px 300px at 10% 10%, rgba(30, 201, 255, 0.18), transparent 65%),
+    radial-gradient(700px 280px at 90% 0%, rgba(46, 213, 115, 0.10), transparent 65%),
+    linear-gradient(135deg, var(--jr-blue-dark) 0%, #071E44 100%);
+  color: rgba(255,255,255,0.86);
+  padding: 36px 0;
+}
+
+.jr-footer a {
+  color: rgba(255,255,255,0.92);
+  text-decoration: none;
+}
+
+.jr-footer a:hover {
+  text-decoration: underline;
+}
+
+.jr-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.jr-footer h4 {
+  color: white;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.jr-empty {
+  margin-top: 18px;
+  background: white;
+  border: 2px dashed var(--color-border);
+  border-radius: 16px;
+  padding: 22px;
+  color: var(--color-subtle);
+}
+
+.jr-filterbar {
+  margin-top: 14px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.jr-input, .jr-select {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: white;
+  min-width: 220px;
+  font-size: 0.95rem;
+}
+
+.jr-input:focus, .jr-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 201, 255, 0.18);
+}
+
+/* Override navbar gradient only on JR pages (jr.css is only included there) */
+.navbar {
+  background: linear-gradient(135deg, var(--jr-blue-dark) 0%, var(--jr-blue) 55%, #073A86 100%);
+  height: var(--jr-nav-h);
+}
+
+.navbar::after {
+  background: var(--jr-grad-warm);
+  opacity: 0.9;
+}
+
+.navbar-logo-img {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 6px;
+  border-radius: 12px;
+}
+
+/* Make brand/logo more prominent (restore "big header" feel) */
+.navbar-brand {
+  font-size: 1.35rem;
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+}
+
+.navbar-logo-img {
+  height: 56px;
+}
+
+/* Navbar buttons (Productos / WhatsApp) */
+.navbar-actions .navbar-download,
+.navbar-actions .navbar-whatsapp {
+  background: rgba(255,255,255,0.95);
+  color: var(--jr-blue-dark);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 10px 26px rgba(2, 6, 23, 0.18);
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.navbar-actions .navbar-download .nav-icon,
+.navbar-actions .navbar-whatsapp .nav-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-actions .navbar-download .nav-text,
+.navbar-actions .navbar-whatsapp .nav-text {
+  display: inline;
+}
+
+.navbar-actions .navbar-download:hover,
+.navbar-actions .navbar-whatsapp:hover {
+  background: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.22);
+}
+
+/* Keep admin gear subtle */
+.navbar-actions .navbar-admin {
+  opacity: 0.95;
+}
+
+.navbar-actions .navbar-admin:hover {
+  opacity: 1;
+}
+
+/* Friendly readable text block */
+.jr-lead {
+  margin-top: 10px;
+  line-height: 1.7;
+  opacity: 0.92;
+}
+
+.jr-contact-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.jr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.20);
+  color: rgba(255,255,255,0.92);
+  text-decoration: none;
+  font-weight: 900;
+}
+
+.jr-chip:hover {
+  background: rgba(255,255,255,0.16);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+  .jr-hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .jr-hero h1 {
+    font-size: 2.3rem;
+  }
+  .jr-input, .jr-select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Mobile drawer (left) – JR pages only */
+@media (max-width: 768px) {
+  /* Admin access only inside drawer on mobile */
+  .navbar-actions .navbar-admin {
+    display: none !important;
+  }
+
+  /* Appbar actions as icons only to keep brand in one line */
+  .navbar-actions .navbar-download,
+  .navbar-actions .navbar-whatsapp {
+    padding: 8px 10px !important;
+    min-width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.16);
+  }
+
+  .navbar-actions .navbar-download .nav-text,
+  .navbar-actions .navbar-whatsapp .nav-text {
+    display: none !important;
+  }
+
+  /* Convert dropdown menu into left drawer */
+  .navbar .navbar-mobile {
+    display: flex !important; /* keep element mounted for slide animation */
+    position: fixed !important;
+    top: var(--jr-nav-h) !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    width: min(320px, 86vw) !important;
+    height: calc(100vh - var(--jr-nav-h)) !important;
+    padding: 16px !important;
+    gap: 10px !important;
+    border-bottom: none !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.14) !important;
+    background: linear-gradient(180deg, var(--jr-blue-dark) 0%, #072B63 100%) !important;
+    box-shadow: 18px 0 44px rgba(2, 6, 23, 0.30) !important;
+    transform: translateX(-110%) !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+    transition: transform 0.22s ease !important;
+    animation: none !important;
+  }
+
+  .navbar.is-open .navbar-mobile {
+    display: flex !important;
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+  }
+
+  .navbar-mobile-btn {
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --jr-nav-h: 84px;
+  }
+
+  .navbar-logo-img {
+    height: 52px;
+  }
+
+  .navbar-brand {
+    font-size: 1.12rem;
+  }
+}

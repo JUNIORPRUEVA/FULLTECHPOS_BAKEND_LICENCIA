@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05422C" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
+    <link rel="icon" href="../assets/img/pwa/icon-192.png" />
+    <script defer src="../assets/js/pwa.js"></script>
+    <script defer src="../assets/js/adminCommon.js"></script>
+    <title>Editar Producto - Panel Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #F3F4F6;
+            color: #1F2937;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .navbar h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
+        .navbar-user { display: flex; align-items: center; gap: 20px; }
+        .navbar-user p { font-size: 0.9rem; opacity: 0.9; }
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        .logout-btn:hover { background: white; color: #05422C; }
+        .back-link { color: white; text-decoration: none; margin-right: 20px; font-weight: 600; }
+        .back-link:hover { opacity: 0.85; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            animation: slideInUp 0.6s ease;
+        }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+        .section-title { font-size: 1.4rem; font-weight: 900; color: #05422C; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .section-subtitle { font-size: 0.95rem; color: #6B7280; margin-bottom: 18px; line-height: 1.5; }
+        .message {
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            margin-bottom: 18px;
+        }
+        .message.show { display: block; }
+        .message.success { background-color: #DCFCE7; border: 1px solid #BBF7D0; color: #166534; }
+        .message.error { background-color: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        label { font-size: 0.9rem; font-weight: 900; color: #05422C; }
+        input[type="text"], input[type="number"], select, textarea {
+            padding: 12px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            background: #F9FAFB;
+            transition: all 0.3s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #10B981;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
+        }
+        textarea { resize: vertical; min-height: 110px; }
+
+        .btn {
+            border: none;
+            padding: 12px 16px;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .btn-primary { background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%); color: white; }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 10px 30px rgba(5,66,44,0.3); transform: translateY(-2px); }
+        .btn-secondary { background: #F3F4F6; color: #05422C; border: 2px solid #E5E7EB; }
+        .btn-secondary:hover:not(:disabled) { background: white; border-color: #10B981; }
+        .btn-danger { background: #EF4444; color: white; }
+        .btn-danger:hover:not(:disabled) { background: #DC2626; box-shadow: 0 6px 18px rgba(220,38,38,0.3); }
+        .btn-warning { background: #F59E0B; color: #111827; }
+        .btn-warning:hover:not(:disabled) { background: #D97706; color: white; }
+        .btn-success { background: #10B981; color: white; }
+        .btn-success:hover:not(:disabled) { box-shadow: 0 10px 30px rgba(16,185,129,0.25); transform: translateY(-2px); }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .muted { color: #6B7280; font-size: 0.85rem; }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 900;
+            font-size: 0.78rem;
+            border: 1px solid #E5E7EB;
+            background: #fff;
+        }
+        .pill.draft { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
+        .pill.published { color: #065f46; border-color: #86efac; background: #f0fdf4; }
+        .pill.archived { color: #374151; border-color: #d1d5db; background: #f9fafb; }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+        .card {
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 14px;
+            background: #fff;
+        }
+        .card:hover { border-color: #10B981; box-shadow: 0 10px 25px rgba(16,185,129,0.08); }
+        .thumb {
+            width: 100%;
+            height: 140px;
+            border-radius: 10px;
+            border: 1px solid #E5E7EB;
+            background: #F9FAFB;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 0.85rem; color: #374151; margin-top: 6px; }
+        .kv b { color: #05422C; }
+        .divider { height: 1px; background: #E5E7EB; margin: 14px 0; }
+
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: #F3F4F6; }
+        th, td { padding: 12px 12px; border-bottom: 1px solid #E5E7EB; text-align: left; font-size: 0.92rem; }
+        th { font-weight: 900; color: #05422C; }
+        tr:hover td { background: #F9FAFB; }
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 12px; text-align: center; padding: 18px 16px; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div style="display:flex; align-items:center; gap: 16px;">
+            <a href="products.html" class="back-link">← Productos</a>
+            <h1 id="pageTitle">✏️ Producto</h1>
+        </div>
+        <div class="navbar-user">
+            <p>Bienvenido, <strong id="userName">Admin</strong></p>
+            <button class="logout-btn" type="button" onclick="AdminCommon.logout()">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="message" class="message"></div>
+
+        <div class="section">
+            <div class="row" style="justify-content: space-between;">
+                <div>
+                    <h2 class="section-title">Información</h2>
+                    <div class="muted">ID: <span id="productIdText">(nuevo)</span> · Estado: <span id="statusPill"></span></div>
+                </div>
+                <div class="row">
+                    <button class="btn btn-secondary" type="button" id="reloadBtn">Recargar</button>
+                    <button class="btn btn-primary" type="button" id="saveBtn">Guardar</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <form id="productForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="slug">Slug *</label>
+                        <input id="slug" type="text" placeholder="fullpos" />
+                        <div class="muted">Solo letras/números/guiones. Se normaliza en backend.</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Nombre *</label>
+                        <input id="name" type="text" placeholder="FULLPOS" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="summary">Resumen</label>
+                    <input id="summary" type="text" placeholder="Descripción corta para el catálogo" />
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <textarea id="description" placeholder="Descripción completa..."></textarea>
+                </div>
+
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label for="price_text">Precio (texto)</label>
+                        <input id="price_text" type="text" placeholder="Desde RD$ 3,500" />
+                    </div>
+                    <div class="form-group">
+                        <label for="price_amount">Precio (monto)</label>
+                        <input id="price_amount" type="number" step="0.01" placeholder="3500" />
+                    </div>
+                    <div class="form-group">
+                        <label for="currency">Moneda</label>
+                        <select id="currency">
+                            <option value="DOP">DOP</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label for="featured">Destacado</label>
+                        <select id="featured">
+                            <option value="false">No</option>
+                            <option value="true">Sí</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tags">Tags (coma)</label>
+                        <input id="tags" type="text" placeholder="pos, inventario" />
+                    </div>
+                    <div class="form-group">
+                        <label for="categories">Categorías (coma)</label>
+                        <input id="categories" type="text" placeholder="software, negocio" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="platforms">Plataformas (coma)</label>
+                    <input id="platforms" type="text" placeholder="windows, android, web" />
+                </div>
+
+                <div class="form-group">
+                    <label for="system_requirements">Requisitos / Detalles técnicos</label>
+                    <textarea id="system_requirements" placeholder="Windows 10+, 4GB RAM, etc"></textarea>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="contact_whatsapp">WhatsApp (opcional)</label>
+                        <input id="contact_whatsapp" type="text" placeholder="1829..." />
+                    </div>
+                    <div class="form-group">
+                        <label for="contact_email">Email (opcional)</label>
+                        <input id="contact_email" type="text" placeholder="ventas@..." />
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="seo_title">SEO Title</label>
+                        <input id="seo_title" type="text" placeholder="JR Digital - ..." />
+                    </div>
+                    <div class="form-group">
+                        <label for="seo_description">SEO Description</label>
+                        <input id="seo_description" type="text" placeholder="Descripción corta para Google" />
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Publicación</h2>
+            <p class="section-subtitle">Para publicar necesitas una portada (cover_image) activa.</p>
+            <div class="row">
+                <button class="btn btn-secondary" type="button" onclick="setStatus('draft')">Volver a Borrador</button>
+                <button class="btn btn-success" type="button" onclick="setStatus('published')">Publicar</button>
+                <button class="btn btn-warning" type="button" onclick="setStatus('archived')">Archivar</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Media</h2>
+            <p class="section-subtitle">Sube logo, portada, galería y OG image. El orden se controla por sort_order.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="font-weight:900; color:#05422C; margin-bottom:10px;">📷 Subir imagen</h3>
+                    <form id="uploadImageForm">
+                        <div class="form-group">
+                            <label for="media_kind">Tipo</label>
+                            <select id="media_kind">
+                                <option value="cover_image">Portada (cover_image)</option>
+                                <option value="gallery_image">Galería (gallery_image)</option>
+                                <option value="logo">Logo</option>
+                                <option value="og_image">OG Image</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="media_sort">Orden</label>
+                            <input id="media_sort" type="number" value="0" />
+                        </div>
+                        <div class="form-group">
+                            <label for="media_file">Archivo</label>
+                            <input id="media_file" type="file" accept="image/*" />
+                        </div>
+                        <button class="btn btn-primary" type="submit" id="uploadImageBtn">Subir</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-weight:900; color:#05422C; margin-bottom:10px;">🎬 Video (link)</h3>
+                    <form id="videoLinkForm">
+                        <div class="form-group">
+                            <label for="video_url">URL</label>
+                            <input id="video_url" type="text" placeholder="https://..." />
+                        </div>
+                        <div class="form-group">
+                            <label for="video_sort">Orden</label>
+                            <input id="video_sort" type="number" value="0" />
+                        </div>
+                        <button class="btn btn-primary" type="submit" id="addVideoBtn">Agregar</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <div id="mediaList" class="media-grid"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Archivos / Descargas</h2>
+            <p class="section-subtitle">Sube archivos (apps, PDFs, manuales) o agrega enlaces. En la web pública solo se muestran si el producto está publicado y el archivo está activo.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="font-weight:900; color:#05422C; margin-bottom:10px;">📦 Subir archivo</h3>
+                    <form id="uploadFileForm">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="file_platform">Plataforma</label>
+                                <select id="file_platform">
+                                    <option value="windows">Windows</option>
+                                    <option value="android">Android</option>
+                                    <option value="web">Web</option>
+                                    <option value="pwa">PWA</option>
+                                    <option value="manual">Manual</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="file_type">Tipo</label>
+                                <select id="file_type">
+                                    <option value="zip">zip</option>
+                                    <option value="exe">exe</option>
+                                    <option value="msi">msi</option>
+                                    <option value="apk">apk</option>
+                                    <option value="aab">aab</option>
+                                    <option value="pdf">pdf</option>
+                                    <option value="other">other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="file_display">Nombre visible</label>
+                            <input id="file_display" type="text" placeholder="Descargar" />
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="file_version">Versión (opcional)</label>
+                                <input id="file_version" type="text" placeholder="1.0.0" />
+                            </div>
+                            <div class="form-group">
+                                <label for="file_requires">¿Requiere licencia?</label>
+                                <select id="file_requires">
+                                    <option value="false">No</option>
+                                    <option value="true">Sí</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="file_bin">Archivo</label>
+                            <input id="file_bin" type="file" />
+                        </div>
+                        <button class="btn btn-primary" type="submit" id="uploadFileBtn">Subir</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-weight:900; color:#05422C; margin-bottom:10px;">🔗 Enlace (URL)</h3>
+                    <form id="urlFileForm">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="url_platform">Plataforma</label>
+                                <select id="url_platform">
+                                    <option value="web">Web</option>
+                                    <option value="pwa">PWA</option>
+                                    <option value="windows">Windows</option>
+                                    <option value="android">Android</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="url_requires">¿Requiere licencia?</label>
+                                <select id="url_requires">
+                                    <option value="false">No</option>
+                                    <option value="true">Sí</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="url_display">Nombre visible</label>
+                            <input id="url_display" type="text" placeholder="Abrir sitio" />
+                        </div>
+                        <div class="form-group">
+                            <label for="url_version">Versión (opcional)</label>
+                            <input id="url_version" type="text" placeholder="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="url_value">URL</label>
+                            <input id="url_value" type="text" placeholder="https://..." />
+                        </div>
+                        <button class="btn btn-primary" type="submit" id="addUrlBtn">Agregar</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <div id="filesWrap"></div>
+        </div>
+    </div>
+
+    <script>
+        const msgId = 'message';
+        let sessionId = null;
+        let productId = null;
+        let currentProduct = null;
+        let currentMedia = [];
+        let currentFiles = [];
+
+        function qs(name) {
+            return new URLSearchParams(window.location.search).get(name);
+        }
+
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+        }
+
+        function setStatusPill(status) {
+            const s = String(status || 'draft').toLowerCase();
+            const cls = s === 'published' ? 'published' : (s === 'archived' ? 'archived' : 'draft');
+            const label = s === 'published' ? 'Publicado' : (s === 'archived' ? 'Archivado' : 'Borrador');
+            document.getElementById('statusPill').innerHTML = `<span class="pill ${cls}">${label}</span>`;
+        }
+
+        function fillForm(product) {
+            document.getElementById('slug').value = product.slug || '';
+            document.getElementById('name').value = product.name || '';
+            document.getElementById('summary').value = product.summary || '';
+            document.getElementById('description').value = product.description || '';
+            document.getElementById('price_text').value = product.price_text || '';
+            document.getElementById('price_amount').value = product.price_amount != null ? String(product.price_amount) : '';
+            document.getElementById('currency').value = product.currency || 'DOP';
+            document.getElementById('featured').value = product.featured ? 'true' : 'false';
+            document.getElementById('tags').value = Array.isArray(product.tags) ? product.tags.join(', ') : '';
+            document.getElementById('categories').value = Array.isArray(product.categories) ? product.categories.join(', ') : '';
+            document.getElementById('platforms').value = Array.isArray(product.platforms) ? product.platforms.join(', ') : '';
+            document.getElementById('system_requirements').value = product.system_requirements || '';
+            document.getElementById('contact_whatsapp').value = product.contact_whatsapp || '';
+            document.getElementById('contact_email').value = product.contact_email || '';
+            document.getElementById('seo_title').value = product.seo_title || '';
+            document.getElementById('seo_description').value = product.seo_description || '';
+
+            setStatusPill(product.status);
+        }
+
+        function buildProductPayload() {
+            return {
+                slug: document.getElementById('slug').value.trim(),
+                name: document.getElementById('name').value.trim(),
+                summary: document.getElementById('summary').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                price_text: document.getElementById('price_text').value.trim() || null,
+                price_amount: document.getElementById('price_amount').value.trim() || null,
+                currency: document.getElementById('currency').value,
+                featured: document.getElementById('featured').value === 'true',
+                tags: document.getElementById('tags').value,
+                categories: document.getElementById('categories').value,
+                platforms: document.getElementById('platforms').value,
+                system_requirements: document.getElementById('system_requirements').value,
+                contact_whatsapp: document.getElementById('contact_whatsapp').value.trim() || null,
+                contact_email: document.getElementById('contact_email').value.trim() || null,
+                seo_title: document.getElementById('seo_title').value.trim() || null,
+                seo_description: document.getElementById('seo_description').value.trim() || null
+            };
+        }
+
+        async function loadProduct() {
+            AdminCommon.hideMessage(msgId);
+
+            if (!productId) {
+                currentProduct = { status: 'draft', currency: 'DOP', featured: false, tags: [], categories: [], platforms: [] };
+                fillForm(currentProduct);
+                document.getElementById('productIdText').textContent = '(nuevo)';
+                document.getElementById('pageTitle').textContent = '➕ Nuevo Producto';
+                document.getElementById('mediaList').innerHTML = '<div class="muted">Guarda primero para habilitar media/files.</div>';
+                document.getElementById('filesWrap').innerHTML = '<div class="muted">Guarda primero para habilitar media/files.</div>';
+                return;
+            }
+
+            document.getElementById('productIdText').textContent = productId;
+            document.getElementById('pageTitle').textContent = '✏️ Editar Producto';
+
+            const { data } = await AdminCommon.adminFetchJson(`/api/admin/products/${encodeURIComponent(productId)}`, { sessionId });
+            currentProduct = data.product;
+            currentMedia = data.media || [];
+            currentFiles = data.files || [];
+
+            fillForm(currentProduct);
+            renderMedia();
+            renderFiles();
+        }
+
+        async function saveProduct() {
+            AdminCommon.hideMessage(msgId);
+
+            const payload = buildProductPayload();
+            if (!payload.slug || !payload.name) {
+                AdminCommon.showMessage(msgId, '❌ Slug y Nombre son requeridos', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('saveBtn');
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                if (!productId) {
+                    const { data } = await AdminCommon.adminFetchJson('/api/admin/products', { method: 'POST', body: payload, sessionId });
+                    productId = data.product.id;
+                    AdminCommon.showMessage(msgId, '✅ Producto creado', 'success');
+                    window.history.replaceState({}, '', `product-edit.html?id=${encodeURIComponent(productId)}`);
+                } else {
+                    await AdminCommon.adminFetchJson(`/api/admin/products/${encodeURIComponent(productId)}`, { method: 'PUT', body: payload, sessionId });
+                    AdminCommon.showMessage(msgId, '✅ Cambios guardados', 'success');
+                }
+
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        }
+
+        async function setStatus(status) {
+            if (!productId) {
+                AdminCommon.showMessage(msgId, '❌ Guarda el producto antes de cambiar el estado', 'error');
+                return;
+            }
+
+            AdminCommon.hideMessage(msgId);
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/${encodeURIComponent(productId)}/status`, {
+                    method: 'PUT',
+                    body: { status },
+                    sessionId
+                });
+                AdminCommon.showMessage(msgId, '✅ Estado actualizado', 'success');
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            }
+        }
+
+        window.setStatus = setStatus;
+
+        function mediaThumbSrc(m) {
+            if (m.kind === 'cover_video') return '';
+            if (!m.storage_path) return '';
+            return `${AdminCommon.BACKEND_API_BASE}/api/admin/products/media/${encodeURIComponent(m.id)}/file?sessionId=${encodeURIComponent(sessionId)}`;
+        }
+
+        function renderMedia() {
+            const el = document.getElementById('mediaList');
+            if (!currentMedia.length) {
+                el.innerHTML = '<div class="muted">Sin media todavía.</div>';
+                return;
+            }
+
+            el.innerHTML = currentMedia.map(m => {
+                const thumb = mediaThumbSrc(m);
+                const isVideo = m.kind === 'cover_video';
+                const activeText = m.is_active ? 'Activo' : 'Inactivo';
+
+                return `
+                    <div class="card">
+                        ${isVideo ? `<div class="thumb" style="display:flex; align-items:center; justify-content:center; font-weight:900; color:#05422C;">🎬 Video</div>`
+                                  : `<img class="thumb" src="${thumb}" alt="${esc(m.kind)}" />`}
+
+                        <div class="kv"><b>Tipo</b><span>${esc(m.kind)}</span></div>
+                        <div class="kv"><b>Orden</b><span>${esc(m.sort_order)}</span></div>
+                        <div class="kv"><b>Estado</b><span>${m.is_active ? '✅ ' + activeText : '⛔ ' + activeText}</span></div>
+                        <div class="kv"><b>URL</b><span style="max-width: 150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(m.url || '')}</span></div>
+
+                        <div class="divider"></div>
+
+                        <div class="row">
+                            <button class="btn btn-secondary" type="button" onclick="toggleMediaActive('${m.id}', ${m.is_active ? 'false' : 'true'})">${m.is_active ? 'Desactivar' : 'Activar'}</button>
+                            <button class="btn btn-secondary" type="button" onclick="promptMediaOrder('${m.id}', ${Number(m.sort_order) || 0})">Orden</button>
+                            <button class="btn btn-danger" type="button" onclick="deleteMedia('${m.id}')">Eliminar</button>
+                            ${isVideo && m.url ? `<a class="btn btn-secondary" target="_blank" rel="noopener" href="${esc(m.url)}">Abrir</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function toggleMediaActive(mediaId, is_active) {
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/media/${encodeURIComponent(mediaId)}/active`, {
+                    method: 'PUT',
+                    body: { is_active },
+                    sessionId
+                });
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            }
+        }
+
+        async function promptMediaOrder(mediaId, current) {
+            const v = prompt('Nuevo sort_order:', String(current));
+            if (v === null) return;
+            const n = Number(v);
+            if (!Number.isFinite(n)) {
+                AdminCommon.showMessage(msgId, '❌ sort_order inválido', 'error');
+                return;
+            }
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/media/${encodeURIComponent(mediaId)}/order`, {
+                    method: 'PUT',
+                    body: { sort_order: n },
+                    sessionId
+                });
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            }
+        }
+
+        async function deleteMedia(mediaId) {
+            if (!confirm('¿Eliminar este media?')) return;
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/media/${encodeURIComponent(mediaId)}`, {
+                    method: 'DELETE',
+                    sessionId
+                });
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            }
+        }
+
+        window.toggleMediaActive = toggleMediaActive;
+        window.promptMediaOrder = promptMediaOrder;
+        window.deleteMedia = deleteMedia;
+
+        async function uploadImage(e) {
+            e.preventDefault();
+            if (!productId) {
+                AdminCommon.showMessage(msgId, '❌ Guarda el producto primero', 'error');
+                return;
+            }
+
+            const file = document.getElementById('media_file').files[0];
+            if (!file) {
+                AdminCommon.showMessage(msgId, '❌ Selecciona una imagen', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('uploadImageBtn');
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Subiendo...';
+
+            try {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('kind', document.getElementById('media_kind').value);
+                fd.append('sort_order', document.getElementById('media_sort').value || '0');
+
+                const response = await fetch(`${AdminCommon.BACKEND_API_BASE}/api/admin/products/${encodeURIComponent(productId)}/media/upload`, {
+                    method: 'POST',
+                    headers: { 'x-session-id': sessionId },
+                    body: fd
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.ok === false || data.success === false) {
+                    throw new Error(data.message || response.statusText || 'Error');
+                }
+
+                AdminCommon.showMessage(msgId, '✅ Imagen subida', 'success');
+                document.getElementById('uploadImageForm').reset();
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        }
+
+        async function addVideoLink(e) {
+            e.preventDefault();
+            if (!productId) {
+                AdminCommon.showMessage(msgId, '❌ Guarda el producto primero', 'error');
+                return;
+            }
+
+            const url = document.getElementById('video_url').value.trim();
+            if (!url) {
+                AdminCommon.showMessage(msgId, '❌ URL requerida', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('addVideoBtn');
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Agregando...';
+
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/${encodeURIComponent(productId)}/media/video-link`, {
+                    method: 'POST',
+                    body: {
+                        url,
+                        sort_order: Number(document.getElementById('video_sort').value || 0)
+                    },
+                    sessionId
+                });
+                AdminCommon.showMessage(msgId, '✅ Video agregado', 'success');
+                document.getElementById('videoLinkForm').reset();
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        }
+
+        function renderFiles() {
+            const el = document.getElementById('filesWrap');
+            if (!currentFiles.length) {
+                el.innerHTML = '<div class="muted">Sin archivos todavía.</div>';
+                return;
+            }
+
+            el.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Plataforma</th>
+                            <th>Tipo</th>
+                            <th>Versión</th>
+                            <th>Licencia</th>
+                            <th>Activo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${currentFiles.map(f => {
+                            const isUrl = f.file_type === 'url';
+                            const requires = f.requires_license ? 'Sí' : 'No';
+                            const active = f.is_active ? '✅' : '⛔';
+                            const openOrDownload = isUrl
+                                ? `<a class="btn btn-secondary" target="_blank" rel="noopener" href="${esc(f.url || '#')}">Abrir</a>`
+                                : `<a class="btn btn-secondary" href="${AdminCommon.BACKEND_API_BASE}/api/admin/products/files/${encodeURIComponent(f.id)}/download?sessionId=${encodeURIComponent(sessionId)}">Descargar</a>`;
+
+                            return `
+                                <tr>
+                                    <td><strong>${esc(f.display_name || 'Descarga')}</strong><div class="muted">${esc(f.url || '')}</div></td>
+                                    <td>${esc(f.platform)}</td>
+                                    <td>${esc(f.file_type)}</td>
+                                    <td class="muted">${esc(f.version || '')}</td>
+                                    <td>${requires}</td>
+                                    <td>${active}</td>
+                                    <td>
+                                        <div class="row">
+                                            ${openOrDownload}
+                                            <button class="btn btn-secondary" type="button" onclick="toggleFileActive('${f.id}', ${f.is_active ? 'false' : 'true'})">${f.is_active ? 'Desactivar' : 'Activar'}</button>
+                                            <button class="btn btn-danger" type="button" onclick="deleteFile('${f.id}')">Eliminar</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function toggleFileActive(fileId, is_active) {
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/files/${encodeURIComponent(fileId)}/active`, {
+                    method: 'PUT',
+                    body: { is_active },
+                    sessionId
+                });
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            }
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm('¿Eliminar este archivo?')) return;
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/files/${encodeURIComponent(fileId)}`, {
+                    method: 'DELETE',
+                    sessionId
+                });
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            }
+        }
+
+        window.toggleFileActive = toggleFileActive;
+        window.deleteFile = deleteFile;
+
+        async function uploadBinaryFile(e) {
+            e.preventDefault();
+            if (!productId) {
+                AdminCommon.showMessage(msgId, '❌ Guarda el producto primero', 'error');
+                return;
+            }
+
+            const file = document.getElementById('file_bin').files[0];
+            if (!file) {
+                AdminCommon.showMessage(msgId, '❌ Selecciona un archivo', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('uploadFileBtn');
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Subiendo...';
+
+            try {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('platform', document.getElementById('file_platform').value);
+                fd.append('file_type', document.getElementById('file_type').value);
+                fd.append('display_name', document.getElementById('file_display').value.trim() || 'Descarga');
+                fd.append('version', document.getElementById('file_version').value.trim());
+                fd.append('requires_license', document.getElementById('file_requires').value);
+
+                const response = await fetch(`${AdminCommon.BACKEND_API_BASE}/api/admin/products/${encodeURIComponent(productId)}/files/upload`, {
+                    method: 'POST',
+                    headers: { 'x-session-id': sessionId },
+                    body: fd
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.ok === false || data.success === false) {
+                    throw new Error(data.message || response.statusText || 'Error');
+                }
+
+                AdminCommon.showMessage(msgId, '✅ Archivo subido', 'success');
+                document.getElementById('uploadFileForm').reset();
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        }
+
+        async function addUrlFile(e) {
+            e.preventDefault();
+            if (!productId) {
+                AdminCommon.showMessage(msgId, '❌ Guarda el producto primero', 'error');
+                return;
+            }
+
+            const url = document.getElementById('url_value').value.trim();
+            if (!url) {
+                AdminCommon.showMessage(msgId, '❌ URL requerida', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('addUrlBtn');
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Agregando...';
+
+            try {
+                const fd = new FormData();
+                fd.append('platform', document.getElementById('url_platform').value);
+                fd.append('file_type', 'url');
+                fd.append('display_name', document.getElementById('url_display').value.trim() || 'Abrir');
+                fd.append('version', document.getElementById('url_version').value.trim());
+                fd.append('url', url);
+                fd.append('requires_license', document.getElementById('url_requires').value);
+
+                const response = await fetch(`${AdminCommon.BACKEND_API_BASE}/api/admin/products/${encodeURIComponent(productId)}/files/upload`, {
+                    method: 'POST',
+                    headers: { 'x-session-id': sessionId },
+                    body: fd
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.ok === false || data.success === false) {
+                    throw new Error(data.message || response.statusText || 'Error');
+                }
+
+                AdminCommon.showMessage(msgId, '✅ Enlace agregado', 'success');
+                document.getElementById('urlFileForm').reset();
+                await loadProduct();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        }
+
+        window.addEventListener('load', async () => {
+            sessionId = await AdminCommon.ensureAuth({ userNameElId: 'userName' });
+            if (!sessionId) return;
+
+            productId = qs('id');
+
+            document.getElementById('reloadBtn').addEventListener('click', loadProduct);
+            document.getElementById('saveBtn').addEventListener('click', saveProduct);
+
+            document.getElementById('uploadImageForm').addEventListener('submit', uploadImage);
+            document.getElementById('videoLinkForm').addEventListener('submit', addVideoLink);
+            document.getElementById('uploadFileForm').addEventListener('submit', uploadBinaryFile);
+            document.getElementById('urlFileForm').addEventListener('submit', addUrlFile);
+
+            await loadProduct();
+        });
+    </script>
+</body>
+</html>

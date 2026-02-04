@@ -38,7 +38,11 @@ async function run() {
     '007_create_projects_and_project_scoping.sql',
     '008_add_customer_business_role.sql',
     '009_create_demo_trials.sql',
-    '010_add_demo_trials_device_id.sql'
+    '010_add_demo_trials_device_id.sql',
+    '011_create_store_settings.sql',
+    '012_create_products.sql',
+    '013_create_product_media.sql',
+    '014_create_product_files.sql'
   ]);
 
   const selectedFiles = licenseOnly

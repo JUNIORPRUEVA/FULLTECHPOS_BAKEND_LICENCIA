@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05422C" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
+    <link rel="icon" href="../assets/img/pwa/icon-192.png" />
+    <script defer src="../assets/js/pwa.js"></script>
+    <script defer src="../assets/js/adminCommon.js"></script>
+    <title>Productos - Panel Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #F3F4F6;
+            color: #1F2937;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .navbar h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
+        .navbar-user { display: flex; align-items: center; gap: 20px; }
+        .navbar-user p { font-size: 0.9rem; opacity: 0.9; }
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        .logout-btn:hover { background: white; color: #05422C; }
+        .back-link { color: white; text-decoration: none; margin-right: 20px; font-weight: 600; }
+        .back-link:hover { opacity: 0.85; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            animation: slideInUp 0.6s ease;
+        }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+        .section-title { font-size: 1.5rem; font-weight: 800; color: #05422C; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .section-subtitle { font-size: 0.95rem; color: #6B7280; margin-bottom: 22px; }
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: end;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 0.9rem; font-weight: 800; color: #05422C; }
+        input[type="text"], select {
+            padding: 12px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            background: #F9FAFB;
+            transition: all 0.3s ease;
+            min-width: 220px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #10B981;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
+        }
+        .btn {
+            border: none;
+            padding: 12px 16px;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .btn-primary { background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%); color: white; }
+        .btn-primary:hover { box-shadow: 0 10px 30px rgba(5,66,44,0.3); transform: translateY(-2px); }
+        .btn-secondary { background: #F3F4F6; color: #05422C; border: 2px solid #E5E7EB; }
+        .btn-secondary:hover { background: white; border-color: #10B981; }
+        .btn-danger { background: #EF4444; color: white; }
+        .btn-danger:hover { background: #DC2626; box-shadow: 0 6px 18px rgba(220,38,38,0.3); }
+        .message {
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            margin-bottom: 18px;
+        }
+        .message.show { display: block; }
+        .message.success { background-color: #DCFCE7; border: 1px solid #BBF7D0; color: #166534; }
+        .message.error { background-color: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        thead { background: #F3F4F6; }
+        th, td { padding: 12px 12px; border-bottom: 1px solid #E5E7EB; text-align: left; font-size: 0.92rem; }
+        th { font-weight: 900; color: #05422C; }
+        tr:hover td { background: #F9FAFB; }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 900;
+            font-size: 0.78rem;
+            border: 1px solid #E5E7EB;
+            background: #fff;
+        }
+        .pill.draft { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
+        .pill.published { color: #065f46; border-color: #86efac; background: #f0fdf4; }
+        .pill.archived { color: #374151; border-color: #d1d5db; background: #f9fafb; }
+        .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .empty { text-align: center; padding: 30px 10px; color: #6B7280; }
+        .loading { text-align: center; padding: 16px 10px; color: #6B7280; }
+        .muted { color: #6B7280; font-size: 0.85rem; }
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 12px; text-align: center; padding: 18px 16px; }
+            input[type="text"], select { min-width: 0; width: 100%; }
+            .filters { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div style="display:flex; align-items:center; gap: 16px;">
+            <a href="admin-hub.html" class="back-link">← Volver</a>
+            <h1>🧩 Productos</h1>
+        </div>
+        <div class="navbar-user">
+            <p>Bienvenido, <strong id="userName">Admin</strong></p>
+            <button class="logout-btn" type="button" onclick="AdminCommon.logout()">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2 class="section-title">Catálogo</h2>
+            <p class="section-subtitle">Crea, publica y gestiona los productos/proyectos que se muestran en la web pública.</p>
+
+            <div id="message" class="message"></div>
+
+            <div class="toolbar">
+                <div class="filters">
+                    <div class="form-group">
+                        <label for="q">Buscar</label>
+                        <input id="q" type="text" placeholder="Nombre o slug" />
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Estado</label>
+                        <select id="status">
+                            <option value="">Todos</option>
+                            <option value="draft">Borrador</option>
+                            <option value="published">Publicado</option>
+                            <option value="archived">Archivado</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" id="searchBtn" type="button">Filtrar</button>
+                </div>
+
+                <div style="display:flex; gap: 10px; align-items:end;">
+                    <button class="btn btn-primary" id="newBtn" type="button">+ Nuevo Producto</button>
+                </div>
+            </div>
+
+            <div class="muted">Tip: para publicar, el producto debe tener una portada (cover_image) activa.</div>
+
+            <div id="listArea">
+                <div class="loading" id="loading" style="display:none;">Cargando...</div>
+                <div id="tableWrap"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const msgId = 'message';
+        let currentSessionId = null;
+
+        function pill(status) {
+            const s = String(status || '').toLowerCase();
+            const cls = s === 'published' ? 'published' : (s === 'archived' ? 'archived' : 'draft');
+            const label = s === 'published' ? 'Publicado' : (s === 'archived' ? 'Archivado' : 'Borrador');
+            return `<span class="pill ${cls}">${label}</span>`;
+        }
+
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+        }
+
+        async function loadProducts() {
+            AdminCommon.hideMessage(msgId);
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('tableWrap').innerHTML = '';
+
+            const q = document.getElementById('q').value.trim();
+            const status = document.getElementById('status').value;
+
+            const params = new URLSearchParams();
+            if (q) params.set('q', q);
+            if (status) params.set('status', status);
+            params.set('limit', '100');
+            params.set('offset', '0');
+
+            try {
+                const { data } = await AdminCommon.adminFetchJson(`/api/admin/products?${params.toString()}`, { sessionId: currentSessionId });
+                const rows = data.products || [];
+
+                if (!rows.length) {
+                    document.getElementById('tableWrap').innerHTML = `<div class="empty">No hay productos para mostrar.</div>`;
+                    return;
+                }
+
+                const html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Slug</th>
+                                <th>Estado</th>
+                                <th>Actualizado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map(p => `
+                                <tr>
+                                    <td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.summary || '')}</div></td>
+                                    <td>${esc(p.slug)}</td>
+                                    <td>${pill(p.status)}</td>
+                                    <td class="muted">${esc(new Date(p.updated_at || p.created_at || Date.now()).toLocaleString())}</td>
+                                    <td>
+                                        <div class="row-actions">
+                                            <button class="btn btn-secondary" type="button" onclick="goEdit('${p.id}')">Editar</button>
+                                            <button class="btn btn-danger" type="button" onclick="doDelete('${p.id}','${esc(p.name)}')">Eliminar</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById('tableWrap').innerHTML = html;
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function goEdit(id) {
+            window.location.href = `product-edit.html?id=${encodeURIComponent(id)}`;
+        }
+
+        async function doDelete(id, name) {
+            if (!confirm(`¿Eliminar el producto "${name}"?\n\nSe eliminarán también media/files asociados en BD. (Los archivos locales se borran al borrar cada media/file).`)) {
+                return;
+            }
+
+            try {
+                await AdminCommon.adminFetchJson(`/api/admin/products/${encodeURIComponent(id)}`, {
+                    method: 'DELETE',
+                    sessionId: currentSessionId
+                });
+                AdminCommon.showMessage(msgId, '✅ Producto eliminado', 'success');
+                await loadProducts();
+            } catch (err) {
+                AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
+            }
+        }
+
+        window.goEdit = goEdit;
+        window.doDelete = doDelete;
+
+        window.addEventListener('load', async () => {
+            currentSessionId = await AdminCommon.ensureAuth({ userNameElId: 'userName' });
+            if (!currentSessionId) return;
+
+            document.getElementById('searchBtn').addEventListener('click', loadProducts);
+            document.getElementById('newBtn').addEventListener('click', () => {
+                window.location.href = 'product-edit.html';
+            });
+
+            document.getElementById('q').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') loadProducts();
+            });
+
+            await loadProducts();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0A6CFF" />
+  <title>Producto - JR Digital</title>
+  <meta name="description" content="Detalles del producto" />
+  <meta property="og:type" content="product" />
+  <meta property="og:title" content="Producto - JR Digital" />
+  <meta property="og:description" content="Detalles del producto" />
+  <meta property="og:image" content="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/img/pwa/icon-180.png" />
+  <link rel="icon" href="/assets/img/pwa/icon-192.png" />
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <link rel="shortcut icon" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/jr.css" />
+  <script defer src="/assets/js/pwa.js"></script>
+  <script defer src="/assets/js/storePublic.js"></script>
+  <style>
+    .detail {
+      padding: 26px 0 44px;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      align-items: start;
+      margin-top: 14px;
+    }
+    .panel {
+      background: white;
+      border: 2px solid var(--color-border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow-soft);
+    }
+    .cover {
+      width: 100%;
+      height: 320px;
+      border-radius: 14px;
+      border: 2px solid var(--color-border);
+      background: #F9FAFB;
+      object-fit: cover;
+    }
+    .gallery {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .gallery img {
+      width: 100%;
+      height: 120px;
+      border-radius: 12px;
+      border: 2px solid var(--color-border);
+      object-fit: cover;
+      background: #F9FAFB;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .gallery img:hover {
+      border-color: var(--color-accent);
+      transform: translateY(-2px);
+    }
+    .h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--color-primary);
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+    }
+    .price {
+      margin-top: 10px;
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      color: #065f46;
+      font-weight: 900;
+    }
+    .files {
+      margin-top: 10px;
+      display: grid;
+      gap: 10px;
+    }
+    .file {
+      border: 2px solid var(--color-border);
+      border-radius: 14px;
+      padding: 12px;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+    .file-title { font-weight: 900; color: var(--color-primary); }
+    .file-meta { color: var(--color-subtle); font-size: 0.9rem; }
+    .file a {
+      text-decoration: none;
+    }
+    .requires {
+      display: inline-flex;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 0.78rem;
+      background: #FFFBEB;
+      border: 1px solid #FCD34D;
+      color: #92400E;
+      margin-left: 8px;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 18px;
+    }
+    .modal.show { display: flex; }
+    .modal img {
+      max-width: min(1000px, 95vw);
+      max-height: 85vh;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.18);
+      background: white;
+    }
+    .modal-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      border: 2px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      font-weight: 900;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .video {
+      width: 100%;
+      height: 320px;
+      border-radius: 14px;
+      border: 2px solid var(--color-border);
+      background: #000;
+    }
+    @media (max-width: 900px) {
+      .detail-grid { grid-template-columns: 1fr; }
+      .cover, .video { height: 240px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a class="navbar-logo" href="/home.html" style="text-decoration:none;">
+        <img id="brandLogo" src="" alt="Logo" class="navbar-logo-img" style="display:none;" />
+        <span class="navbar-brand" id="brandName">JR Digital</span>
+      </a>
+
+      <div class="navbar-actions">
+        <a class="navbar-download" href="/products.html" aria-label="Ver productos">
+          <span class="nav-icon" aria-hidden="true">🧩</span>
+          <span class="nav-text">Productos</span>
+        </a>
+        <a id="whatsappTop" href="#" class="navbar-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <span class="nav-icon" aria-hidden="true">💬</span>
+          <span class="nav-text">WhatsApp</span>
+        </a>
+        <button id="navbarToggle" class="navbar-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
+        <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+      </div>
+    </div>
+
+    <div id="navbarMobile" class="navbar-mobile" aria-label="Menú móvil">
+      <a class="navbar-mobile-btn" href="/home.html">Inicio</a>
+      <a class="navbar-mobile-btn" href="/products.html">Productos</a>
+      <a id="whatsappMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a id="adminLoginLinkMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">Admin</a>
+    </div>
+  </nav>
+
+  <main class="detail">
+    <div class="jr-container">
+      <a href="/products.html" style="text-decoration:none; font-weight:900; color: var(--color-primary);">← Volver</a>
+
+      <div id="notFound" class="jr-empty" style="display:none; margin-top: 14px;">
+        Producto no encontrado o no publicado.
+      </div>
+
+      <div id="content" style="display:none;">
+        <div class="detail-grid">
+          <div class="panel">
+            <div class="h1" id="name">Producto</div>
+            <div class="muted" id="summary" style="margin-top:8px;"></div>
+            <div id="price" class="price" style="display:none;"></div>
+
+            <div style="margin-top: 14px;" id="coverWrap"></div>
+
+            <div id="gallery" class="gallery"></div>
+
+            <div style="margin-top: 16px;">
+              <h2 style="font-size:1.2rem; font-weight:900; color: var(--color-primary);">Descripción</h2>
+              <div id="description" style="margin-top:8px; white-space: pre-wrap; line-height: 1.7;"></div>
+            </div>
+
+            <div id="requirementsWrap" style="margin-top:16px; display:none;">
+              <h2 style="font-size:1.2rem; font-weight:900; color: var(--color-primary);">Detalles técnicos</h2>
+              <div id="requirements" style="margin-top:8px; white-space: pre-wrap; line-height: 1.7;"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2 style="font-size:1.2rem; font-weight:900; color: var(--color-primary);">Descargas</h2>
+            <div class="muted" style="margin-top:6px;">Archivos activos del producto publicado.</div>
+            <div id="files" class="files"></div>
+
+            <div style="margin-top: 18px;">
+              <a id="whatsappCta" class="jr-btn primary" href="#" target="_blank" rel="noopener">Solicitar por WhatsApp</a>
+            </div>
+
+            <div id="contactAlt" class="muted" style="margin-top: 12px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="imgModal" class="modal" onclick="closeModal(event)">
+    <button class="modal-close" type="button" onclick="closeModal()">Cerrar</button>
+    <img id="modalImg" src="" alt="Imagen" />
+  </div>
+
+  <footer class="jr-footer">
+    <div class="jr-container">
+      <div class="jr-footer-grid">
+        <div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <img id="footerLogo" src="" alt="JR Digital" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
+            <h4 id="footerBrand">JR Digital</h4>
+          </div>
+          <div style="opacity:0.9; margin-top:10px;">Productos, instaladores, manuales y recursos.</div>
+        </div>
+
+        <div>
+          <h4>Enlaces</h4>
+          <div style="opacity:0.9; line-height:1.9;">
+            <a href="/home.html">Inicio</a><br />
+            <a href="/products.html">Catálogo</a><br />
+            <a href="/admin/login.html" target="_blank" rel="noopener">Admin</a>
+          </div>
+        </div>
+
+        <div>
+          <h4>Contacto</h4>
+          <div class="muted" style="color: rgba(255,255,255,0.86);" id="footerContact">WhatsApp</div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px; opacity:0.85;">© 2026 <span id="footerBrand2">JR Digital</span></div>
+    </div>
+  </footer>
+
+  <script>
+    function wireMobileNavbar() {
+      const navbar = document.querySelector('.navbar');
+      const toggle = document.getElementById('navbarToggle');
+      const mobileMenu = document.getElementById('navbarMobile');
+      if (!navbar || !toggle || !mobileMenu) return;
+
+      function closeMenu() {
+        navbar.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+      function openMenu() {
+        navbar.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (navbar.classList.contains('is-open')) closeMenu();
+        else openMenu();
+      });
+
+      mobileMenu.querySelectorAll('a,button').forEach((el) => {
+        el.addEventListener('click', () => closeMenu());
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!navbar.classList.contains('is-open')) return;
+        if (navbar.contains(e.target)) return;
+        closeMenu();
+      });
+
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) closeMenu();
+      });
+    }
+
+    function openModal(src) {
+      const m = document.getElementById('imgModal');
+      const i = document.getElementById('modalImg');
+      i.src = src;
+      m.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(event) {
+      const m = document.getElementById('imgModal');
+      if (event && event.target && event.target.id === 'modalImg') return;
+      m.classList.remove('show');
+      document.body.style.overflow = 'auto';
+    }
+
+    window.closeModal = closeModal;
+
+    function isYouTube(url) {
+      return /youtube\.com\/(watch\?v=|embed\/)|youtu\.be\//i.test(url || '');
+    }
+
+    function youtubeEmbed(url) {
+      const u = String(url || '').trim();
+      const m1 = u.match(/[?&]v=([^&]+)/);
+      if (m1 && m1[1]) return `https://www.youtube.com/embed/${m1[1]}`;
+      const m2 = u.match(/youtu\.be\/([^?]+)/);
+      if (m2 && m2[1]) return `https://www.youtube.com/embed/${m2[1]}`;
+      const m3 = u.match(/youtube\.com\/embed\/([^?]+)/);
+      if (m3 && m3[1]) return `https://www.youtube.com/embed/${m3[1]}`;
+      return u;
+    }
+
+    function setMetaDescription(text) {
+      const meta = document.querySelector('meta[name="description"]');
+      if (meta) meta.setAttribute('content', text);
+    }
+
+    async function init() {
+      wireMobileNavbar();
+
+      const OFFICIAL_LOGO_URL = 'https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png';
+      const DEFAULT_PHONE = '8295319442';
+      const DEFAULT_EMAIL = 'jrdigitalrd@gmail.com';
+
+      // Admin login links
+      [document.getElementById('adminLoginLink'), document.getElementById('adminLoginLinkMobile')]
+        .filter(Boolean)
+        .forEach((link) => {
+          const returnTo = encodeURIComponent(window.location.href);
+          link.href = `${StorePublic.API_BASE}/admin/login.html?returnTo=${returnTo}`;
+        });
+
+      const slug = new URLSearchParams(window.location.search).get('slug');
+      if (!slug) {
+        document.getElementById('notFound').style.display = 'block';
+        return;
+      }
+
+      let settings = null;
+      try {
+        const s = await StorePublic.fetchJson('/api/public/store-settings');
+        settings = s.settings || null;
+      } catch (_) {}
+
+      const brandName = settings?.brand_name || 'JR Digital';
+      const logoUrl = settings?.logo_url || OFFICIAL_LOGO_URL;
+      StorePublic.setCssVars(settings?.theme);
+      // Enforce corporate theme (visual only)
+      StorePublic.setCssVars({ primary: '#0A6CFF', accent: '#1EC9FF', light: '#F8FAFC', dark: '#0B3C8C' });
+      document.getElementById('brandName').textContent = brandName;
+      document.getElementById('footerBrand').textContent = brandName;
+      document.getElementById('footerBrand2').textContent = brandName;
+
+      const logoImg = document.getElementById('brandLogo');
+      if (logoImg && logoUrl) {
+        logoImg.src = logoUrl;
+        logoImg.style.display = 'block';
+      }
+
+      const footerLogo = document.getElementById('footerLogo');
+      if (footerLogo && logoUrl) footerLogo.src = logoUrl;
+
+      const wa = settings?.whatsapp || '';
+      const phone = (wa || DEFAULT_PHONE);
+      const email = (settings?.email || DEFAULT_EMAIL);
+      const waLinkGlobal = StorePublic.e164ToWaLink(phone, `Hola, quiero información sobre ${brandName}`);
+      ['whatsappTop','whatsappMobile'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.href = waLinkGlobal;
+      });
+
+      const contactBits = [];
+      contactBits.push(`📧 <a href="mailto:${StorePublic.esc(email)}">${StorePublic.esc(email)}</a>`);
+      contactBits.push(`📱 <a href="${waLinkGlobal}" target="_blank" rel="noopener">${StorePublic.esc(phone)}</a>`);
+      if (settings?.address) contactBits.push(`📍 ${StorePublic.esc(settings.address)}`);
+      const footerContact = document.getElementById('footerContact');
+      if (footerContact) footerContact.innerHTML = contactBits.join('<br />') || '—';
+
+      try {
+        const data = await StorePublic.fetchJson(`/api/public/products/${encodeURIComponent(slug)}`);
+        const product = data.product;
+        const media = data.media || [];
+        const files = data.files || [];
+
+        document.getElementById('content').style.display = 'block';
+        document.getElementById('name').textContent = product.name || product.slug;
+        document.getElementById('summary').textContent = product.summary || '';
+        document.title = `${product.seo_title || product.name || product.slug} - ${brandName}`;
+        setMetaDescription(product.seo_description || product.summary || '');
+
+        const ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) ogTitle.setAttribute('content', product.seo_title || product.name || product.slug);
+        const ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) ogDesc.setAttribute('content', product.seo_description || product.summary || '');
+
+        const priceText = StorePublic.moneyText(product);
+        const priceEl = document.getElementById('price');
+        if (priceText) {
+          priceEl.style.display = 'inline-flex';
+          priceEl.textContent = priceText;
+        } else {
+          priceEl.style.display = 'none';
+        }
+
+        document.getElementById('description').textContent = product.description || '';
+
+        if (product.system_requirements) {
+          document.getElementById('requirementsWrap').style.display = 'block';
+          document.getElementById('requirements').textContent = product.system_requirements;
+        }
+
+        // Cover: prefer cover_image active
+        const cover = media.find(m => m.kind === 'cover_image') || null;
+        const video = media.find(m => m.kind === 'cover_video') || null;
+        const coverWrap = document.getElementById('coverWrap');
+
+        if (video && video.url) {
+          if (isYouTube(video.url)) {
+            const embed = youtubeEmbed(video.url);
+            coverWrap.innerHTML = `<iframe class="video" src="${StorePublic.esc(embed)}" title="Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+          } else {
+            coverWrap.innerHTML = `<div class="jr-empty">🎬 Video: <a href="${StorePublic.esc(video.url)}" target="_blank" rel="noopener">Abrir enlace</a></div>`;
+          }
+        } else if (cover && cover.url) {
+          coverWrap.innerHTML = `<img class="cover" src="${StorePublic.esc(cover.url)}" alt="${StorePublic.esc(product.name)}" />`;
+
+          const ogImg = document.querySelector('meta[property="og:image"]');
+          if (ogImg) ogImg.setAttribute('content', cover.url);
+        } else {
+          coverWrap.innerHTML = `<div class="jr-empty">Sin portada todavía.</div>`;
+        }
+
+        // Gallery images
+        const gallery = media.filter(m => m.kind === 'gallery_image' && m.url);
+        const galleryEl = document.getElementById('gallery');
+        if (gallery.length) {
+          galleryEl.innerHTML = gallery.map(g => `<img src="${StorePublic.esc(g.url)}" alt="Galería" onclick="openModal('${StorePublic.esc(g.url)}')" />`).join('');
+        } else {
+          galleryEl.innerHTML = '';
+        }
+
+        // Files
+        const filesEl = document.getElementById('files');
+        if (!files.length) {
+          filesEl.innerHTML = `<div class="jr-empty">No hay descargas disponibles.</div>`;
+        } else {
+          filesEl.innerHTML = files.map(f => {
+            const ver = f.version ? ` · v${StorePublic.esc(f.version)}` : '';
+            const req = f.requires_license ? `<span class="requires">Requiere licencia</span>` : '';
+            const href = f.url || '#';
+            const target = href.startsWith('http') ? ' target="_blank" rel="noopener"' : ' target="_blank" rel="noopener"';
+
+            return `
+              <div class="file">
+                <div>
+                  <div class="file-title">${StorePublic.esc(f.display_name || 'Descarga')}${req}</div>
+                  <div class="file-meta">${StorePublic.esc(f.platform || '')} · ${StorePublic.esc(f.file_type || '')}${ver}</div>
+                </div>
+                <a class="jr-btn primary" href="${StorePublic.esc(href)}"${target}>Descargar</a>
+              </div>
+            `;
+          }).join('');
+        }
+
+        const waText = `Hola, quiero información sobre: ${product.name || product.slug}`;
+        const waLink = StorePublic.e164ToWaLink(product.contact_whatsapp || settings?.whatsapp || phone || '', waText);
+        document.getElementById('whatsappCta').href = waLink;
+
+        const alt = [];
+        if (product.contact_email) alt.push(`Email: <a href="mailto:${StorePublic.esc(product.contact_email)}">${StorePublic.esc(product.contact_email)}</a>`);
+        if (product.contact_whatsapp) alt.push(`WhatsApp directo: <a href="${StorePublic.esc(StorePublic.e164ToWaLink(product.contact_whatsapp, waText))}" target="_blank" rel="noopener">${StorePublic.esc(product.contact_whatsapp)}</a>`);
+        document.getElementById('contactAlt').innerHTML = alt.join('<br />');
+      } catch (e) {
+        document.getElementById('notFound').style.display = 'block';
+      }
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
