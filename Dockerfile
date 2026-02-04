@@ -17,6 +17,6 @@ EXPOSE 3000
 # Healthcheck for EasyPanel / orchestrators.
 # Alpine includes busybox wget, so we can avoid adding curl.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
-	CMD wget -q -O - http://127.0.0.1:3000/api/health > /dev/null 2>&1 || exit 1
+	CMD wget -q -O - http://127.0.0.1:${PORT:-3000}/api/health > /dev/null 2>&1 || exit 1
 
 CMD ["npm", "start"]
