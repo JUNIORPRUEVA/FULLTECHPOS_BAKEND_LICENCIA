@@ -101,8 +101,27 @@ app.use('/admin', express.static(path.join(__dirname, '../admin')));
 // Nota: evitamos exponer toda la raíz del repo; sólo servimos lo necesario.
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
 
-app.get(['/', '/index.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, '../index.html'));
+// Public pages
+// Canonical landing should be the root URL (avoid showing /home.html in the browser).
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../home.html'));
+});
+
+// Keep backwards compatibility for existing bookmarks.
+app.get(['/index.html', '/home.html'], (req, res) => {
+  res.redirect(302, '/');
+});
+
+app.get('/products.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../products.html'));
+});
+
+app.get('/product.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../product.html'));
+});
+
+app.get('/fullpos.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../fullpos.html'));
 });
 
 app.get('/manifest.webmanifest', (req, res) => {
