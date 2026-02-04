@@ -1,0 +1,204 @@
+/* JR Digital - Admin theme layer (overrides inline admin styles) */
+
+:root {
+  /* Palette aligned with public JR theme */
+  --jr-blue: #0A6CFF;
+  --jr-blue-dark: #0B3C8C;
+  --jr-cyan: #1EC9FF;
+  --jr-green-dark: #043523;
+  --jr-green: #0B7C61;
+
+  --jr-admin-bg: #F3F4F6;
+  --jr-admin-card: #FFFFFF;
+  --jr-admin-text: #0F172A;
+  --jr-admin-muted: #64748B;
+  --jr-admin-border: rgba(15, 23, 42, 0.12);
+
+  --jr-grad-brand: linear-gradient(135deg, #031026 0%, #062B63 28%, #0A6CFF 50%, #0B7C61 72%, #043523 100%);
+  --jr-grad-brand-vert: linear-gradient(180deg, #031026 0%, #062B63 30%, #0B7C61 74%, #043523 100%);
+}
+
+/* Base */
+.jr-admin {
+  background-color: var(--jr-admin-bg) !important;
+  color: var(--jr-admin-text);
+}
+
+.jr-admin a {
+  color: inherit;
+}
+
+/* Top navbar pattern (most admin pages) */
+.jr-admin .navbar {
+  background: var(--jr-grad-brand) !important;
+  color: #fff !important;
+}
+
+.jr-admin .navbar h1,
+.jr-admin .top-navbar h1 {
+  color: #fff;
+}
+
+.jr-admin .back-link {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.jr-admin .back-link:hover {
+  opacity: 0.85;
+}
+
+/* Brand lockup */
+.jr-admin-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jr-admin-brandLogo {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 6px;
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.26);
+}
+
+.jr-admin-brandText {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.jr-admin-brandName {
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  font-size: 1.05rem;
+}
+
+.jr-admin-brandPage {
+  font-weight: 800;
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+/* Cards/sections */
+.jr-admin .section,
+.jr-admin .login-container {
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.jr-admin .section-title,
+.jr-admin .welcome-title,
+.jr-admin label,
+.jr-admin th,
+.jr-admin .top-navbar h1 {
+  color: #062B63 !important;
+}
+
+.jr-admin .section-subtitle,
+.jr-admin .welcome-subtitle,
+.jr-admin .muted,
+.jr-admin .user-info p {
+  color: var(--jr-admin-muted) !important;
+}
+
+.jr-admin .navbar .navbar-user p {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* Buttons */
+.jr-admin .btn-primary,
+.jr-admin button:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.logout-btn) {
+  background: var(--jr-grad-brand) !important;
+  color: #fff !important;
+}
+
+.jr-admin .btn-primary:hover:not(:disabled),
+.jr-admin button:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.logout-btn):hover:not(:disabled) {
+  box-shadow: 0 14px 40px rgba(2, 6, 23, 0.28) !important;
+}
+
+.jr-admin .btn-secondary,
+.jr-admin .back-link.jr-admin-btn {
+  background: rgba(248, 250, 252, 0.98) !important;
+  color: #062B63 !important;
+  border: 2px solid rgba(15, 23, 42, 0.10) !important;
+}
+
+.jr-admin .btn-secondary:hover:not(:disabled) {
+  border-color: rgba(30, 201, 255, 0.45) !important;
+  box-shadow: 0 10px 30px rgba(30, 201, 255, 0.10) !important;
+}
+
+.jr-admin .logout-btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.jr-admin .logout-btn:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #031026 !important;
+}
+
+/* Inputs */
+.jr-admin input:focus,
+.jr-admin select:focus,
+.jr-admin textarea:focus {
+  border-color: rgba(30, 201, 255, 0.95) !important;
+  box-shadow: 0 0 0 3px rgba(30, 201, 255, 0.16) !important;
+}
+
+/* Tables */
+.jr-admin thead {
+  background: rgba(248, 250, 252, 1) !important;
+}
+
+.jr-admin tr:hover td {
+  background: rgba(248, 250, 252, 1) !important;
+}
+
+/* Admin Hub sidebar */
+.jr-admin .sidebar {
+  background: var(--jr-grad-brand-vert) !important;
+}
+
+.jr-admin .sidebar-nav a.active {
+  background-color: rgba(30, 201, 255, 0.12) !important;
+  border-left-color: rgba(30, 201, 255, 0.9) !important;
+}
+
+.jr-admin .sidebar-nav a:hover {
+  background-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Login page */
+.jr-admin.jr-admin-login {
+  background: var(--jr-grad-brand) !important;
+}
+
+.jr-admin-login .login-header img {
+  width: 88px;
+  height: 88px;
+  border-radius: 22px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 10px;
+  box-shadow: 0 20px 54px rgba(2, 6, 23, 0.32);
+  margin-bottom: 14px;
+}
+
+@media (max-width: 768px) {
+  .jr-admin-brandLogo {
+    width: 40px;
+    height: 40px;
+  }
+  .jr-admin-brandName {
+    font-size: 1rem;
+  }
+  .jr-admin-brandPage {
+    font-size: 0.85rem;
+  }
+}

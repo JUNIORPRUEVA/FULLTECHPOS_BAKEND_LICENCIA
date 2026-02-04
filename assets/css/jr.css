@@ -24,6 +24,10 @@
   --jr-grad-blue: linear-gradient(135deg, var(--jr-blue) 0%, var(--jr-cyan) 100%);
   --jr-grad-warm: linear-gradient(90deg, var(--jr-green) 0%, var(--jr-yellow) 52%, var(--jr-orange) 100%);
 
+  /* Unified brand gradient (dark blue -> dark green) */
+  --jr-grad-brand: linear-gradient(135deg, #031026 0%, #062B63 28%, #0A6CFF 50%, #0B7C61 72%, #043523 100%);
+  --jr-grad-brand-vert: linear-gradient(180deg, #031026 0%, #062B63 30%, #0B7C61 74%, #043523 100%);
+
   /* JR navbar height (override styles.css fixed 70px on JR pages) */
   --jr-nav-h: 86px;
 }
@@ -45,11 +49,69 @@ body {
 .jr-hero {
   padding: 70px 0 40px;
   background:
-    radial-gradient(900px 420px at 10% 10%, rgba(30, 201, 255, 0.28), transparent 62%),
-    radial-gradient(1000px 460px at 95% 0%, rgba(10, 108, 255, 0.22), transparent 60%),
-    radial-gradient(900px 520px at 40% 120%, rgba(46, 213, 115, 0.18), transparent 55%),
-    linear-gradient(135deg, var(--jr-blue-dark) 0%, var(--jr-blue) 55%, var(--jr-cyan) 120%);
+    radial-gradient(920px 420px at 14% 12%, rgba(30, 201, 255, 0.20), transparent 62%),
+    radial-gradient(980px 520px at 92% 0%, rgba(10, 108, 255, 0.16), transparent 60%),
+    radial-gradient(900px 520px at 82% 120%, rgba(8, 120, 74, 0.30), transparent 55%),
+    var(--jr-grad-brand);
   color: white;
+}
+
+/* Home cover/portada: logo on the side + informative content */
+.jr-hero--split {
+  padding: 118px 0 86px;
+  min-height: 680px;
+}
+
+.jr-hero--split .jr-hero-grid {
+  align-items: start;
+}
+
+.jr-hero-left {
+  max-width: 760px;
+}
+
+/* Logo at the very top of header */
+.jr-hero-logoTop {
+  width: min(240px, 46vw);
+  height: auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 20px 54px rgba(2, 6, 23, 0.62));
+  margin-bottom: 18px;
+}
+
+/* Structured areas to make everything feel aligned */
+.jr-hero-copy {
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.jr-hero-contactArea,
+.jr-hero-actionsArea {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+/* (legacy class - keep in case older markup still references it) */
+.jr-hero-logoAbove {
+  width: min(240px, 46vw);
+  height: auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 20px 54px rgba(2, 6, 23, 0.62));
 }
 
 .jr-hero-logo {
@@ -250,7 +312,7 @@ body {
   background:
     radial-gradient(900px 300px at 10% 10%, rgba(30, 201, 255, 0.18), transparent 65%),
     radial-gradient(700px 280px at 90% 0%, rgba(46, 213, 115, 0.10), transparent 65%),
-    linear-gradient(135deg, var(--jr-blue-dark) 0%, #071E44 100%);
+    var(--jr-grad-brand);
   color: rgba(255,255,255,0.86);
   padding: 36px 0;
 }
@@ -309,7 +371,7 @@ body {
 
 /* Override navbar gradient only on JR pages (jr.css is only included there) */
 .navbar {
-  background: linear-gradient(135deg, var(--jr-blue-dark) 0%, var(--jr-blue) 55%, #073A86 100%);
+  background: var(--jr-grad-brand);
   height: var(--jr-nav-h);
 }
 
@@ -416,6 +478,26 @@ body {
   .jr-hero h1 {
     font-size: 2.3rem;
   }
+  .jr-hero--split {
+    padding: 102px 0 72px;
+    min-height: 0;
+  }
+
+  .jr-hero-left {
+    max-width: none;
+  }
+
+  .jr-hero-logoTop,
+  .jr-hero-logoAbove {
+    width: min(260px, 70vw);
+  }
+
+  .jr-hero-copy,
+  .jr-hero-contactArea,
+  .jr-hero-actionsArea {
+    padding: 14px 14px;
+    border-radius: 16px;
+  }
   .jr-input, .jr-select {
     min-width: 0;
     width: 100%;
@@ -458,7 +540,7 @@ body {
     gap: 10px !important;
     border-bottom: none !important;
     border-right: 1px solid rgba(255, 255, 255, 0.14) !important;
-    background: linear-gradient(180deg, var(--jr-blue-dark) 0%, #072B63 100%) !important;
+    background: var(--jr-grad-brand-vert) !important;
     box-shadow: 18px 0 44px rgba(2, 6, 23, 0.30) !important;
     transform: translateX(-110%) !important;
     opacity: 1 !important;
@@ -484,6 +566,15 @@ body {
 @media (max-width: 480px) {
   :root {
     --jr-nav-h: 84px;
+  }
+
+  .jr-hero--split {
+    padding: 96px 0 62px;
+  }
+
+  .jr-hero-logoTop,
+  .jr-hero-logoAbove {
+    width: min(240px, 78vw);
   }
 
   .navbar-logo-img {

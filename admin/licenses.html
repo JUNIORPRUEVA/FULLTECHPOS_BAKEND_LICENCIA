@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#05422C">
+    <meta name="theme-color" content="#031026">
     <link rel="manifest" href="../manifest.webmanifest">
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
-    <title>Gestionar Licencias - FULLTECH POS</title>
+    <title>Gestionar Licencias - JR Digital</title>
     <style>
         * {
             margin: 0;
@@ -245,13 +245,22 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/jr-admin.css">
 </head>
-<body>
+<body class="jr-admin">
     <!-- NAVBAR -->
     <div class="navbar">
         <div style="display: flex; align-items: center; gap: 20px;">
             <a href="admin-hub.html" class="back-link">← Volver</a>
-            <h1>📜 Gestionar Licencias</h1>
+            <h1>
+                <span class="jr-admin-brand">
+                    <img src="../assets/img/logo/logoprincipal.png" alt="JR Digital" class="jr-admin-brandLogo" />
+                    <span class="jr-admin-brandText">
+                        <span class="jr-admin-brandName">JR Digital</span>
+                        <span class="jr-admin-brandPage">Gestionar Licencias</span>
+                    </span>
+                </span>
+            </h1>
         </div>
         <div class="navbar-user">
             <p>Bienvenido, <strong id="userName">Admin</strong></p>
@@ -303,7 +312,7 @@
                     </div>
                     <div class="form-group">
                         <label for="newProjectName">&nbsp;</label>
-                        <input type="text" id="newProjectName" placeholder="Nombre (ej: FULLTECH POS)" />
+                        <input type="text" id="newProjectName" placeholder="Nombre (ej: JR Digital)" />
                         <div style="display:flex; gap:10px; margin-top:10px;">
                             <button type="button" onclick="createProjectFromUi()" style="background:#111827;">➕ Crear Proyecto</button>
                         </div>

@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v14';
 const STATIC_CACHE = `fulltech-pos-static-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -13,6 +13,7 @@ const PRECACHE_URLS = [
   '/manifest.webmanifest',
   '/assets/css/styles.css',
   '/assets/css/jr.css',
+  '/assets/css/jr-admin.css',
   '/assets/js/pwa.js',
   '/assets/js/storePublic.js',
   '/assets/img/pwa/icon-192.png',

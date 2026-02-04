@@ -1,12 +1,12 @@
 {
-  "name": "FullTech POS",
-  "short_name": "FullTech POS",
-  "description": "FullTech POS Web",
+  "name": "JR Digital",
+  "short_name": "JR Digital",
+  "description": "JR Digital Web",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#05422C",
+  "theme_color": "#031026",
   "icons": [
     {
       "src": "/assets/img/pwa/icon-192.png",

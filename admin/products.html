@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#05422C" />
+    <meta name="theme-color" content="#031026" />
     <link rel="manifest" href="../manifest.webmanifest" />
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
     <link rel="icon" href="../assets/img/pwa/icon-192.png" />
@@ -134,12 +134,21 @@
             .filters { width: 100%; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/jr-admin.css" />
 </head>
-<body>
+<body class="jr-admin">
     <div class="navbar">
         <div style="display:flex; align-items:center; gap: 16px;">
             <a href="admin-hub.html" class="back-link">← Volver</a>
-            <h1>🧩 Productos</h1>
+            <h1>
+                <span class="jr-admin-brand">
+                    <img src="../assets/img/logo/logoprincipal.png" alt="JR Digital" class="jr-admin-brandLogo" />
+                    <span class="jr-admin-brandText">
+                        <span class="jr-admin-brandName">JR Digital</span>
+                        <span class="jr-admin-brandPage">Productos</span>
+                    </span>
+                </span>
+            </h1>
         </div>
         <div class="navbar-user">
             <p>Bienvenido, <strong id="userName">Admin</strong></p>
