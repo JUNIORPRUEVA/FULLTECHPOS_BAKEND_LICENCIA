@@ -337,7 +337,8 @@ async function check(req, res) {
         tipo: license.tipo,
         fecha_inicio: license.fecha_inicio,
         fecha_fin: license.fecha_fin,
-        estado: currentEstado
+        estado: currentEstado,
+        motivo: license.notas || null
       });
     } catch (error) {
       await client.query('ROLLBACK');

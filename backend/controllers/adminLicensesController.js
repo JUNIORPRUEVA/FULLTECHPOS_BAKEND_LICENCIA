@@ -177,10 +177,26 @@ async function getLicenseDetail(req, res) {
 async function bloquearLicense(req, res) {
   try {
     const licenseId = req.params.id;
-    const updated = await licensesModel.updateLicenseStatus(licenseId, 'BLOQUEADA');
-    if (!updated) {
+    const motivoRaw = (req.body || {}).motivo ?? (req.body || {}).notas;
+    const motivo = String(motivoRaw || '').trim();
+
+    const current = await licensesModel.getLicenseById(licenseId);
+    if (!current) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
+
+    const finalNotas = motivo || String(current.notas || '').trim();
+    if (!finalNotas) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Para bloquear, debes indicar el motivo (campo notas/motivo)'
+      });
+    }
+
+    const updated = await licensesModel.updateLicense(licenseId, {
+      estado: 'BLOQUEADA',
+      notas: finalNotas
+    });
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('bloquearLicense error:', error);
@@ -317,12 +333,26 @@ async function bloquearLicenseByKey(req, res) {
       return res.status(400).json({ ok: false, message: 'license_key es requerido' });
     }
 
+    const motivoRaw = req.body?.motivo ?? req.body?.notas;
+    const motivo = String(motivoRaw || '').trim();
+
     const license = await licensesModel.findLicenseByKey(licenseKey);
     if (!license) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
 
-    const updated = await licensesModel.updateLicenseStatus(license.id, 'BLOQUEADA');
+    const finalNotas = motivo || String(license.notas || '').trim();
+    if (!finalNotas) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Para bloquear, debes indicar el motivo (campo notas/motivo)'
+      });
+    }
+
+    const updated = await licensesModel.updateLicense(license.id, {
+      estado: 'BLOQUEADA',
+      notas: finalNotas
+    });
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('bloquearLicenseByKey error:', error);

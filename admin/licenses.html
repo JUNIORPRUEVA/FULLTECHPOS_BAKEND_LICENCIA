@@ -1226,10 +1226,19 @@
 
         async function bloquearLicense(licenseId) {
             if (!confirm('¿Bloquear esta licencia?')) return;
+            const motivo = prompt('Motivo del bloqueo (obligatorio):', 'Pago pendiente');
+            if (!motivo || !motivo.trim()) {
+                showMessage('❌ Debes indicar un motivo para bloquear', 'error');
+                return;
+            }
             try {
                 const response = await fetch(`${API_URL}/api/admin/licenses/${licenseId}/bloquear`, {
                     method: 'PATCH',
-                    headers: { 'x-session-id': sessionId }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify({ motivo: motivo.trim() })
                 });
                 const data = await response.json();
                 if (data.ok) {

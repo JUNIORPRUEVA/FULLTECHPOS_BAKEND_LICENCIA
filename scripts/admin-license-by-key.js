@@ -17,13 +17,20 @@ async function main() {
   const username = process.env.ADMIN_USERNAME || 'fulltechsd@gmail.com';
   const password = process.env.ADMIN_PASSWORD || 'Ayleen10';
 
-  const [cmd, licenseKey] = process.argv.slice(2);
+  const [cmd, licenseKey, ...motivoParts] = process.argv.slice(2);
 
   const command = String(cmd || '').trim().toLowerCase();
   const key = String(licenseKey || '').trim();
+  const motivo = String(motivoParts.join(' ') || '').trim() || String(process.env.BLOCK_REASON || '').trim();
 
   if (!['block', 'expire', 'activate'].includes(command) || !key) {
-    console.log('Usage: node scripts/admin-license-by-key.js block|expire|activate <LICENSE_KEY>');
+    console.log('Usage: node scripts/admin-license-by-key.js block|expire|activate <LICENSE_KEY> [MOTIVO]');
+    process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'block' && !motivo) {
+    console.log('Missing MOTIVO for block. Provide it as 3rd arg or set env BLOCK_REASON.');
     process.exitCode = 1;
     return;
   }
@@ -51,7 +58,7 @@ async function main() {
       'content-type': 'application/json',
       'x-session-id': sessionId
     },
-    body: JSON.stringify({ license_key: key })
+    body: JSON.stringify(command === 'block' ? { license_key: key, motivo } : { license_key: key })
   });
 
   const data = await res.json().catch(() => ({}));
