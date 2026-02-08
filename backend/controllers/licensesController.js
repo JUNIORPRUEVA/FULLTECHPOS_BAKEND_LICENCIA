@@ -395,13 +395,32 @@ async function autoActivateByDevice(req, res) {
         [device, project.id]
       );
 
-      const hist = histRes.rows[0];
-      if (!hist || !hist.customer_id) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ ok: false, code: 'NO_HISTORY', message: 'Sin historial de licencias para este dispositivo' });
+      let customerId = histRes.rows[0]?.customer_id || null;
+
+      // Fallback: algunos clientes pueden tener DEMO creada pero sin activaciones vigentes
+      // (o el historial de activaciones fue limpiado). En ese caso, usamos demo_trials
+      // para poder resolver el customer_id del dispositivo y continuar con la auto-detección.
+      if (!customerId) {
+        const trialRes = await client.query(
+          `SELECT customer_id
+           FROM demo_trials
+           WHERE project_id = $1
+             AND device_id = $2
+           ORDER BY started_at DESC
+           LIMIT 1`,
+          [project.id, device]
+        );
+        customerId = trialRes.rows[0]?.customer_id || null;
       }
 
-      const customerId = hist.customer_id;
+      if (!customerId) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({
+          ok: false,
+          code: 'NO_HISTORY',
+          message: 'Sin historial de licencias para este dispositivo'
+        });
+      }
       const now = nowDate();
 
       // 2) Find newest license for this customer+project that can be used.
