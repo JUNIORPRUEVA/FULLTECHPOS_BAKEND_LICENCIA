@@ -14,6 +14,11 @@ router.post('/check', (req, res, next) => {
   Promise.resolve(licensesController.check(req, res)).catch(next);
 });
 
+// POST /api/licenses/auto-activate
+router.post('/auto-activate', (req, res, next) => {
+  Promise.resolve(licensesController.autoActivateByDevice(req, res)).catch(next);
+});
+
 // POST /api/licenses/start-demo
 router.post('/start-demo', (req, res, next) => {
   Promise.resolve(licensesDemoController.startDemo(req, res)).catch(next);

@@ -353,9 +353,223 @@ async function check(req, res) {
   }
 }
 
+// POST /api/licenses/auto-activate
+// Auto-detects the customer from prior activations on this device (DEMO or FULL)
+// and, if an ACTIVA license exists for that customer+project, activates it for the device.
+// This enables the ONLINE upgrade flow after DEMO ends without the user typing a new key.
+async function autoActivateByDevice(req, res) {
+  try {
+    const { device_id, project_id, project_code } = req.body || {};
+    const device = String(device_id || '').trim();
+
+    if (!device) {
+      return res.status(400).json({ ok: false, message: 'device_id es requerido' });
+    }
+
+    let project = null;
+    if (project_id) {
+      project = await projectsModel.getProjectById(String(project_id).trim());
+    } else if (project_code) {
+      project = await projectsModel.getProjectByCode(String(project_code));
+    } else {
+      project = await projectsModel.getDefaultProject();
+    }
+
+    if (!project) {
+      return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1) Identify customer_id from the latest activation on this device for this project.
+      const histRes = await client.query(
+        `SELECT l.customer_id
+         FROM license_activations a
+         JOIN licenses l ON l.id = a.license_id
+         WHERE a.device_id = $1
+           AND a.project_id = $2
+         ORDER BY a.last_check_at DESC, a.activated_at DESC, l.created_at DESC
+         LIMIT 1`,
+        [device, project.id]
+      );
+
+      const hist = histRes.rows[0];
+      if (!hist || !hist.customer_id) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ ok: false, code: 'NO_HISTORY', message: 'Sin historial de licencias para este dispositivo' });
+      }
+
+      const customerId = hist.customer_id;
+      const now = nowDate();
+
+      // 2) Find newest license for this customer+project that can be used.
+      const licRes = await client.query(
+        `SELECT *
+         FROM licenses
+         WHERE customer_id = $1
+           AND project_id = $2
+         ORDER BY created_at DESC
+         LIMIT 25`,
+        [customerId, project.id]
+      );
+
+      let chosen = null;
+      for (const l of licRes.rows) {
+        if (!l) continue;
+
+        if (l.estado === 'BLOQUEADA') {
+          // If the newest license is blocked, treat as blocked.
+          chosen = l;
+          break;
+        }
+
+        if (l.estado === 'VENCIDA') {
+          continue;
+        }
+
+        if (isExpiredByDate(l, now)) {
+          // Normalize to VENCIDA in DB.
+          try {
+            await client.query(`UPDATE licenses SET estado = 'VENCIDA' WHERE id = $1`, [l.id]);
+          } catch (_) {}
+          continue;
+        }
+
+        if (l.estado === 'ACTIVA') {
+          chosen = l;
+          break;
+        }
+      }
+
+      if (!chosen) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ ok: false, code: 'NO_ACTIVE_LICENSE', message: 'No hay licencia activa para este cliente' });
+      }
+
+      if (chosen.estado === 'BLOQUEADA') {
+        await client.query('COMMIT');
+        return res.status(403).json({
+          ok: false,
+          code: 'BLOCKED',
+          estado: 'BLOQUEADA',
+          motivo: chosen.notas || null
+        });
+      }
+
+      // 3) Ensure license has dates: initialize on first activation.
+      if (!chosen.fecha_inicio) {
+        const days = Number(chosen.dias_validez) || 1;
+        const fechaInicio = now;
+        const fechaFin = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+        const upd = await client.query(
+          `UPDATE licenses
+           SET fecha_inicio = $2,
+               fecha_fin = $3,
+               estado = 'ACTIVA'
+           WHERE id = $1
+           RETURNING *`,
+          [chosen.id, fechaInicio, fechaFin]
+        );
+        chosen = upd.rows[0] || chosen;
+      }
+
+      // 4) Activate this license for the device (respect max_dispositivos).
+      const existingActRes = await client.query(
+        `SELECT * FROM license_activations WHERE license_id = $1 AND device_id = $2`,
+        [chosen.id, device]
+      );
+      const existing = existingActRes.rows[0];
+
+      const countRes = await client.query(
+        `SELECT COUNT(*)::int AS total
+         FROM license_activations
+         WHERE license_id = $1 AND estado = 'ACTIVA'`,
+        [chosen.id]
+      );
+      const used = countRes.rows[0]?.total || 0;
+
+      if (existing && existing.estado === 'ACTIVA') {
+        await client.query(`UPDATE license_activations SET last_check_at = now() WHERE id = $1`, [existing.id]);
+        await client.query('COMMIT');
+        return res.json({
+          ok: true,
+          code: 'OK',
+          license_key: chosen.license_key,
+          tipo: chosen.tipo,
+          fecha_inicio: chosen.fecha_inicio,
+          fecha_fin: chosen.fecha_fin,
+          max_dispositivos: chosen.max_dispositivos,
+          usados: used,
+          estado: 'ACTIVA',
+          motivo: chosen.notas || null
+        });
+      }
+
+      if (!existing && used >= Number(chosen.max_dispositivos)) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ ok: false, code: 'MAX_DEVICES_REACHED' });
+      }
+
+      if (existing && existing.estado !== 'ACTIVA') {
+        await client.query(
+          `UPDATE license_activations
+           SET estado = 'ACTIVA', activated_at = now(), last_check_at = now(), project_id = $2
+           WHERE id = $1`,
+          [existing.id, project.id]
+        );
+        await client.query('COMMIT');
+        return res.json({
+          ok: true,
+          code: 'OK',
+          license_key: chosen.license_key,
+          tipo: chosen.tipo,
+          fecha_inicio: chosen.fecha_inicio,
+          fecha_fin: chosen.fecha_fin,
+          max_dispositivos: chosen.max_dispositivos,
+          usados: used + 1,
+          estado: 'ACTIVA',
+          motivo: chosen.notas || null
+        });
+      }
+
+      await client.query(
+        `INSERT INTO license_activations (license_id, project_id, device_id, estado)
+         VALUES ($1, $2, $3, 'ACTIVA')`,
+        [chosen.id, project.id, device]
+      );
+
+      await client.query('COMMIT');
+      return res.json({
+        ok: true,
+        code: 'OK',
+        license_key: chosen.license_key,
+        tipo: chosen.tipo,
+        fecha_inicio: chosen.fecha_inicio,
+        fecha_fin: chosen.fecha_fin,
+        max_dispositivos: chosen.max_dispositivos,
+        usados: used + 1,
+        estado: 'ACTIVA',
+        motivo: chosen.notas || null
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('autoActivateByDevice error:', error);
+      return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('autoActivateByDevice outer error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   activate,
   check,
+  autoActivateByDevice,
   verifyOfflineFile,
   getPublicSigningKey
 };
