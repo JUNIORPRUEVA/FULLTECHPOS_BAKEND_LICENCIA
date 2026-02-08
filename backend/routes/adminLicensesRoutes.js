@@ -49,6 +49,36 @@ router.patch('/:id/extender-dias', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensesController.extenderDias(req, res)).catch(next);
 });
 
+// PATCH /api/admin/licenses/by-key/bloquear
+router.patch('/by-key/bloquear', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.bloquearLicenseByKey(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/by-key/vencer
+router.patch('/by-key/vencer', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.vencerLicenseByKey(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/by-key/activar-manual
+router.patch('/by-key/activar-manual', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.activarManualByKey(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/by-key/bloquear
+router.patch('/by-key/bloquear', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.bloquearLicenseByKey(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/by-key/vencer
+router.patch('/by-key/vencer', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.vencerLicenseByKey(req, res)).catch(next);
+});
+
+// PATCH /api/admin/licenses/by-key/activar-manual
+router.patch('/by-key/activar-manual', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.activarManualByKey(req, res)).catch(next);
+});
+
 // GET /api/admin/licenses/:id/license-file?device_id=...&download=1
 router.get('/:id/license-file', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensesController.exportLicenseFile(req, res)).catch(next);

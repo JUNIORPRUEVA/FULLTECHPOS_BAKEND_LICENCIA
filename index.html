@@ -171,14 +171,14 @@
                     </div>
                 </div>
 
-                <!-- Característica 6: Activación por Licencia -->
+                <!-- Característica 6: Licencias y Seguridad -->
                 <div class="feature-card">
                     <div class="feature-card-header">
                         <div class="feature-icon">🔐</div>
                         <h3 class="feature-title">Seguridad</h3>
                     </div>
                     <p class="feature-description">
-                        Activación segura por licencia.
+                        Control de acceso y licencias.
                     </p>
                     <div class="feature-card-footer">
                         <a href="javascript:void(0)" onclick="showFeatureDetails(5)">Ver más</a>
@@ -258,8 +258,14 @@
                         </div>
                         <div class="step">
                             <span class="step-number">4</span>
-                            <p><strong>Activa el sistema</strong> con tu clave y disfruta sin limitaciones</p>
+                            <p><strong>Te guiamos para dejarlo listo</strong> y disfrutar sin limitaciones</p>
                         </div>
+                    </div>
+
+                    <div id="trialEndedCta" style="display:none; margin-top: 18px; padding: 16px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); background: rgba(5, 66, 44, 0.06);">
+                        <h4 style="margin: 0 0 8px;">¿Terminó tu tiempo de prueba?</h4>
+                        <p style="margin: 0 0 12px;">Compra tu licencia hoy vía WhatsApp y te guiamos en el proceso.</p>
+                        <a id="buyLicenseWhatsAppBtn" class="btn btn-tertiary" href="#">💬 Comprar por WhatsApp</a>
                     </div>
                 </div>
 
@@ -320,7 +326,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
-                            Enviar Solicitud
+                            Enviar Solicitud y abrir WhatsApp
                         </button>
                     </form>
                 </section>
@@ -410,8 +416,8 @@
             },
             {
                 icon: '🔐',
-                title: 'Activación por Licencia',
-                description: 'Sistema seguro con activación por licencia. Prueba la demo con funciones limitadas sin costo. Una vez satisfecho, activa tu licencia para disfrutar de todas las funcionalidades sin restricciones.'
+                title: 'Licencias y Seguridad',
+                description: 'Protege el acceso al sistema y mantén el control del uso con licencias. Si terminaste tu tiempo de prueba, contáctanos por WhatsApp para comprar tu licencia y recibir asistencia en el proceso.'
             }
         ];
 
@@ -473,6 +479,37 @@
             });
 
         const licenseForm = document.getElementById('license-request-form');
+
+        const WHATSAPP_NUMBER = '18295319442';
+        function buildWhatsAppUrl(message) {
+            const text = encodeURIComponent(message || 'Hola, quiero comprar una licencia de FULLTECH POS.');
+            return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
+        }
+
+        // Si el usuario llega con fin de prueba, mostramos CTA destacado.
+        (function wireTrialEndedCta() {
+            const params = new URLSearchParams(window.location.search);
+            const trialEnded =
+                params.get('expired') === '1' ||
+                params.get('trialEnded') === '1' ||
+                params.get('trial') === 'ended';
+
+            const cta = document.getElementById('trialEndedCta');
+            const btn = document.getElementById('buyLicenseWhatsAppBtn');
+            if (!cta || !btn) return;
+
+            const msg = 'Hola, terminé mi tiempo de prueba de FULLTECH POS y quiero comprar mi licencia.';
+            btn.href = buildWhatsAppUrl(msg);
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = btn.href;
+            });
+
+            if (trialEnded) {
+                cta.style.display = 'block';
+            }
+        })();
+
         if (licenseForm) {
             licenseForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -521,8 +558,18 @@
                         throw new Error(data.message || 'No se pudo enviar la solicitud');
                     }
 
-                    alert('✅ Solicitud enviada. Te contactaremos al número indicado en un plazo de 0 a 24 horas.');
+                    const waMessage =
+                        'Hola, quiero comprar una licencia de FULLTECH POS.' +
+                        `\n\nNombre: ${payload.nombre}` +
+                        (payload.negocio ? `\nNegocio: ${payload.negocio}` : '') +
+                        `\nTeléfono: ${payload.telefono}` +
+                        `\nEmail: ${payload.email}` +
+                        (payload.mensaje ? `\n\nMensaje: ${payload.mensaje}` : '');
+
+                    alert('✅ Solicitud enviada. Ahora te redirigimos a WhatsApp para completar la compra.');
                     this.reset();
+
+                    window.location.href = buildWhatsAppUrl(waMessage);
                 } catch (error) {
                     alert(`❌ Error enviando la solicitud: ${error.message}`);
                     console.error('Error enviando solicitud de licencia:', error);

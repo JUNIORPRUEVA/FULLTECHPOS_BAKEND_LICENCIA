@@ -310,16 +310,79 @@ async function extenderDias(req, res) {
   }
 }
 
+async function bloquearLicenseByKey(req, res) {
+  try {
+    const licenseKey = String(req.body?.license_key || '').trim();
+    if (!licenseKey) {
+      return res.status(400).json({ ok: false, message: 'license_key es requerido' });
+    }
+
+    const license = await licensesModel.findLicenseByKey(licenseKey);
+    if (!license) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    const updated = await licensesModel.updateLicenseStatus(license.id, 'BLOQUEADA');
+    return res.json({ ok: true, license: updated });
+  } catch (error) {
+    console.error('bloquearLicenseByKey error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
+async function vencerLicenseByKey(req, res) {
+  try {
+    const licenseKey = String(req.body?.license_key || '').trim();
+    if (!licenseKey) {
+      return res.status(400).json({ ok: false, message: 'license_key es requerido' });
+    }
+
+    const license = await licensesModel.findLicenseByKey(licenseKey);
+    if (!license) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    const updated = await licensesModel.updateLicense(license.id, { estado: 'VENCIDA' });
+    return res.json({ ok: true, license: updated });
+  } catch (error) {
+    console.error('vencerLicenseByKey error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
+async function activarManualByKey(req, res) {
+  try {
+    const licenseKey = String(req.body?.license_key || '').trim();
+    if (!licenseKey) {
+      return res.status(400).json({ ok: false, message: 'license_key es requerido' });
+    }
+
+    const license = await licensesModel.findLicenseByKey(licenseKey);
+    if (!license) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    const updated = await licensesModel.activateLicenseManually(license.id);
+    return res.json({ ok: true, license: updated });
+  } catch (error) {
+    console.error('activarManualByKey error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   createLicense,
   listLicenses,
   getLicenseDetail,
   bloquearLicense,
+  bloquearLicenseByKey,
   activarManual,
+  activarManualByKey,
   desbloquearLicense,
   deleteLicense,
   updateLicense,
   extenderDias,
+  vencerLicenseByKey,
   exportLicenseFile
 };
 
