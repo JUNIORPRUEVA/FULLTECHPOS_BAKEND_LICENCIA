@@ -207,7 +207,7 @@ async function startDemo(req, res) {
     const deviceKey = nullIfEmpty(device_id);
     if (deviceKey) {
       const deviceTrialRes = await client.query(
-        `SELECT id, started_at
+        `SELECT id, started_at, customer_id, license_id
          FROM demo_trials
          WHERE project_id = $1
            AND device_id = $2
@@ -217,7 +217,37 @@ async function startDemo(req, res) {
       );
       const deviceTrial = deviceTrialRes.rows[0];
       if (deviceTrial) {
-        await client.query('ROLLBACK');
+        // Si existe un trial previo pero le faltan referencias, intentar
+        // completarlas para permitir auto-detección posterior (upgrade a FULL).
+        // Nota: NO crea una nueva DEMO; solo arregla datos faltantes.
+        let inferredLicenseId = deviceTrial.license_id;
+        if (!inferredLicenseId) {
+          const licRes = await client.query(
+            `SELECT id
+             FROM licenses
+             WHERE customer_id = $1
+               AND project_id = $2
+               AND tipo = 'DEMO'
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [customer.id, project.id]
+          );
+          inferredLicenseId = licRes.rows[0]?.id || null;
+        }
+
+        try {
+          await client.query(
+            `UPDATE demo_trials
+             SET customer_id = COALESCE(customer_id, $2),
+                 license_id = COALESCE(license_id, $3)
+             WHERE id = $1`,
+            [deviceTrial.id, customer.id, inferredLicenseId]
+          );
+        } catch (_) {
+          // Si no se puede backfillear por alguna razón, igual devolvemos 409.
+        }
+
+        await client.query('COMMIT');
         return res.status(409).json({
           ok: false,
           code: 'DEMO_ALREADY_USED',
