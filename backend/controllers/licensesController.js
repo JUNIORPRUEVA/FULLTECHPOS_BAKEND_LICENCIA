@@ -402,11 +402,12 @@ async function autoActivateByDevice(req, res) {
       // para poder resolver el customer_id del dispositivo y continuar con la auto-detección.
       if (!customerId) {
         const trialRes = await client.query(
-          `SELECT customer_id
-           FROM demo_trials
-           WHERE project_id = $1
-             AND device_id = $2
-           ORDER BY started_at DESC
+          `SELECT COALESCE(dt.customer_id, l.customer_id) AS customer_id
+           FROM demo_trials dt
+           LEFT JOIN licenses l ON l.id = dt.license_id
+           WHERE dt.project_id = $1
+             AND dt.device_id = $2
+           ORDER BY dt.started_at DESC
            LIMIT 1`,
           [project.id, device]
         );
