@@ -1,6 +1,9 @@
-# syntax=docker/dockerfile:1
+# NOTE: Do not use `# syntax=docker/dockerfile:1` here.
+# In some hosted builders (e.g. EasyPanel) the BuildKit frontend pull
+# can fail with TLS handshake timeouts to auth.docker.io.
 
-FROM node:20-alpine
+ARG NODE_IMAGE=node:20-alpine
+FROM ${NODE_IMAGE}
 
 WORKDIR /app
 

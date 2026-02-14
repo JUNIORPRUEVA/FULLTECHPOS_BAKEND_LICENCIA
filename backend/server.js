@@ -66,8 +66,22 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, status: 'up', ts: new Date().toISOString() });
 });
 
+// Alias por compatibilidad (algunos servicios prueban /health).
+app.get('/health', (req, res) => {
+  res.json({ ok: true, status: 'up', ts: new Date().toISOString() });
+});
+
 // Diagnóstico opcional de DB. No usar como healthcheck estricto.
 app.get('/api/health/db', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    return res.json({ ok: true, db: 'up', ts: new Date().toISOString() });
+  } catch (e) {
+    return res.status(200).json({ ok: true, db: 'down', error: e?.code || e?.message || 'DB_ERROR' });
+  }
+});
+
+app.get('/health/db', async (req, res) => {
   try {
     await pool.query('SELECT 1');
     return res.json({ ok: true, db: 'up', ts: new Date().toISOString() });
