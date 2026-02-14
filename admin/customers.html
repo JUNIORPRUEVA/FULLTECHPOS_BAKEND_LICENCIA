@@ -595,10 +595,10 @@
                             <td style="font-family:monospace; font-weight:700;">${businessId ? escapeHtml(businessId) : '<span style="color:#6B7280;">—</span>'}</td>
                             <td>${escapeHtml(created)}</td>
                             <td class="actions">
-                                <button class="link-btn" type="button" onclick="copyText('${escapeAttr(customerId)}')">Copiar ID</button>
-                                <button class="link-btn" type="button" onclick="copyBusinessId('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Copiar Business ID</button>
-                                <button class="link-btn" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','${escapeAttr(businessId)}')">Asignar Business ID</button>
-                                <button class="link-btn" type="button" onclick="checkCloudLicense('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Ver estado licencia</button>
+                                ${businessId
+                                    ? ''
+                                    : `<button class="link-btn" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','')">Asignar Business ID</button>`
+                                }
                                 <button class="link-btn" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
                                 <button class="link-btn" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')" style="color:#991B1B;">Eliminar</button>
                             </td>
@@ -608,15 +608,6 @@
             } catch (err) {
                 body.innerHTML = '<tr><td colspan="7" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
             }
-        }
-
-        async function copyBusinessId(businessId) {
-            const id = String(businessId || '').trim();
-            if (!id) {
-                showMessage('err', 'Este cliente no tiene business_id todavía');
-                return;
-            }
-            await copyText(id);
         }
 
         async function setBusinessIdPrompt(customerId, negocio, currentBusinessId) {
@@ -665,31 +656,6 @@
             }
         }
 
-        async function checkCloudLicense(businessId) {
-            const id = String(businessId || '').trim();
-            if (!id) {
-                showMessage('err', 'Este cliente no tiene business_id todavía');
-                return;
-            }
-
-            // Endpoint público: GET /businesses/:business_id/license
-            try {
-                const res = await fetch(`${API_URL}/businesses/${encodeURIComponent(id)}/license`, { method: 'GET' });
-                if (res.status === 204) {
-                    showMessage('err', '⏳ Aún no hay licencia activa para este business_id (204)');
-                    return;
-                }
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.ok) {
-                    showMessage('err', data?.message || `No se pudo consultar licencia (HTTP ${res.status})`);
-                    return;
-                }
-
-                showMessage('ok', `✅ Licencia OK: token disponible (${String(data.plan || '').toUpperCase() || 'PLAN'})`);
-            } catch (e) {
-                showMessage('err', 'No se pudo conectar con el servidor para verificar el estado');
-            }
-        }
 
         async function deleteCustomer(customerId, negocio) {
             const id = String(customerId || '').trim();
@@ -743,21 +709,6 @@
             return String(value || '').replace(/'/g, "\\'");
         }
 
-        async function copyText(text) {
-            try {
-                await navigator.clipboard.writeText(String(text || ''));
-                showMessage('ok', '✅ Copiado al portapapeles');
-            } catch {
-                // Fallback simple
-                const tmp = document.createElement('textarea');
-                tmp.value = String(text || '');
-                document.body.appendChild(tmp);
-                tmp.select();
-                document.execCommand('copy');
-                tmp.remove();
-                showMessage('ok', '✅ Copiado al portapapeles');
-            }
-        }
 
         function goToLicenses(customerId) {
             const id = String(customerId || '').trim();

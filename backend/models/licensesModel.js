@@ -1,5 +1,11 @@
 const { pool } = require('../db/pool');
 
+function isPgMissingColumnOrTable(e) {
+  const code = e && e.code;
+  // 42703 undefined_column, 42P01 undefined_table
+  return code === '42703' || code === '42P01';
+}
+
 async function createLicenseWithKey({
   project_id,
   customer_id,
@@ -9,74 +15,186 @@ async function createLicenseWithKey({
   max_dispositivos,
   notas
 }) {
-  const result = await pool.query(
-    `INSERT INTO licenses (project_id, customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
-     VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7)
-     RETURNING *`,
-    [project_id, customer_id || null, license_key, tipo, dias_validez, max_dispositivos, notas || null]
-  );
-  return result.rows[0];
+  try {
+    const result = await pool.query(
+      `INSERT INTO licenses (project_id, customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
+       VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7)
+       RETURNING *`,
+      [project_id, customer_id || null, license_key, tipo, dias_validez, max_dispositivos, notas || null]
+    );
+    return result.rows[0];
+  } catch (e) {
+    // Backward compatibility: old schema without projects
+    if (isPgMissingColumnOrTable(e)) {
+      const result = await pool.query(
+        `INSERT INTO licenses (customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
+         VALUES ($1, $2, $3, $4, $5, 'PENDIENTE', $6)
+         RETURNING *`,
+        [customer_id || null, license_key, tipo, dias_validez, max_dispositivos, notas || null]
+      );
+      return result.rows[0];
+    }
+    throw e;
+  }
 }
 
 async function listLicenses({ limit, offset, project_id, customer_id, tipo, estado }) {
-  const where = [];
-  const params = [];
+  const baseFilters = [];
+  if (project_id) baseFilters.push({ key: 'project_id', field: 'l.project_id', value: project_id });
+  if (customer_id) baseFilters.push({ key: 'customer_id', field: 'l.customer_id', value: customer_id });
+  if (tipo) baseFilters.push({ key: 'tipo', field: 'l.tipo', value: tipo });
+  if (estado) baseFilters.push({ key: 'estado', field: 'l.estado', value: estado });
 
-  if (project_id) {
-    params.push(project_id);
-    where.push(`l.project_id = $${params.length}`);
+  const buildWhere = ({ includeProjectFilter }) => {
+    const where = [];
+    const params = [];
+
+    for (const f of baseFilters) {
+      if (f.key === 'project_id' && !includeProjectFilter) continue;
+      params.push(f.value);
+      where.push(`${f.field} = $${params.length}`);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    return { whereSql, params };
+  };
+
+  // Some deployments may not have licenses.project_id yet.
+  // In that case, we drop the project filter instead of throwing 500.
+  let includeProjectFilter = true;
+  for (let projectFilterAttempt = 0; projectFilterAttempt < 2; projectFilterAttempt++) {
+    const { whereSql, params: filterParams } = buildWhere({ includeProjectFilter });
+
+    let total = 0;
+    try {
+      const totalRes = await pool.query(
+        `SELECT COUNT(*)::int AS total
+         FROM licenses l
+         ${whereSql}`,
+        filterParams
+      );
+      total = totalRes.rows[0]?.total || 0;
+    } catch (e) {
+      if (
+        includeProjectFilter &&
+        isPgMissingColumnOrTable(e) &&
+        String(e.message || '').toLowerCase().includes('project_id')
+      ) {
+        includeProjectFilter = false;
+        continue;
+      }
+      throw e;
+    }
+
+    const params = [...filterParams, limit, offset];
+    const limitParamIndex = params.length - 1;
+    const offsetParamIndex = params.length;
+
+  const tryQueries = [
+    // Newest schema
+    {
+      includeProjects: true,
+      includeBusinessId: true
+    },
+    // Missing customers.business_id
+    {
+      includeProjects: true,
+      includeBusinessId: false
+    },
+    // Missing projects table/columns
+    {
+      includeProjects: false,
+      includeBusinessId: true
+    },
+    // Missing both
+    {
+      includeProjects: false,
+      includeBusinessId: false
+    }
+  ];
+
+    let lastError = null;
+    for (const q of tryQueries) {
+      try {
+      const businessIdSelect = q.includeBusinessId ? 'c.business_id' : 'NULL::text AS business_id';
+      const projectSelect = q.includeProjects
+        ? 'p.code AS project_code, p.name AS project_name'
+        : `'DEFAULT'::text AS project_code, NULL::text AS project_name`;
+      const projectsJoin = q.includeProjects ? 'LEFT JOIN projects p ON p.id = l.project_id' : '';
+
+      const rowsRes = await pool.query(
+        `SELECT l.*, c.nombre_negocio, ${businessIdSelect}, ${projectSelect}
+         FROM licenses l
+         LEFT JOIN customers c ON c.id = l.customer_id
+         ${projectsJoin}
+         ${whereSql}
+         ORDER BY l.created_at DESC
+         LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
+        params
+      );
+      return { total, licenses: rowsRes.rows };
+      } catch (e) {
+        lastError = e;
+        if (
+          includeProjectFilter &&
+          isPgMissingColumnOrTable(e) &&
+          String(e.message || '').toLowerCase().includes('project_id')
+        ) {
+          // Drop project filter and retry the whole function.
+          includeProjectFilter = false;
+          break;
+        }
+        if (!isPgMissingColumnOrTable(e)) throw e;
+      }
+    }
+
+    if (!includeProjectFilter) {
+      // retry outer loop
+      continue;
+    }
+
+    throw lastError;
   }
 
-  if (customer_id) {
-    params.push(customer_id);
-    where.push(`l.customer_id = $${params.length}`);
-  }
-  if (tipo) {
-    params.push(tipo);
-    where.push(`l.tipo = $${params.length}`);
-  }
-  if (estado) {
-    params.push(estado);
-    where.push(`l.estado = $${params.length}`);
-  }
-
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-
-  const totalRes = await pool.query(
-    `SELECT COUNT(*)::int AS total
-     FROM licenses l
-     ${whereSql}`,
-    params
-  );
-  const total = totalRes.rows[0]?.total || 0;
-
-  params.push(limit);
-  params.push(offset);
-
-  const rowsRes = await pool.query(
-    `SELECT l.*, c.nombre_negocio, c.business_id, p.code AS project_code, p.name AS project_name
-     FROM licenses l
-     LEFT JOIN customers c ON c.id = l.customer_id
-     LEFT JOIN projects p ON p.id = l.project_id
-     ${whereSql}
-     ORDER BY l.created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
-
-  return { total, licenses: rowsRes.rows };
+  // Should be unreachable.
+  return { total: 0, licenses: [] };
 }
 
 async function getLicenseById(licenseId) {
-  const licRes = await pool.query(
-    `SELECT l.*, c.nombre_negocio, c.business_id, p.code AS project_code, p.name AS project_name
-     FROM licenses l
-     LEFT JOIN customers c ON c.id = l.customer_id
-     LEFT JOIN projects p ON p.id = l.project_id
-     WHERE l.id = $1`,
-    [licenseId]
-  );
-  const license = licRes.rows[0];
+  let license = null;
+  const tryQueries = [
+    { includeProjects: true, includeBusinessId: true },
+    { includeProjects: true, includeBusinessId: false },
+    { includeProjects: false, includeBusinessId: true },
+    { includeProjects: false, includeBusinessId: false }
+  ];
+
+  let lastError = null;
+  for (const q of tryQueries) {
+    try {
+      const businessIdSelect = q.includeBusinessId ? 'c.business_id' : 'NULL::text AS business_id';
+      const projectSelect = q.includeProjects
+        ? 'p.code AS project_code, p.name AS project_name'
+        : `'DEFAULT'::text AS project_code, NULL::text AS project_name`;
+      const projectsJoin = q.includeProjects ? 'LEFT JOIN projects p ON p.id = l.project_id' : '';
+
+      const licRes = await pool.query(
+        `SELECT l.*, c.nombre_negocio, ${businessIdSelect}, ${projectSelect}
+         FROM licenses l
+         LEFT JOIN customers c ON c.id = l.customer_id
+         ${projectsJoin}
+         WHERE l.id = $1`,
+        [licenseId]
+      );
+      license = licRes.rows[0] || null;
+      break;
+    } catch (e) {
+      lastError = e;
+      if (!isPgMissingColumnOrTable(e)) throw e;
+    }
+  }
+
+  if (lastError && !license) throw lastError;
   if (!license) return null;
 
   const actRes = await pool.query(
