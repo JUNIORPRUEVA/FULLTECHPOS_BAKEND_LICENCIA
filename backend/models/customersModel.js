@@ -61,6 +61,24 @@ async function getCustomerById(customerId) {
   return result.rows[0] || null;
 }
 
+async function getCustomerByBusinessId(businessId) {
+  const id = String(businessId || '').trim();
+  if (!id) return null;
+
+  try {
+    const result = await pool.query('SELECT * FROM customers WHERE business_id = $1 LIMIT 1', [id]);
+    return result.rows[0] || null;
+  } catch (e) {
+    // 42703 = undefined_column (migration pending)
+    if (e && e.code === '42703') {
+      const err = new Error('customers.business_id column missing');
+      err.code = 'MIGRATION_PENDING';
+      throw err;
+    }
+    throw e;
+  }
+}
+
 async function setCustomerBusinessId({ customerId, business_id }) {
   try {
     const result = await pool.query(
@@ -150,6 +168,7 @@ module.exports = {
   createCustomer,
   listCustomers,
   getCustomerById,
+  getCustomerByBusinessId,
   setCustomerBusinessId,
   findCustomerByContact,
   deleteCustomerCascade

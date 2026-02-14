@@ -37,6 +37,7 @@ const LICENSE_ONLY = String(process.env.LICENSE_ONLY || '').trim() === '1';
 const sessions = require('./auth/sessions');
 const uploadRoutes = require('./routes/uploads');
 const adminCustomersRoutes = require('./routes/adminCustomersRoutes');
+const adminBusinessesRoutes = require('./routes/adminBusinessesRoutes');
 const adminLicensesRoutes = require('./routes/adminLicensesRoutes');
 const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
@@ -217,6 +218,7 @@ app.use('/api', (req, res, next) => {
 // ==========================================
 // ADMIN (panel web)
 app.use('/api/admin/customers', adminCustomersRoutes);
+app.use('/api/admin/businesses', adminBusinessesRoutes);
 app.use('/api/admin/licenses', adminLicensesRoutes);
 app.use('/api/admin/license-config', adminLicenseConfigRoutes);
 app.use('/api/admin/activations', adminActivationsRoutes);
