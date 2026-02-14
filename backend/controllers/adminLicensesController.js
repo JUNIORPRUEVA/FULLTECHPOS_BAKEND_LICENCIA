@@ -447,7 +447,8 @@ async function exportLicenseFile(req, res) {
     const customer = license.customer_id
       ? {
           id: license.customer_id,
-          nombre_negocio: license.nombre_negocio
+          nombre_negocio: license.nombre_negocio,
+          business_id: license.business_id
         }
       : null;
 

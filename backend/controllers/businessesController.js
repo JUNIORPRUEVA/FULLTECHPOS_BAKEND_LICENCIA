@@ -57,14 +57,43 @@ function buildBusinessLicensePayload({ businessId, license, project }) {
     project_code: String(project?.code || '').toUpperCase(),
     license_key: String(license?.license_key || '').trim(),
     plan: String(license?.tipo || '').toUpperCase(),
+    estado: String(license?.estado || '').toUpperCase(),
     starts_at: license?.fecha_inicio ? new Date(license.fecha_inicio).toISOString() : null,
     expires_at: license?.fecha_fin ? new Date(license.fecha_fin).toISOString() : null,
     features: [],
     limits: {
       max_devices: Number(license?.max_dispositivos)
     },
+    // Compat: algunos clientes esperan max_devices en la raíz.
+    max_devices: Number(license?.max_dispositivos),
     issued_at: new Date().toISOString()
   };
+}
+
+function addDaysIso(iso, days) {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    d.setUTCDate(d.getUTCDate() + Number(days || 0));
+    return d.toISOString();
+  } catch (_) {
+    return null;
+  }
+}
+
+function isWithinDaysFromNow(iso, days) {
+  try {
+    if (!iso) return false;
+    const start = new Date(iso);
+    if (Number.isNaN(start.getTime())) return false;
+    const endIso = addDaysIso(start.toISOString(), days);
+    if (!endIso) return false;
+    const end = new Date(endIso);
+    const now = new Date();
+    return now.getTime() < end.getTime();
+  } catch (_) {
+    return false;
+  }
 }
 
 async function register(req, res) {
@@ -298,11 +327,11 @@ async function getLicense(req, res) {
     const now = new Date();
 
     let chosen = null;
+    let blocked = null;
     for (const l of licRes.rows) {
       if (!l) continue;
       if (String(l.estado || '').toUpperCase() === 'BLOQUEADA') {
-        // Treat blocked as 'no license yet' for this endpoint.
-        chosen = null;
+        blocked = l;
         break;
       }
       if (String(l.estado || '').toUpperCase() === 'VENCIDA') {
@@ -323,7 +352,52 @@ async function getLicense(req, res) {
       break;
     }
 
+    // Si está BLOQUEADA, devolver token bloqueado para que el cliente muestre
+    // inmediatamente la pantalla de bloqueo (y no se quede en TRIAL/local).
+    if (blocked) {
+      const payload = buildBusinessLicensePayload({ businessId, license: blocked, project });
+      const licenseFile = signPayloadEd25519(payload);
+      const token = toBase64Url(JSON.stringify(licenseFile));
+      return res.json({
+        ok: true,
+        business_id: businessId,
+        license_token: token,
+        plan: payload.plan,
+        starts_at: payload.starts_at,
+        expires_at: payload.expires_at,
+        estado: payload.estado
+      });
+    }
+
     if (!chosen) {
+      // TRIAL: si el negocio tiene trial_start_at y aún está dentro de ventana,
+      // emitir un token TRIAL firmado. El cliente lo puede guardar local y
+      // seguir funcionando offline-first.
+      const trialStartAt = customer.trial_start_at ? new Date(customer.trial_start_at).toISOString() : null;
+      const TRIAL_DAYS = 5;
+      if (trialStartAt && isWithinDaysFromNow(trialStartAt, TRIAL_DAYS)) {
+        const trialLicense = {
+          license_key: `TRIAL-${businessId}`,
+          tipo: 'TRIAL',
+          estado: 'ACTIVA',
+          fecha_inicio: trialStartAt,
+          fecha_fin: addDaysIso(trialStartAt, TRIAL_DAYS),
+          max_dispositivos: 1
+        };
+        const payload = buildBusinessLicensePayload({ businessId, license: trialLicense, project });
+        const licenseFile = signPayloadEd25519(payload);
+        const token = toBase64Url(JSON.stringify(licenseFile));
+        return res.json({
+          ok: true,
+          business_id: businessId,
+          license_token: token,
+          plan: payload.plan,
+          starts_at: payload.starts_at,
+          expires_at: payload.expires_at,
+          estado: payload.estado
+        });
+      }
+
       return res.status(204).send();
     }
 

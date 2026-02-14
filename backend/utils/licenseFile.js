@@ -40,6 +40,7 @@ function getPublicKeyPem() {
 
 function buildPayload({
   project_code,
+  business_id,
   license_key,
   tipo,
   fecha_inicio,
@@ -53,6 +54,7 @@ function buildPayload({
   return {
     v: 1,
     project_code: String(project_code || '').toUpperCase(),
+    business_id: business_id ? String(business_id).trim() : null,
     license_key: String(license_key || '').trim(),
     tipo: String(tipo || '').toUpperCase(),
     fecha_inicio: fecha_inicio ? new Date(fecha_inicio).toISOString() : null,
@@ -107,6 +109,7 @@ function createLicenseFileFromDbRows({ license, project, customer, device_id }) 
 
   const payload = buildPayload({
     project_code: project.code,
+    business_id: (customer && customer.business_id) ? customer.business_id : license.business_id,
     license_key: license.license_key,
     tipo: license.tipo,
     fecha_inicio: license.fecha_inicio,
