@@ -329,12 +329,12 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="deliveryMode">Modo de uso *</label>
+                        <label for="deliveryMode">Entrega de licencia *</label>
                         <select id="deliveryMode" name="delivery_mode" required>
-                            <option value="ONLINE">🌐 Online (requiere internet)</option>
-                            <option value="OFFLINE">💾 Offline (archivo local firmado)</option>
+                            <option value="ONLINE">🔑 Activación por Internet</option>
+                            <option value="OFFLINE">📄 Archivo de licencia</option>
                         </select>
-                        <div class="auto-fill-hint">Offline descarga un archivo <b>.lic.json</b> para validar sin internet.</div>
+                        <div class="auto-fill-hint">Puedes activar por Internet o descargar un archivo firmado <b>.lic.json</b>.</div>
                     </div>
                 </div>
 
@@ -508,7 +508,7 @@
                 }
             });
 
-            // Configurar modo Online/Offline
+            // Configurar entrega de licencia
             const deliveryMode = document.getElementById('deliveryMode');
             deliveryMode.addEventListener('change', () => {
                 applyDeliveryModeUi();
@@ -631,9 +631,9 @@
                                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                         <button onclick="openDetailModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#3B82F6; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Ver</button>
                                         <button onclick="openEditModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#10B981; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
-                                        <button onclick="activateCloudLicense('${String(biz).replace(/'/g, "\\'")}', { projectCode: '${(license.project_code || 'DEFAULT')}', licenseId: '${license.id}' })" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#065F46; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🚀 Activar nube</button>
-                                        <button onclick="checkCloudLicense('${String(biz).replace(/'/g, "\\'")}')" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#0F766E; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🌐 Estado nube</button>
-                                        <button onclick="promptOfflineDownload('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#111827; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">💾 Offline</button>
+                                        <button onclick="activateCloudLicense('${String(biz).replace(/'/g, "\\'")}', { projectCode: '${(license.project_code || 'DEFAULT')}', licenseId: '${license.id}' })" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#065F46; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🚀 Activar licencia</button>
+                                        <button onclick="checkCloudLicense('${String(biz).replace(/'/g, "\\'")}')" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#0F766E; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🌐 Ver estado</button>
+                                        <button onclick="promptOfflineDownload('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#111827; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">📄 Descargar</button>
                                         <button onclick="deleteLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#6B7280; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">Eliminar</button>
                                         ${license.estado === 'BLOQUEADA'
                                             ? `<button onclick="activarManual('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#F59E0B; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Desbloquear</button>`
@@ -702,7 +702,7 @@
                 const data = await response.json();
 
                 if (response.ok && data.ok) {
-                    showMessage(isOffline ? '✅ Licencia creada. Descargando archivo offline…' : '✅ Licencia creada correctamente', 'success');
+                    showMessage(isOffline ? '✅ Licencia creada. Descargando archivo…' : '✅ Licencia creada correctamente', 'success');
                     document.getElementById('createLicenseForm').reset();
                     applyDeliveryModeUi();
 
@@ -763,9 +763,9 @@
             if (!response.ok) {
                 try {
                     const err = await response.json();
-                    showMessage('❌ ' + (err.message || 'No se pudo generar la licencia offline'), 'error');
+                    showMessage('❌ ' + (err.message || 'No se pudo generar el archivo de licencia'), 'error');
                 } catch {
-                    showMessage('❌ No se pudo generar la licencia offline', 'error');
+                    showMessage('❌ No se pudo generar el archivo de licencia', 'error');
                 }
                 return;
             }
@@ -1057,11 +1057,11 @@
                     <div style="grid-column:1 / -1;"><div style="color:#6B7280; font-size:0.85rem;">Notas</div><div style="font-weight:700;">${l.notas ? l.notas : '—'}</div></div>
 
                     <div style="grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
-                        <button onclick="promptOfflineDownload('${licenseId}')" style="padding:10px 14px; border-radius:8px; border:none; background:#111827; color:#fff; cursor:pointer; font-weight:900;">💾 Descargar licencia offline</button>
+                        <button onclick="promptOfflineDownload('${licenseId}')" style="padding:10px 14px; border-radius:8px; border:none; background:#111827; color:#fff; cursor:pointer; font-weight:900;">📄 Descargar archivo de licencia</button>
                         <button onclick="activarManual('${licenseId}')" style="padding:10px 14px; border-radius:8px; border:none; background:#F59E0B; color:#fff; cursor:pointer; font-weight:900;">Iniciar/Activar</button>
                     </div>
                     <div style="grid-column:1 / -1; color:#6B7280; font-size:0.85rem; margin-top:-4px;">
-                        Offline genera un archivo firmado. Si sale “no configurada”, configura <b>LICENSE_SIGN_PRIVATE_KEY</b> y <b>LICENSE_SIGN_PUBLIC_KEY</b> en el backend.
+                        El archivo de licencia se genera firmado. Si sale “no configurada”, configura <b>LICENSE_SIGN_PRIVATE_KEY</b> y <b>LICENSE_SIGN_PUBLIC_KEY</b> en el backend.
                     </div>
                 `;
 
@@ -1314,17 +1314,17 @@
                     body: JSON.stringify(payload)
                 });
             } catch (e) {
-                showMessage('❌ No se pudo activar en nube (red): ' + e.message, 'error');
+                showMessage('❌ No se pudo activar (red): ' + e.message, 'error');
                 return;
             }
 
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.ok) {
-                showMessage('❌ ' + (data?.message || `No se pudo activar en nube (HTTP ${response.status})`), 'error');
+                showMessage('❌ ' + (data?.message || `No se pudo activar (HTTP ${response.status})`), 'error');
                 return;
             }
 
-            showMessage('✅ Activada para nube. Verificando token…', 'success');
+            showMessage('✅ Licencia activada. Verificando…', 'success');
             await checkCloudLicense(id);
         }
 
@@ -1338,17 +1338,17 @@
             try {
                 const res = await fetch(`${API_URL}/businesses/${encodeURIComponent(id)}/license`, { method: 'GET' });
                 if (res.status === 204) {
-                    showMessage('⏳ Nube: aún no hay licencia activa (204)', 'error');
+                    showMessage('⏳ Aún no hay licencia activa (204)', 'error');
                     return;
                 }
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
-                    showMessage('❌ ' + (data?.message || `No se pudo consultar nube (HTTP ${res.status})`), 'error');
+                    showMessage('❌ ' + (data?.message || `No se pudo consultar el estado (HTTP ${res.status})`), 'error');
                     return;
                 }
-                showMessage(`✅ Nube OK: token disponible (${String(data.plan || '').toUpperCase() || 'PLAN'})`, 'success');
+                showMessage(`✅ Licencia OK: token disponible (${String(data.plan || '').toUpperCase() || 'PLAN'})`, 'success');
             } catch (e) {
-                showMessage('❌ Error consultando nube: ' + e.message, 'error');
+                showMessage('❌ Error consultando estado: ' + e.message, 'error');
             }
         }
     </script>
