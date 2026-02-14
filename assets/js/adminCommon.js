@@ -5,7 +5,13 @@
 
 (function () {
   const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-  const BACKEND_API_BASE = isLocal ? 'http://127.0.0.1:3000' : window.location.origin;
+  // Prefer a stable API origin in production to avoid mismatches between
+  // where the static admin is hosted vs where the API lives.
+  const BACKEND_API_BASE = isLocal
+    ? 'http://127.0.0.1:3000'
+    : (window.location.origin.includes('api.fulltechrd.com')
+        ? window.location.origin
+        : 'https://api.fulltechrd.com');
 
   function getReturnTo() {
     const params = new URLSearchParams(window.location.search);

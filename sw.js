@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = 'v18';
+const CACHE_VERSION = 'v19';
 const STATIC_CACHE = `fulltech-pos-static-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -72,6 +72,26 @@ self.addEventListener('fetch', (event) => {
         })
     );
     return;
+  }
+
+  // Admin assets/pages: network-first to avoid stale session/auth JS.
+  try {
+    const url = new URL(request.url);
+    const isSameOrigin = url.origin === self.location.origin;
+    const isAdminPath = url.pathname.startsWith('/admin/');
+    const isAdminAsset = url.pathname.startsWith('/assets/js/admin') ||
+      url.pathname.startsWith('/assets/css/jr-admin');
+    if (isSameOrigin && (isAdminPath || isAdminAsset)) {
+      event.respondWith(
+        fetch(request).catch(async () => {
+          const cached = await caches.match(request);
+          return cached || fetch(request);
+        })
+      );
+      return;
+    }
+  } catch (_) {
+    // ignore
   }
 
   // Static assets: cache-first.
