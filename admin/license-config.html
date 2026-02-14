@@ -362,7 +362,7 @@
             <h2 class="section-title">⚙️ Configuración de Licencias</h2>
             <p class="section-subtitle">
                 Desde aquí puedes definir cuántos días dura la demo y las licencias de pago, 
-                y cuántos dispositivos puede activar cada plan. Estos valores se usarán como 
+                estos valores se usarán como 
                 predeterminados cuando crees nuevas licencias. Siempre podrás personalizar 
                 los valores de forma individual para cada licencia.
             </p>
@@ -400,18 +400,6 @@
                                 required
                             >
                         </div>
-
-                        <div class="form-group">
-                            <label for="demo_max_dispositivos">Máximo de dispositivos para DEMO</label>
-                            <input 
-                                type="number" 
-                                id="demo_max_dispositivos" 
-                                name="demo_max_dispositivos"
-                                min="1" 
-                                max="99"
-                                required
-                            >
-                        </div>
                     </div>
 
                     <!-- CARD FULL -->
@@ -429,18 +417,6 @@
                                 name="full_dias_validez"
                                 min="1" 
                                 max="9999"
-                                required
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="full_max_dispositivos">Máximo de dispositivos para FULL</label>
-                            <input 
-                                type="number" 
-                                id="full_max_dispositivos" 
-                                name="full_max_dispositivos"
-                                min="1" 
-                                max="99"
                                 required
                             >
                         </div>
@@ -514,12 +490,11 @@
                 loadingContainer.style.display = 'none';
 
                 if (data.ok && data.config) {
-                    originalConfig = { ...data.config };
+                    // Por defecto siempre 1 dispositivo
+                    originalConfig = { ...data.config, demo_max_dispositivos: 1, full_max_dispositivos: 1 };
                     
                     document.getElementById('demo_dias_validez').value = data.config.demo_dias_validez;
-                    document.getElementById('demo_max_dispositivos').value = data.config.demo_max_dispositivos;
                     document.getElementById('full_dias_validez').value = data.config.full_dias_validez;
-                    document.getElementById('full_max_dispositivos').value = data.config.full_max_dispositivos;
 
                     configForm.style.display = 'block';
                 } else {
@@ -545,9 +520,9 @@
             try {
                 const payload = {
                     demo_dias_validez: parseInt(document.getElementById('demo_dias_validez').value),
-                    demo_max_dispositivos: parseInt(document.getElementById('demo_max_dispositivos').value),
+                    demo_max_dispositivos: 1,
                     full_dias_validez: parseInt(document.getElementById('full_dias_validez').value),
-                    full_max_dispositivos: parseInt(document.getElementById('full_max_dispositivos').value)
+                    full_max_dispositivos: 1
                 };
 
                 const response = await fetch(`${API_URL}/api/admin/license-config`, {
@@ -594,9 +569,7 @@
          */
         function resetForm() {
             document.getElementById('demo_dias_validez').value = originalConfig.demo_dias_validez;
-            document.getElementById('demo_max_dispositivos').value = originalConfig.demo_max_dispositivos;
             document.getElementById('full_dias_validez').value = originalConfig.full_dias_validez;
-            document.getElementById('full_max_dispositivos').value = originalConfig.full_max_dispositivos;
             document.getElementById('message').classList.remove('show');
         }
 

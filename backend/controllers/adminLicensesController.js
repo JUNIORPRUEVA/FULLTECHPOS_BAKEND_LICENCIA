@@ -73,6 +73,9 @@ async function createLicense(req, res) {
       maxDisp = tipoUpper === 'DEMO' ? config.demo_max_dispositivos : config.full_max_dispositivos;
     }
 
+    // FULLPOS: siempre 1 dispositivo
+    maxDisp = 1;
+
     // Validación final de los valores (ya sean del body o del config)
     if (!Number.isFinite(dias) || dias <= 0) {
       return res.status(400).json({ ok: false, message: 'dias_validez debe ser un número entero > 0' });
@@ -266,11 +269,8 @@ async function updateLicense(req, res) {
     }
 
     if (body.max_dispositivos !== undefined) {
-      const maxDisp = Number(body.max_dispositivos);
-      if (!Number.isFinite(maxDisp) || maxDisp <= 0) {
-        return res.status(400).json({ ok: false, message: 'max_dispositivos debe ser un número entero > 0' });
-      }
-      patch.max_dispositivos = Math.floor(maxDisp);
+      // FULLPOS: siempre 1 dispositivo
+      patch.max_dispositivos = 1;
     }
 
     if (body.estado !== undefined) {

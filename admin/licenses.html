@@ -273,7 +273,7 @@
         <div class="section">
             <h2 class="section-title">➕ Crear Nueva Licencia</h2>
             <p class="section-subtitle">
-                Completa el formulario para crear una nueva licencia. Los días y dispositivos se rellenarán automáticamente 
+                Completa el formulario para crear una nueva licencia. Los días se rellenarán automáticamente 
                 según la configuración del tipo de licencia que selecciones, pero puedes modificarlos si lo necesitas.
             </p>
 
@@ -364,17 +364,9 @@
                     </div>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="maxDispositivos">Máximo de Dispositivos *</label>
-                        <input type="number" id="maxDispositivos" name="max_dispositivos" min="1" max="99" required>
-                        <div class="auto-fill-hint" id="dispositivosHint"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notas">Notas (opcional)</label>
-                        <textarea id="notas" name="notas" placeholder="Agregá notas si lo necesitas..."></textarea>
-                    </div>
+                <div class="form-group">
+                    <label for="notas">Notas (opcional)</label>
+                    <textarea id="notas" name="notas" placeholder="Agregá notas si lo necesitas..."></textarea>
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 30px;">
@@ -497,13 +489,10 @@
                     
                     if (defaults) {
                         document.getElementById('diasValidez').value = defaults.dias_validez;
-                        document.getElementById('maxDispositivos').value = defaults.max_dispositivos;
                         
                         // Actualizar hints
                         document.getElementById('diasHint').textContent = 
                             `(Configuración predeterminada: ${defaults.dias_validez} días)`;
-                        document.getElementById('dispositivosHint').textContent = 
-                            `(Configuración predeterminada: ${defaults.max_dispositivos} dispositivos)`;
                     }
                 }
             });
@@ -574,11 +563,27 @@
                     }
                 });
 
-                const data = await response.json();
+                // Si la sesión expiró, volver a inicio.
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
+                }
+
+                const data = await response.json().catch(() => ({}));
 
                 const container = document.getElementById('licensesList');
 
-                if (data.ok && data.licenses && data.licenses.length > 0) {
+                if (!response.ok || !data.ok) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #991B1B;">
+                            <p>⚠️ No se pudieron cargar las licencias.</p>
+                            <p style="font-size: 0.9rem; margin-top: 10px;">${(data && data.message) ? String(data.message) : `HTTP ${response.status}`}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (Array.isArray(data.licenses) && data.licenses.length > 0) {
                     let html = `
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
@@ -589,7 +594,6 @@
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Clave</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Tipo</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Días</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Dispositivos</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Estado</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Válida Hasta</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Acciones</th>
@@ -619,7 +623,6 @@
                                 <td style="padding: 12px;">${license.license_key}</td>
                                 <td style="padding: 12px;">${icon} ${license.tipo}</td>
                                 <td style="padding: 12px;">${license.dias_validez}</td>
-                                <td style="padding: 12px;">${license.max_dispositivos}</td>
                                 <td style="padding: 12px;">
                                     <span style="background: ${statusColor}20; color: ${statusColor}; 
                                     padding: 4px 8px; border-radius: 4px; font-weight: 600;">
@@ -685,7 +688,8 @@
                     customer_id: document.getElementById('customer_id').value,
                     tipo: document.getElementById('licenseType').value.toUpperCase(),
                     dias_validez: parseInt(document.getElementById('diasValidez').value),
-                    max_dispositivos: parseInt(document.getElementById('maxDispositivos').value),
+                    // Por defecto siempre 1 dispositivo
+                    max_dispositivos: 1,
                     notas: document.getElementById('notas').value || null,
                     auto_activate: document.getElementById('autoActivate')?.checked !== false
                 };
@@ -984,14 +988,10 @@
                                         <option value="FULL">FULL</option>
                                     </select>
                                 </div>
-                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                                <div style="display:grid; grid-template-columns: 1fr; gap:12px;">
                                     <div>
                                         <label style="display:block; margin-bottom:6px; font-weight:700;">Días validez</label>
                                         <input id="editDias" type="number" min="1" style="width:100%; padding:10px; border:1px solid #D1D5DB; border-radius:8px;" />
-                                    </div>
-                                    <div>
-                                        <label style="display:block; margin-bottom:6px; font-weight:700;">Max dispositivos</label>
-                                        <input id="editMax" type="number" min="1" style="width:100%; padding:10px; border:1px solid #D1D5DB; border-radius:8px;" />
                                     </div>
                                 </div>
                                 <div>
@@ -1051,7 +1051,6 @@
                     <div><div style="color:#6B7280; font-size:0.85rem;">License Key</div><div style="font-family:monospace; font-weight:900; word-break:break-all;">${l.license_key}</div></div>
                     <div><div style="color:#6B7280; font-size:0.85rem;">Cliente</div><div style="font-weight:800;">${l.nombre_negocio || '—'}</div></div>
                     <div><div style="color:#6B7280; font-size:0.85rem;">Días validez</div><div style="font-weight:800;">${l.dias_validez}</div></div>
-                    <div><div style="color:#6B7280; font-size:0.85rem;">Max dispositivos</div><div style="font-weight:800;">${l.max_dispositivos}</div></div>
                     <div><div style="color:#6B7280; font-size:0.85rem;">Fecha inicio</div><div style="font-weight:800;">${fechaInicio}</div></div>
                     <div><div style="color:#6B7280; font-size:0.85rem;">Fecha fin</div><div style="font-weight:800;">${fechaFin}</div></div>
                     <div style="grid-column:1 / -1;"><div style="color:#6B7280; font-size:0.85rem;">Notas</div><div style="font-weight:700;">${l.notas ? l.notas : '—'}</div></div>
@@ -1158,7 +1157,6 @@
                 const l = data.license;
                 document.getElementById('editTipo').value = l.tipo;
                 document.getElementById('editDias').value = l.dias_validez;
-                document.getElementById('editMax').value = l.max_dispositivos;
                 document.getElementById('editEstado').value = l.estado;
                 document.getElementById('editNotas').value = l.notas || '';
 
@@ -1180,11 +1178,11 @@
 
             const tipo = document.getElementById('editTipo').value;
             const dias = Number(document.getElementById('editDias').value);
-            const maxDisp = Number(document.getElementById('editMax').value);
+            const maxDisp = 1;
             const estado = document.getElementById('editEstado').value;
             const notas = document.getElementById('editNotas').value;
 
-            if (!tipo || !estado || !Number.isFinite(dias) || dias <= 0 || !Number.isFinite(maxDisp) || maxDisp <= 0) {
+            if (!tipo || !estado || !Number.isFinite(dias) || dias <= 0) {
                 showMessage('❌ Revisa los campos (números > 0)', 'error');
                 return;
             }
@@ -1203,7 +1201,7 @@
                     body: JSON.stringify({
                         tipo,
                         dias_validez: Math.floor(dias),
-                        max_dispositivos: Math.floor(maxDisp),
+                        max_dispositivos: maxDisp,
                         estado,
                         notas: notas || null
                     })
