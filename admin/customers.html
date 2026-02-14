@@ -338,6 +338,12 @@
                     <h3>➕ Nuevo Cliente</h3>
                     <form id="createForm">
                         <div class="field">
+                            <label for="business_id">Business ID (opcional)</label>
+                            <input id="business_id" name="business_id" placeholder="Ej: a1b2c3d4e5f6..." />
+                            <div class="hint">Debe ser el mismo Business ID que genera el sistema del cliente (para licencias online por nube).</div>
+                        </div>
+
+                        <div class="field">
                             <label for="nombre_negocio">Nombre del negocio *</label>
                             <input id="nombre_negocio" name="nombre_negocio" placeholder="Ej: Colmado La Esquina" required />
                         </div>
@@ -387,12 +393,13 @@
                                     <th>Contacto</th>
                                     <th>Teléfono</th>
                                     <th>Email</th>
+                                    <th>Business ID</th>
                                     <th>Creado</th>
                                     <th style="text-align:right;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="customersBody">
-                                <tr><td colspan="6" style="color:#6B7280;">Cargando...</td></tr>
+                                <tr><td colspan="7" style="color:#6B7280;">Cargando...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -478,6 +485,7 @@
             e.preventDefault();
             clearMessage();
 
+            const business_id = (document.getElementById('business_id').value || '').trim();
             const nombre_negocio = (document.getElementById('nombre_negocio').value || '').trim();
             const contacto_nombre = (document.getElementById('contacto_nombre').value || '').trim();
             const contacto_telefono = (document.getElementById('contacto_telefono').value || '').trim();
@@ -499,6 +507,7 @@
                     method: 'POST',
                     headers: { 'content-type': 'application/json' },
                     body: JSON.stringify({
+                        business_id: business_id || null,
                         nombre_negocio,
                         contacto_nombre: contacto_nombre || null,
                         contacto_telefono,
@@ -532,13 +541,13 @@
         async function loadCustomers(page) {
             currentPage = Math.max(1, Number(page || 1) || 1);
             const body = document.getElementById('customersBody');
-            body.innerHTML = '<tr><td colspan="6" style="color:#6B7280;">Cargando...</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="color:#6B7280;">Cargando...</td></tr>';
 
             try {
                 const res = await apiFetch(`/api/admin/customers?page=${encodeURIComponent(currentPage)}&limit=${encodeURIComponent(limit)}`);
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
-                    body.innerHTML = `<tr><td colspan="6" style="color:#991B1B;">${data?.message || 'Error cargando clientes'}</td></tr>`;
+                    body.innerHTML = `<tr><td colspan="7" style="color:#991B1B;">${data?.message || 'Error cargando clientes'}</td></tr>`;
                     return;
                 }
 
@@ -553,7 +562,7 @@
                 document.getElementById('nextBtn').disabled = !hasNext;
 
                 if (!customers.length) {
-                    body.innerHTML = '<tr><td colspan="6" style="color:#6B7280;">No hay clientes aún.</td></tr>';
+                    body.innerHTML = '<tr><td colspan="7" style="color:#6B7280;">No hay clientes aún.</td></tr>';
                     return;
                 }
 
@@ -564,15 +573,20 @@
                     const email = c.contacto_email || '';
                     const created = formatDate(c.created_at);
                     const customerId = c.id || '';
+                    const businessId = c.business_id || '';
                     return `
                         <tr>
                             <td><strong>${escapeHtml(negocio)}</strong><div class="hint">${escapeHtml(c.rol_negocio || '')}</div></td>
                             <td>${escapeHtml(contacto)}</td>
                             <td>${escapeHtml(tel)}</td>
                             <td>${escapeHtml(email)}</td>
+                            <td style="font-family:monospace; font-weight:700;">${businessId ? escapeHtml(businessId) : '<span style="color:#6B7280;">—</span>'}</td>
                             <td>${escapeHtml(created)}</td>
                             <td class="actions">
                                 <button class="link-btn" type="button" onclick="copyText('${escapeAttr(customerId)}')">Copiar ID</button>
+                                <button class="link-btn" type="button" onclick="copyBusinessId('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Copiar Business ID</button>
+                                <button class="link-btn" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','${escapeAttr(businessId)}')">Asignar Business ID</button>
+                                <button class="link-btn" type="button" onclick="checkCloudLicense('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Ver estado nube</button>
                                 <button class="link-btn" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
                                 <button class="link-btn" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')" style="color:#991B1B;">Eliminar</button>
                             </td>
@@ -580,7 +594,88 @@
                     `;
                 }).join('');
             } catch (err) {
-                body.innerHTML = '<tr><td colspan="6" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
+                body.innerHTML = '<tr><td colspan="7" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
+            }
+        }
+
+        async function copyBusinessId(businessId) {
+            const id = String(businessId || '').trim();
+            if (!id) {
+                showMessage('err', 'Este cliente no tiene business_id todavía');
+                return;
+            }
+            await copyText(id);
+        }
+
+        async function setBusinessIdPrompt(customerId, negocio, currentBusinessId) {
+            const id = String(customerId || '').trim();
+            if (!id) return;
+
+            const current = String(currentBusinessId || '').trim();
+            const name = String(negocio || '').trim();
+
+            const next = prompt(
+                `Asignar Business ID al cliente${name ? ' "' + name + '"' : ''}.\n\n` +
+                (current ? `Actual: ${current}\n\n` : '') +
+                'Pega aquí el Business ID del cliente:',
+                current || ''
+            );
+
+            if (next === null) return;
+            const business_id = String(next || '').trim();
+            if (!business_id) {
+                showMessage('err', 'business_id es requerido');
+                return;
+            }
+
+            const force = Boolean(current && current !== business_id);
+            if (force) {
+                const ok = confirm('Este cliente ya tenía business_id distinto. ¿Reemplazarlo?');
+                if (!ok) return;
+            }
+
+            try {
+                const res = await apiFetch(`/api/admin/customers/${encodeURIComponent(id)}/business_id`, {
+                    method: 'PUT',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ business_id, force })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showMessage('err', data?.message || `Error asignando business_id (${res.status})`);
+                    return;
+                }
+
+                showMessage('ok', '✅ Business ID actualizado');
+                await loadCustomers(currentPage);
+            } catch (e) {
+                showMessage('err', 'No se pudo conectar con el servidor');
+            }
+        }
+
+        async function checkCloudLicense(businessId) {
+            const id = String(businessId || '').trim();
+            if (!id) {
+                showMessage('err', 'Este cliente no tiene business_id todavía');
+                return;
+            }
+
+            // Endpoint público: GET /businesses/:business_id/license
+            try {
+                const res = await fetch(`${API_URL}/businesses/${encodeURIComponent(id)}/license`, { method: 'GET' });
+                if (res.status === 204) {
+                    showMessage('err', '⏳ Aún no hay licencia activa para este business_id (estado nube: 204)');
+                    return;
+                }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showMessage('err', data?.message || `No se pudo consultar licencia (HTTP ${res.status})`);
+                    return;
+                }
+
+                showMessage('ok', `✅ Nube OK: licencia_token disponible (${String(data.plan || '').toUpperCase() || 'PLAN'})`);
+            } catch (e) {
+                showMessage('err', 'No se pudo conectar con el servidor para verificar nube');
             }
         }
 

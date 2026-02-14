@@ -106,6 +106,77 @@ async function register(req, res) {
 
     let customer = existingRes.rows[0] || null;
 
+    // If admin pre-created the customer without business_id, match by contact and attach business_id.
+    // This avoids unique constraint failures on contacto_telefono/contacto_email.
+    if (!customer) {
+      let byPhone = null;
+      if (phone) {
+        const byPhoneRes = await client.query(
+          `SELECT *
+           FROM customers
+           WHERE regexp_replace(coalesce(contacto_telefono, ''), '[^0-9]', '', 'g') = $1
+           ORDER BY created_at ASC
+           LIMIT 1
+           FOR UPDATE`,
+          [phone]
+        );
+        byPhone = byPhoneRes.rows[0] || null;
+      }
+
+      let byEmail = null;
+      if (!byPhone && email) {
+        const byEmailRes = await client.query(
+          `SELECT *
+           FROM customers
+           WHERE lower(coalesce(contacto_email, '')) = $1
+           ORDER BY created_at ASC
+           LIMIT 1
+           FOR UPDATE`,
+          [email]
+        );
+        byEmail = byEmailRes.rows[0] || null;
+      }
+
+      const matched = byPhone || byEmail;
+      if (matched) {
+        const existingBiz = asTrimmed(matched.business_id);
+        if (existingBiz && existingBiz !== business_id) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            ok: false,
+            code: 'BUSINESS_ID_CONFLICT',
+            message: 'Este cliente ya tiene otro business_id asignado'
+          });
+        }
+
+        const upd = await client.query(
+          `UPDATE customers
+           SET business_id = COALESCE(customers.business_id, $2),
+               nombre_negocio = $3,
+               rol_negocio = $4,
+               contacto_nombre = $5,
+               contacto_telefono = $6,
+               contacto_email = $7,
+               trial_start_at = COALESCE(customers.trial_start_at, $8),
+               app_version = COALESCE($9, customers.app_version)
+           WHERE id = $1
+           RETURNING *`,
+          [
+            matched.id,
+            business_id,
+            business_name,
+            role,
+            owner_name,
+            phone,
+            email || null,
+            trialStartAt,
+            app_version || null
+          ]
+        );
+        customer = upd.rows[0] || matched;
+      }
+    }
+
     if (!customer) {
       const ins = await client.query(
         `INSERT INTO customers (business_id, nombre_negocio, rol_negocio, contacto_nombre, contacto_telefono, contacto_email, trial_start_at, app_version)
@@ -171,7 +242,21 @@ async function register(req, res) {
 
     // 23505 = unique_violation
     if (error && error.code === '23505') {
-      return res.status(409).json({ ok: false, code: 'BUSINESS_ID_CONFLICT', message: 'business_id ya existe' });
+      const constraint = String(error.constraint || '');
+
+      if (constraint.includes('business_id') || constraint.includes('idx_customers_business_id_unique')) {
+        return res.status(409).json({ ok: false, code: 'BUSINESS_ID_CONFLICT', message: 'business_id ya existe' });
+      }
+
+      if (constraint.includes('contacto_telefono')) {
+        return res.status(409).json({ ok: false, code: 'PHONE_CONFLICT', message: 'Ya existe un cliente con ese teléfono' });
+      }
+
+      if (constraint.includes('contacto_email')) {
+        return res.status(409).json({ ok: false, code: 'EMAIL_CONFLICT', message: 'Ya existe un cliente con ese email' });
+      }
+
+      return res.status(409).json({ ok: false, code: 'CONFLICT', message: 'Conflicto: cliente duplicado' });
     }
 
     console.error('businesses.register error:', error);

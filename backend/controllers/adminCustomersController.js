@@ -11,7 +11,7 @@ function parsePagination(req) {
 
 async function createCustomer(req, res) {
   try {
-    const { nombre_negocio, contacto_nombre, contacto_telefono, contacto_email } = req.body || {};
+    const { nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio, business_id } = req.body || {};
 
     if (!nombre_negocio || !String(nombre_negocio).trim()) {
       return res.status(400).json({ ok: false, message: 'nombre_negocio es requerido' });
@@ -25,7 +25,9 @@ async function createCustomer(req, res) {
       nombre_negocio: String(nombre_negocio).trim(),
       contacto_nombre: contacto_nombre ? String(contacto_nombre).trim() : null,
       contacto_telefono: String(contacto_telefono).trim(),
-      contacto_email: contacto_email ? String(contacto_email).trim() : null
+      contacto_email: contacto_email ? String(contacto_email).trim() : null,
+      rol_negocio: rol_negocio ? String(rol_negocio).trim() : null,
+      business_id: business_id ? String(business_id).trim() : null
     });
 
     return res.status(201).json({ ok: true, customer });
@@ -39,6 +41,9 @@ async function createCustomer(req, res) {
       }
       if (constraint.includes('contacto_email')) {
         return res.status(409).json({ ok: false, message: 'Ya existe un cliente con ese contacto_email' });
+      }
+      if (constraint.includes('business_id') || constraint.includes('idx_customers_business_id_unique')) {
+        return res.status(409).json({ ok: false, message: 'Ya existe un cliente con ese business_id' });
       }
       return res.status(409).json({ ok: false, message: 'Ya existe un cliente con esos datos (duplicado)' });
     }
@@ -89,8 +94,64 @@ async function deleteCustomer(req, res) {
   }
 }
 
+async function setBusinessId(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ ok: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ ok: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const business_id = String(req.body?.business_id || '').trim();
+    const force = Boolean(req.body?.force);
+
+    if (!business_id) {
+      return res.status(400).json({ ok: false, message: 'business_id es requerido' });
+    }
+
+    const current = await customersModel.getCustomerById(customerId);
+    if (!current) {
+      return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+    }
+
+    if (current.business_id && String(current.business_id).trim() && !force) {
+      if (String(current.business_id).trim() !== business_id) {
+        return res.status(409).json({
+          ok: false,
+          code: 'BUSINESS_ID_ALREADY_SET',
+          message: 'Este cliente ya tiene business_id asignado (usa force para reemplazar)'
+        });
+      }
+    }
+
+    const updated = await customersModel.setCustomerBusinessId({ customerId, business_id });
+    if (!updated) {
+      return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+    }
+
+    return res.json({ ok: true, customer: updated });
+  } catch (error) {
+    console.error('admin.setBusinessId error:', error);
+
+    if (error && error.code === 'MIGRATION_PENDING') {
+      return res.status(501).json({ ok: false, message: 'Migración pendiente: falta columna business_id en customers' });
+    }
+
+    // 23505 = unique_violation
+    if (error && error.code === '23505') {
+      return res.status(409).json({ ok: false, message: 'Ese business_id ya está asignado a otro cliente' });
+    }
+
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
-  deleteCustomer
+  deleteCustomer,
+  setBusinessId
 };

@@ -1,7 +1,24 @@
 const { pool } = require('../db/pool');
 
-async function createCustomer({ nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio }) {
+async function createCustomer({ nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio, business_id }) {
   try {
+    if (business_id) {
+      const result = await pool.query(
+        `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio, business_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          nombre_negocio,
+          contacto_nombre || null,
+          contacto_telefono || null,
+          contacto_email || null,
+          rol_negocio || null,
+          String(business_id).trim()
+        ]
+      );
+      return result.rows[0];
+    }
+
     const result = await pool.query(
       `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio)
        VALUES ($1, $2, $3, $4, $5)
@@ -42,6 +59,24 @@ async function listCustomers({ limit, offset }) {
 async function getCustomerById(customerId) {
   const result = await pool.query('SELECT * FROM customers WHERE id = $1', [customerId]);
   return result.rows[0] || null;
+}
+
+async function setCustomerBusinessId({ customerId, business_id }) {
+  try {
+    const result = await pool.query(
+      'UPDATE customers SET business_id = $2 WHERE id = $1 RETURNING *',
+      [customerId, business_id]
+    );
+    return result.rows[0] || null;
+  } catch (e) {
+    // 42703 = undefined_column (migration pending)
+    if (e && e.code === '42703') {
+      const err = new Error('customers.business_id column missing');
+      err.code = 'MIGRATION_PENDING';
+      throw err;
+    }
+    throw e;
+  }
 }
 
 function normalizeEmail(email) {
@@ -115,6 +150,7 @@ module.exports = {
   createCustomer,
   listCustomers,
   getCustomerById,
+  setCustomerBusinessId,
   findCustomerByContact,
   deleteCustomerCascade
 };

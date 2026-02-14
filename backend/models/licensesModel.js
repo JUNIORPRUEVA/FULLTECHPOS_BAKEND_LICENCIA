@@ -54,7 +54,7 @@ async function listLicenses({ limit, offset, project_id, customer_id, tipo, esta
   params.push(offset);
 
   const rowsRes = await pool.query(
-    `SELECT l.*, c.nombre_negocio, p.code AS project_code, p.name AS project_name
+    `SELECT l.*, c.nombre_negocio, c.business_id, p.code AS project_code, p.name AS project_name
      FROM licenses l
      LEFT JOIN customers c ON c.id = l.customer_id
      LEFT JOIN projects p ON p.id = l.project_id
@@ -69,7 +69,7 @@ async function listLicenses({ limit, offset, project_id, customer_id, tipo, esta
 
 async function getLicenseById(licenseId) {
   const licRes = await pool.query(
-    `SELECT l.*, c.nombre_negocio, p.code AS project_code, p.name AS project_name
+    `SELECT l.*, c.nombre_negocio, c.business_id, p.code AS project_code, p.name AS project_name
      FROM licenses l
      LEFT JOIN customers c ON c.id = l.customer_id
      LEFT JOIN projects p ON p.id = l.project_id

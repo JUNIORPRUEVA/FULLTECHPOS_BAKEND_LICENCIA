@@ -581,6 +581,7 @@
                                 <tr style="background: #F3F4F6; border-bottom: 2px solid #E5E7EB;">
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Proyecto</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Cliente</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Business ID</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Clave</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Tipo</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 700;">Días</th>
@@ -605,10 +606,12 @@
                         const fechaFin = license.fecha_fin ? 
                             new Date(license.fecha_fin).toLocaleDateString('es-ES') : 'N/A';
 
+                        const biz = license.business_id || '';
                         html += `
                             <tr style="border-bottom: 1px solid #E5E7EB;">
                                 <td style="padding: 12px; font-weight: 900;">${(license.project_code || 'DEFAULT')}</td>
                                 <td style="padding: 12px; font-weight: 600;">${license.nombre_negocio || '—'}</td>
+                                <td style="padding: 12px; font-family:monospace; font-weight:800;">${biz ? biz : '<span style=\"color:#6B7280;\">—</span>'}</td>
                                 <td style="padding: 12px;">${license.license_key}</td>
                                 <td style="padding: 12px;">${icon} ${license.tipo}</td>
                                 <td style="padding: 12px;">${license.dias_validez}</td>
@@ -624,6 +627,7 @@
                                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                         <button onclick="openDetailModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#3B82F6; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Ver</button>
                                         <button onclick="openEditModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#10B981; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
+                                        <button onclick="checkCloudLicense('${String(biz).replace(/'/g, "\\'")}')" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#0F766E; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🌐 Estado nube</button>
                                         <button onclick="promptOfflineDownload('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#111827; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">💾 Offline</button>
                                         <button onclick="deleteLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#6B7280; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">Eliminar</button>
                                         ${license.estado === 'BLOQUEADA'
@@ -1288,6 +1292,30 @@
                 }
             } catch (e) {
                 showMessage('❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function checkCloudLicense(businessId) {
+            const id = String(businessId || '').trim();
+            if (!id) {
+                showMessage('❌ Este cliente no tiene business_id', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/businesses/${encodeURIComponent(id)}/license`, { method: 'GET' });
+                if (res.status === 204) {
+                    showMessage('⏳ Nube: aún no hay licencia activa (204)', 'error');
+                    return;
+                }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showMessage('❌ ' + (data?.message || `No se pudo consultar nube (HTTP ${res.status})`), 'error');
+                    return;
+                }
+                showMessage(`✅ Nube OK: token disponible (${String(data.plan || '').toUpperCase() || 'PLAN'})`, 'success');
+            } catch (e) {
+                showMessage('❌ Error consultando nube: ' + e.message, 'error');
             }
         }
     </script>
