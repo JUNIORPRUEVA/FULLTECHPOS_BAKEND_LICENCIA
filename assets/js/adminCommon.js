@@ -32,8 +32,11 @@
   }
 
   async function verifySession(sessionId) {
-    const response = await fetch(`${BACKEND_API_BASE}/api/verify-session?sessionId=${encodeURIComponent(sessionId)}`, {
-      cache: 'no-store'
+    const response = await fetch(`${BACKEND_API_BASE}/api/verify-session`, {
+      cache: 'no-store',
+      headers: {
+        'x-session-id': sessionId
+      }
     });
     const data = await response.json().catch(() => ({}));
     return { response, data };

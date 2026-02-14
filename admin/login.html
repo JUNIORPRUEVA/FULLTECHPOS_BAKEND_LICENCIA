@@ -353,7 +353,7 @@
         window.addEventListener('load', () => {
             const sessionId = localStorage.getItem('sessionId');
             if (sessionId) {
-                fetch(`/api/verify-session?sessionId=${sessionId}`)
+                fetch(`/api/verify-session?sessionId=${encodeURIComponent(sessionId)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
