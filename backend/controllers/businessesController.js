@@ -328,8 +328,12 @@ async function getLicense(req, res) {
 
     let chosen = null;
     let blocked = null;
+    let hasDeletedMarker = false;
     for (const l of licRes.rows) {
       if (!l) continue;
+      if (String(l.estado || '').toUpperCase() === 'ELIMINADA') {
+        hasDeletedMarker = true;
+      }
       if (String(l.estado || '').toUpperCase() === 'BLOQUEADA') {
         blocked = l;
         break;
@@ -370,6 +374,12 @@ async function getLicense(req, res) {
     }
 
     if (!chosen) {
+      // Si el admin eliminó la licencia explícitamente, NO emitir token TRIAL.
+      // Esto permite que el cliente aplique la revocación casi al instante.
+      if (hasDeletedMarker) {
+        return res.status(204).send();
+      }
+
       // TRIAL: si el negocio tiene trial_start_at y aún está dentro de ventana,
       // emitir un token TRIAL firmado. El cliente lo puede guardar local y
       // seguir funcionando offline-first.

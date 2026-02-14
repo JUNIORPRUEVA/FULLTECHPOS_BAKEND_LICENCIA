@@ -220,9 +220,12 @@ async function updateLicenseStatus(licenseId, estado) {
 }
 
 async function deleteLicense(licenseId) {
-  // Nota: license_activations tiene FK ON DELETE CASCADE hacia licenses.
+  // Soft-delete: mantener registro para auditoría y para que el endpoint
+  // /businesses/:business_id/license pueda distinguir una revocación explícita
+  // (no debe volver a emitir TRIAL si el admin eliminó la licencia).
   const res = await pool.query(
-    `DELETE FROM licenses
+    `UPDATE licenses
+     SET estado = 'ELIMINADA'
      WHERE id = $1
      RETURNING *`,
     [licenseId]
