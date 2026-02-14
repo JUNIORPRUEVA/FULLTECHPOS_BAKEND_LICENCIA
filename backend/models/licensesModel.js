@@ -38,7 +38,7 @@ async function createLicenseWithKey({
   }
 }
 
-async function listLicenses({ limit, offset, project_id, customer_id, tipo, estado }) {
+async function listLicenses({ limit, offset, project_id, customer_id, tipo, estado, excludeEstados }) {
   const baseFilters = [];
   if (project_id) baseFilters.push({ key: 'project_id', field: 'l.project_id', value: project_id });
   if (customer_id) baseFilters.push({ key: 'customer_id', field: 'l.customer_id', value: customer_id });
@@ -53,6 +53,14 @@ async function listLicenses({ limit, offset, project_id, customer_id, tipo, esta
       if (f.key === 'project_id' && !includeProjectFilter) continue;
       params.push(f.value);
       where.push(`${f.field} = $${params.length}`);
+    }
+
+    const excluded = Array.isArray(excludeEstados)
+      ? excludeEstados.map((x) => String(x || '').trim().toUpperCase()).filter(Boolean)
+      : [];
+    if (excluded.length) {
+      params.push(excluded);
+      where.push(`NOT (l.estado = ANY($${params.length}::text[]))`);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

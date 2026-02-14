@@ -153,7 +153,10 @@ async function listLicenses(req, res) {
       project_id: resolvedProjectId,
       customer_id,
       tipo,
-      estado
+      estado,
+      // Por defecto: no mostrar licencias eliminadas (soft-delete).
+      // Si el usuario filtra explícitamente por estado=ELIMINADA, sí deben aparecer.
+      excludeEstados: estado ? undefined : ['ELIMINADA']
     });
 
     return res.json({ ok: true, page, limit, total, licenses });
