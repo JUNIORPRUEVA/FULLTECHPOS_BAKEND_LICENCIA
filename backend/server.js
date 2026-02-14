@@ -42,6 +42,7 @@ const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
+const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
 const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
 const storePublicRoutes = require('./routes/storePublicRoutes');
@@ -209,6 +210,11 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 
 // APP ESCRITORIO
 app.use('/api/licenses', licensesPublicRoutes);
+
+// Registro de negocios + auto-licencia (sin device_id)
+// Soportamos ambas rutas por compatibilidad con la especificación.
+app.use('/api/businesses', businessesRoutes);
+app.use('/businesses', businessesRoutes);
 
 // SINCRONIZACIÓN (nube ⇆ local)
 if (!LICENSE_ONLY) {

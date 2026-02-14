@@ -39,6 +39,7 @@ async function run() {
     '008_add_customer_business_role.sql',
     '009_create_demo_trials.sql',
     '010_add_demo_trials_device_id.sql',
+    '015_add_customers_business_id.sql',
     '011_create_store_settings.sql',
     '012_create_products.sql',
     '013_create_product_media.sql',
