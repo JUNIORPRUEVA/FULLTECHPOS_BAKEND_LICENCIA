@@ -433,17 +433,12 @@
 
     <script>
         const API_URL = (() => {
-            const defaultApi = 'https://api.fulltechrd.com';
             const host = (window.location && window.location.hostname) ? String(window.location.hostname) : '';
+            const origin = (window.location && typeof window.location.origin === 'string') ? window.location.origin : '';
 
-            // Local dev: same-origin.
-            if (host === 'localhost' || host === '127.0.0.1') return '';
-
-            // If already hosted on the API domain, same-origin is fine.
-            if (host === 'api.fulltechrd.com') return '';
-
-            // If opened from file:// (host empty) or any other domain, use the API origin.
-            return defaultApi;
+            if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:3000';
+            if (origin && origin !== 'null') return origin;
+            return '';
         })();
         let sessionId = localStorage.getItem('sessionId');
         let originalConfig = {};

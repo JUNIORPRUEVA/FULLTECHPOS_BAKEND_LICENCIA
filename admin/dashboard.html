@@ -441,16 +441,21 @@
         // Verificar sesión
         async function verifySession() {
             try {
-                const response = await fetch(`${API_URL}/api/verify-session?sessionId=${sessionId}`);
-                const data = await response.json();
+                const response = await fetch(`${API_URL}/api/verify-session`, {
+                    cache: 'no-store',
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+                const data = await response.json().catch(() => ({}));
 
                 if (data.success) {
-                    document.getElementById('userName').textContent = data.username;
+                    document.getElementById('userName').textContent = data.username || 'Admin';
                 } else {
                     logout();
                 }
             } catch (error) {
-                logout();
+                console.warn('verifySession failed (transient):', error && error.message ? error.message : error);
             }
         }
 

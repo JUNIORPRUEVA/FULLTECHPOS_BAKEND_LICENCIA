@@ -402,7 +402,14 @@
     </div>
 
     <script>
-        const API_URL = '';
+        const API_URL = (() => {
+            const host = (window.location && window.location.hostname) ? String(window.location.hostname) : '';
+            const origin = (window.location && typeof window.location.origin === 'string') ? window.location.origin : '';
+
+            if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:3000';
+            if (origin && origin !== 'null') return origin;
+            return '';
+        })();
         let sessionId = localStorage.getItem('sessionId');
 
         // Verificar autenticación al cargar
@@ -427,16 +434,21 @@
          */
         async function verifySession() {
             try {
-                const response = await fetch(`${API_URL}/api/verify-session?sessionId=${sessionId}`);
-                const data = await response.json();
+                const response = await fetch(`${API_URL}/api/verify-session`, {
+                    cache: 'no-store',
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+                const data = await response.json().catch(() => ({}));
 
                 if (data.success) {
-                    document.getElementById('userName').textContent = data.username;
+                    document.getElementById('userName').textContent = data.username || 'Admin';
                 } else {
                     logout();
                 }
             } catch (error) {
-                logout();
+                console.warn('verifySession failed (transient):', error && error.message ? error.message : error);
             }
         }
 

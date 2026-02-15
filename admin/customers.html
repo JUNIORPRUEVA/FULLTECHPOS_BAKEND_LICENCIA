@@ -416,17 +416,17 @@
 
     <script>
         const API_URL = (() => {
-            const defaultApi = 'https://api.fulltechrd.com';
             const host = (window.location && window.location.hostname) ? String(window.location.hostname) : '';
+            const origin = (window.location && typeof window.location.origin === 'string') ? window.location.origin : '';
 
-            // Local dev: same-origin.
-            if (host === 'localhost' || host === '127.0.0.1') return '';
+            // Local dev: keep the historical localhost backend.
+            if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:3000';
 
-            // If already hosted on the API domain, same-origin is fine.
-            if (host === 'api.fulltechrd.com') return '';
+            // Production: same-origin (EasyPanel domain).
+            if (origin && origin !== 'null') return origin;
 
-            // If opened from file:// (host empty) or any other domain, use the API origin.
-            return defaultApi;
+            // Fallback when opened from file://
+            return '';
         })();
         let sessionId = localStorage.getItem('sessionId');
 
@@ -475,16 +475,22 @@
 
         async function verifySession() {
             try {
-                const response = await fetch(`${API_URL}/api/verify-session?sessionId=${sessionId}`);
-                const data = await response.json();
+                const response = await fetch(`${API_URL}/api/verify-session`, {
+                    cache: 'no-store',
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+                const data = await response.json().catch(() => ({}));
 
                 if (data.success) {
-                    document.getElementById('userName').textContent = data.username;
+                    document.getElementById('userName').textContent = data.username || 'Admin';
                 } else {
                     logout();
                 }
             } catch (error) {
-                logout();
+                // No forzar logout en errores transitorios de red.
+                console.warn('verifySession failed (transient):', error && error.message ? error.message : error);
             }
         }
 
