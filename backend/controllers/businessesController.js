@@ -288,6 +288,17 @@ async function register(req, res) {
       return res.status(409).json({ ok: false, code: 'CONFLICT', message: 'Conflicto: cliente duplicado' });
     }
 
+    const pgCode = error && error.code ? String(error.code) : '';
+    if (pgCode === '42703' || pgCode === '42P01') {
+      console.error('businesses.register DB schema error:', { code: pgCode, message: error?.message });
+      return res.status(500).json({
+        ok: false,
+        code: 'DB_SCHEMA_OUTDATED',
+        message: 'Esquema de base de datos desactualizado (faltan migraciones).',
+        pg: pgCode
+      });
+    }
+
     console.error('businesses.register error:', error);
     return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
   } finally {
@@ -424,6 +435,17 @@ async function getLicense(req, res) {
       expires_at: payload.expires_at
     });
   } catch (error) {
+    const pgCode = error && error.code ? String(error.code) : '';
+    if (pgCode === '42703' || pgCode === '42P01') {
+      console.error('businesses.getLicense DB schema error:', { code: pgCode, message: error?.message });
+      return res.status(500).json({
+        ok: false,
+        code: 'DB_SCHEMA_OUTDATED',
+        message: 'Esquema de base de datos desactualizado (faltan migraciones).',
+        pg: pgCode
+      });
+    }
+
     console.error('businesses.getLicense error:', error);
     return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
   }
