@@ -60,7 +60,10 @@ async function listLicenses({ limit, offset, project_id, customer_id, tipo, esta
       : [];
     if (excluded.length) {
       params.push(excluded);
-      where.push(`NOT (l.estado = ANY($${params.length}::text[]))`);
+      // `l.estado` is usually an ENUM (license_estado). Comparing ENUM = text errors.
+      // Cast to text for safe filtering even when exclude list contains values
+      // not present in the enum (e.g., soft-delete 'ELIMINADA' on older schemas).
+      where.push(`NOT (l.estado::text = ANY($${params.length}::text[]))`);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
