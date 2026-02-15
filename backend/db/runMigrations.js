@@ -24,6 +24,20 @@ require('dotenv').config({ path: dotenvPath });
 console.log(`Using env file: ${dotenvPath}`);
 const { pool } = require('./pool');
 
+async function ensureMigrationsTable(client) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      filename text PRIMARY KEY,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+}
+
+async function getAppliedMigrations(client) {
+  const res = await client.query('SELECT filename FROM schema_migrations');
+  return new Set(res.rows.map(r => String(r.filename)));
+}
+
 async function run() {
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
@@ -64,11 +78,25 @@ async function run() {
 
   const client = await pool.connect();
   try {
-    for (const file of selectedFiles) {
+    await ensureMigrationsTable(client);
+    const applied = await getAppliedMigrations(client);
+    const pendingFiles = selectedFiles.filter(f => !applied.has(f));
+
+    if (pendingFiles.length === 0) {
+      console.log('✅ No hay migraciones pendientes');
+      return;
+    }
+
+    for (const file of pendingFiles) {
       const fullPath = path.join(migrationsDir, file);
       const sql = fs.readFileSync(fullPath, 'utf8');
       console.log('Ejecutando migración:', file);
       await client.query(sql);
+
+      await client.query(
+        'INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT (filename) DO NOTHING',
+        [file]
+      );
     }
     console.log('✅ Migraciones completadas');
   } finally {

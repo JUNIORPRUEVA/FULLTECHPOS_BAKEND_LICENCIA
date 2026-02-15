@@ -24,6 +24,20 @@ Efectos:
 
 Incluye una migración que crea `projects` y agrega `project_id` a licencias.
 
+Notas importantes:
+- El runner crea automáticamente la tabla `schema_migrations` para registrar qué archivos `.sql` ya se aplicaron.
+- Puedes ejecutar `npm run migrate` múltiples veces: solo correrá las migraciones pendientes.
+
+Variables de entorno:
+- `DATABASE_URL` (recomendado)
+- `PGSSLMODE` (opcional): `disable` o `require`
+
+Flujo típico en una DB nueva (EasyPanel / servidor):
+1) Configura `DATABASE_URL` en el servicio backend.
+2) Despliega el contenedor/app.
+3) Ejecuta `npm run migrate` (una vez). Si lo vuelves a ejecutar, no rompe.
+4) Verifica conectividad con `GET /api/health/db`.
+
 ## Port
 - Default: `3000` (override with `PORT`)
 

@@ -5,7 +5,25 @@ const { pool } = require('../db/pool');
 // Cache en memoria (optimización). La fuente de verdad es Postgres.
 const activeSessions = Object.create(null);
 
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+const AUTH_DEBUG = String(process.env.AUTH_DEBUG || '').trim() === '1';
+
+function parseTtlMs() {
+  const daysRaw = String(process.env.ADMIN_SESSION_TTL_DAYS || '').trim();
+  const msRaw = String(process.env.ADMIN_SESSION_TTL_MS || '').trim();
+
+  if (msRaw && Number.isFinite(Number(msRaw))) {
+    return Math.max(60_000, Number(msRaw));
+  }
+
+  if (daysRaw && Number.isFinite(Number(daysRaw))) {
+    return Math.max(1, Number(daysRaw)) * 24 * 60 * 60 * 1000;
+  }
+
+  // Default: 30 días (admin sessions)
+  return 30 * 24 * 60 * 60 * 1000;
+}
+
+const SESSION_TTL_MS = parseTtlMs();
 let _tableEnsured = false;
 
 async function ensureAdminSessionsTable() {
@@ -61,6 +79,38 @@ function createSession(username) {
   return sessionId;
 }
 
+async function createSessionAsync(username) {
+  const sessionId = crypto.randomBytes(24).toString('hex');
+  const now = Date.now();
+  const expiresAt = new Date(now + SESSION_TTL_MS);
+
+  // Pre-fill cache for same-instance calls.
+  activeSessions[sessionId] = {
+    username,
+    loginTime: new Date(now),
+    expiresAt
+  };
+
+  await ensureAdminSessionsTable();
+  await pool.query(
+    `INSERT INTO admin_sessions (session_id, username, expires_at)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (session_id) DO UPDATE
+       SET username = EXCLUDED.username,
+           expires_at = EXCLUDED.expires_at`,
+    [sessionId, String(username || '').trim() || 'Admin', expiresAt]
+  );
+
+  if (AUTH_DEBUG) {
+    console.log('[sessions] created session', {
+      sidPrefix: sessionId.slice(0, 8),
+      ttlMs: SESSION_TTL_MS
+    });
+  }
+
+  return sessionId;
+}
+
 function verifySessionId(sessionId) {
   const sid = String(sessionId || '').trim();
   if (!sid) {
@@ -105,6 +155,19 @@ function verifySessionId(sessionId) {
 
 function verifySessionMiddleware(req, res, next) {
   const sessionId = req.headers['x-session-id'] || req.query.sessionId;
+  if (AUTH_DEBUG) {
+    const sid = String(sessionId || '');
+    console.log('[sessions] verify', {
+      method: req.method,
+      path: req.originalUrl || req.url,
+      hasSid: Boolean(sid),
+      sidPrefix: sid ? sid.slice(0, 8) : null,
+      origin: req.headers.origin || null,
+      host: req.headers.host || null,
+      xfProto: req.headers['x-forwarded-proto'] || null,
+      proto: req.protocol || null
+    });
+  }
   const result = verifySessionId(sessionId);
 
   // ok === true: pass
@@ -143,15 +206,30 @@ function verifySessionMiddleware(req, res, next) {
         return res.status(401).json({ success: false, message: 'Sesión expirada' });
       }
 
+      // Sliding expiration: extend on successful activity.
+      const newExpiresAt = new Date(Date.now() + SESSION_TTL_MS);
+      try {
+        await pool.query(
+          'UPDATE admin_sessions SET last_seen_at = NOW(), expires_at = $2 WHERE session_id = $1',
+          [sid, newExpiresAt]
+        );
+      } catch (_) {}
+
       // Update cache + last_seen
       activeSessions[sid] = {
         username: row.username,
         loginTime: new Date(),
-        expiresAt: expiresAt || new Date(Date.now() + SESSION_TTL_MS)
+        expiresAt: newExpiresAt
       };
-      try {
-        await pool.query('UPDATE admin_sessions SET last_seen_at = NOW() WHERE session_id = $1', [sid]);
-      } catch (_) {}
+
+      if (AUTH_DEBUG) {
+        const now = Date.now();
+        const expMs = newExpiresAt.getTime();
+        console.log('[sessions] ok', {
+          sidPrefix: sid.slice(0, 8),
+          expiresInSec: Math.round((expMs - now) / 1000)
+        });
+      }
 
       req.sessionId = sid;
       req.adminUser = row.username;
@@ -176,6 +254,7 @@ function destroySession(sessionId) {
 module.exports = {
   activeSessions,
   createSession,
+  createSessionAsync,
   verifySessionId,
   verifySessionMiddleware,
   destroySession

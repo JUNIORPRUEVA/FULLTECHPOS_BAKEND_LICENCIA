@@ -58,6 +58,10 @@ const { pool } = require('./db/pool');
 const app = express();
 const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
 
+// Behind reverse proxies (EasyPanel), this enables correct protocol detection.
+// Important for secure cookies and accurate request logging.
+app.set('trust proxy', 1);
+
 // ==========================================
 // HEALTH CHECKS (containers / EasyPanel)
 // ==========================================
@@ -98,9 +102,32 @@ app.get('/health/db', async (req, res) => {
 app.use(bodyParser.json({ limit: '25mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '25mb' }));
 
-// CORS básico para permitir que la landing (ej. :8000) llame a la API (:3000)
+// CORS (si hay cookies/credenciales, NO usar '*')
+// Configura `CORS_ORIGINS` como lista separada por coma.
+const corsOrigins = String(process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+function isOriginAllowed(origin) {
+  if (!origin) return false;
+  if (corsOrigins.length === 0) return true; // permissive default (dev) if not set
+  return corsOrigins.includes(origin);
+}
+
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowOrigin = isOriginAllowed(origin) ? origin : null;
+
+  if (allowOrigin) {
+    res.header('Access-Control-Allow-Origin', allowOrigin);
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    // Non-browser calls (no Origin) or disallowed origins.
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.header(
     'Access-Control-Allow-Headers',
@@ -175,13 +202,25 @@ app.use('/api/admin', adminStoreSettingsRoutes);
 // Credenciales fijas (MUY BÁSICO - para desarrollo)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'fulltechsd@gmail.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ayleen10';
+const AUTH_DEBUG = String(process.env.AUTH_DEBUG || '').trim() === '1';
 
 // POST /api/login - Verificar credenciales
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
+  if (AUTH_DEBUG) {
+    console.log('[auth] login attempt', {
+      userProvided: String(username || '').trim() ? true : false,
+      origin: req.headers.origin || null,
+      host: req.headers.host || null,
+      xfProto: req.headers['x-forwarded-proto'] || null,
+      proto: req.protocol || null
+    });
+  }
+
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    const sessionId = sessions.createSession(username);
+    // Important: await DB insert so sessions work across instances / restarts.
+    const sessionId = await sessions.createSessionAsync(username);
 
     res.json({
       success: true,
@@ -252,15 +291,9 @@ app.post('/api/logout', sessions.verifySessionMiddleware, (req, res) => {
 });
 
 // GET /api/verify-session - Verificar si la sesión es válida
-app.get('/api/verify-session', (req, res) => {
-  const sessionId = req.headers['x-session-id'] || req.query.sessionId;
-
-  const result = sessions.verifySessionId(sessionId);
-  if (result.ok) {
-    return res.json({ success: true, username: result.session.username });
-  }
-
-  return res.status(401).json({ success: false, message: 'No autenticado' });
+// Importante: usa middleware para soportar sesiones respaldadas por Postgres.
+app.get('/api/verify-session', sessions.verifySessionMiddleware, (req, res) => {
+  return res.json({ success: true, username: req.adminUser || 'Admin' });
 });
 
 // ==========================================

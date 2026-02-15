@@ -5,13 +5,10 @@
 
 (function () {
   const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-  // Prefer a stable API origin in production to avoid mismatches between
-  // where the static admin is hosted vs where the API lives.
-  const BACKEND_API_BASE = isLocal
-    ? 'http://127.0.0.1:3000'
-    : (window.location.origin.includes('api.fulltechrd.com')
-        ? window.location.origin
-        : 'https://api.fulltechrd.com');
+  // Default: same-origin. This avoids "session expired" issues when deploying
+  // to a new domain (e.g. EasyPanel) because sessions are bound to the backend.
+  // Local dev keeps the historical localhost:3000 default.
+  const BACKEND_API_BASE = isLocal ? 'http://127.0.0.1:3000' : window.location.origin;
 
   function getReturnTo() {
     const params = new URLSearchParams(window.location.search);
@@ -44,7 +41,7 @@
 
   function redirectToLogin() {
     const returnTo = getReturnTo() || window.location.href;
-    const url = `${BACKEND_API_BASE}/admin/login.html?returnTo=${encodeURIComponent(returnTo)}`;
+    const url = `/admin/login.html?returnTo=${encodeURIComponent(returnTo)}`;
     window.location.href = url;
   }
 
@@ -76,8 +73,10 @@
       if (el) el.textContent = data.username || 'Admin';
       return sessionId;
     } catch (_) {
-      logout();
-      return null;
+      // No forzar logout en errores transitorios (red/proxy).
+      // Mantener la sesión local y permitir reintentos.
+      console.warn('[adminCommon] verifySession failed (transient).');
+      return sessionId;
     }
   }
 
