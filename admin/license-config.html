@@ -133,7 +133,9 @@
             letter-spacing: -0.2px;
         }
 
-        input[type="number"] {
+        input[type="number"],
+        input[type="text"],
+        input[type="password"] {
             padding: 12px 14px;
             border: 2px solid #E5E7EB;
             border-radius: 9px;
@@ -144,7 +146,9 @@
             transition: all 0.3s ease;
         }
 
-        input[type="number"]:focus {
+        input[type="number"]:focus,
+        input[type="text"]:focus,
+        input[type="password"]:focus {
             outline: none;
             border-color: #10B981;
             background-color: white;
@@ -354,6 +358,79 @@
             <p>Bienvenido, <strong id="userName">Admin</strong></p>
             <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
         </div>
+
+        <!-- SECCIÓN EVOLUTION API -->
+        <div class="section">
+            <h2 class="section-title">📲 Recuperación por Evolution API</h2>
+            <p class="section-subtitle">
+                Configura aquí la instancia de Evolution API para enviar el código OTP cuando el cliente use
+                "Olvidé mi contraseña" en FULLPOS (login local en su PC).
+            </p>
+
+            <div id="evolutionMessage" class="message"></div>
+
+            <div id="evolutionLoading" class="loading" style="display: none;">
+                <div class="spinner"></div> Cargando configuración Evolution...
+            </div>
+
+            <form id="evolutionForm" style="display: none;">
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="card-icon">🔌</span>
+                            Conexión Evolution
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ev_enabled">Habilitado (1/0)</label>
+                            <input type="number" id="ev_enabled" min="0" max="1" step="1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ev_base_url">Base URL</label>
+                            <input type="text" id="ev_base_url" placeholder="https://evo.tudominio.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ev_instance_name">Nombre de instancia</label>
+                            <input type="text" id="ev_instance_name" placeholder="fullpos-instance" required>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="card-icon">🔐</span>
+                            Seguridad y OTP
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ev_api_key">API Key (dejar vacío para conservar)</label>
+                            <input type="password" id="ev_api_key" placeholder="Nueva API key">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ev_api_key_masked">API Key actual</label>
+                            <input type="text" id="ev_api_key_masked" disabled>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ev_from_number">Número remitente (opcional)</label>
+                            <input type="text" id="ev_from_number" placeholder="18095551234">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ev_otp_ttl_minutes">TTL código (minutos)</label>
+                            <input type="number" id="ev_otp_ttl_minutes" min="1" max="60" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" class="btn-reset" onclick="resetEvolutionForm()">Cancelar</button>
+                    <button type="submit" class="btn-save" id="evolutionSubmitBtn">Guardar Evolution</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="container">
@@ -442,6 +519,7 @@
         })();
         let sessionId = localStorage.getItem('sessionId');
         let originalConfig = {};
+        let originalEvolutionConfig = {};
 
         // Verificar autenticación al cargar
         window.addEventListener('load', () => {
@@ -459,7 +537,113 @@
 
             verifySession();
             loadConfiguration();
+            loadEvolutionConfiguration();
         });
+
+        async function loadEvolutionConfiguration() {
+            const loading = document.getElementById('evolutionLoading');
+            const form = document.getElementById('evolutionForm');
+
+            loading.style.display = 'block';
+            form.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/evolution-config`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (response.ok && data.ok && data.config) {
+                    originalEvolutionConfig = { ...data.config };
+
+                    document.getElementById('ev_enabled').value = data.config.enabled ? 1 : 0;
+                    document.getElementById('ev_base_url').value = data.config.base_url || '';
+                    document.getElementById('ev_instance_name').value = data.config.instance_name || '';
+                    document.getElementById('ev_api_key').value = '';
+                    document.getElementById('ev_api_key_masked').value = data.config.api_key_masked || '(sin clave)';
+                    document.getElementById('ev_from_number').value = data.config.from_number || '';
+                    document.getElementById('ev_otp_ttl_minutes').value = data.config.otp_ttl_minutes || 10;
+
+                    form.style.display = 'block';
+                    return;
+                }
+
+                showEvolutionMessage('Error al cargar configuración de Evolution', 'error');
+            } catch (error) {
+                loading.style.display = 'none';
+                form.style.display = 'block';
+                showEvolutionMessage('Error de conexión: ' + error.message, 'error');
+            }
+        }
+
+        document.getElementById('evolutionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('evolutionSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="display: inline-block; margin-right: 8px;"></div> Guardando...';
+
+            try {
+                const payload = {
+                    enabled: Number(document.getElementById('ev_enabled').value) === 1,
+                    base_url: document.getElementById('ev_base_url').value.trim(),
+                    instance_name: document.getElementById('ev_instance_name').value.trim(),
+                    from_number: document.getElementById('ev_from_number').value.trim(),
+                    otp_ttl_minutes: parseInt(document.getElementById('ev_otp_ttl_minutes').value, 10)
+                };
+
+                const apiKey = document.getElementById('ev_api_key').value.trim();
+                if (apiKey) payload.api_key = apiKey;
+
+                const response = await fetch(`${API_URL}/api/admin/evolution-config`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (response.ok && data.ok && data.config) {
+                    originalEvolutionConfig = { ...data.config };
+                    document.getElementById('ev_api_key').value = '';
+                    document.getElementById('ev_api_key_masked').value = data.config.api_key_masked || '(sin clave)';
+                    showEvolutionMessage('✅ Configuración de Evolution guardada', 'success');
+                    return;
+                }
+
+                showEvolutionMessage('❌ ' + (data.message || 'Error al guardar Evolution'), 'error');
+            } catch (error) {
+                showEvolutionMessage('❌ Error de conexión: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar Evolution';
+            }
+        });
+
+        function resetEvolutionForm() {
+            document.getElementById('ev_enabled').value = originalEvolutionConfig.enabled ? 1 : 0;
+            document.getElementById('ev_base_url').value = originalEvolutionConfig.base_url || '';
+            document.getElementById('ev_instance_name').value = originalEvolutionConfig.instance_name || '';
+            document.getElementById('ev_api_key').value = '';
+            document.getElementById('ev_api_key_masked').value = originalEvolutionConfig.api_key_masked || '(sin clave)';
+            document.getElementById('ev_from_number').value = originalEvolutionConfig.from_number || '';
+            document.getElementById('ev_otp_ttl_minutes').value = originalEvolutionConfig.otp_ttl_minutes || 10;
+            document.getElementById('evolutionMessage').classList.remove('show');
+        }
+
+        function showEvolutionMessage(message, type) {
+            const messageEl = document.getElementById('evolutionMessage');
+            messageEl.textContent = message;
+            messageEl.className = `message show ${type}`;
+        }
 
         /**
          * Cargar configuración actual desde el backend
