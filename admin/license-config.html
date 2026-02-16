@@ -194,6 +194,76 @@
 
     .field { display: grid; gap: 6px; }
 
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1.8px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      min-height: 44px;
+    }
+
+    .switch-label {
+      font-size: .9rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .switch-wrap {
+      position: relative;
+      width: 52px;
+      height: 30px;
+      flex: 0 0 auto;
+    }
+
+    .switch-wrap input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #cbd5e1;
+      transition: .2s;
+      border-radius: 999px;
+    }
+
+    .switch-slider::before {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+
+    .switch-wrap input:checked + .switch-slider {
+      background: var(--ok);
+    }
+
+    .switch-wrap input:checked + .switch-slider::before {
+      transform: translateX(22px);
+    }
+
+    .switch-state {
+      font-size: .82rem;
+      font-weight: 800;
+      color: #334155;
+      min-width: 34px;
+      text-align: right;
+    }
+
     label {
       font-size: .87rem;
       font-weight: 700;
@@ -434,8 +504,17 @@
 
             <div class="fields-2">
               <div class="field">
-                <label for="ev_enabled">Habilitado (1 = Sí, 0 = No)</label>
-                <input type="number" id="ev_enabled" min="0" max="1" step="1" required>
+                <label for="ev_enabled">Habilitado</label>
+                <div class="switch-row">
+                  <span class="switch-label">Recuperación OTP</span>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <label class="switch-wrap" for="ev_enabled">
+                      <input type="checkbox" id="ev_enabled">
+                      <span class="switch-slider"></span>
+                    </label>
+                    <span class="switch-state" id="ev_enabled_state">OFF</span>
+                  </div>
+                </div>
               </div>
               <div class="field">
                 <label for="ev_otp_ttl_minutes">TTL del código (minutos)</label>
@@ -571,6 +650,13 @@
       document.getElementById('statusInstance').textContent = originalEvolutionConfig.instance_name || '-';
     }
 
+    function refreshEnabledSwitchLabel() {
+      const isEnabled = Boolean(document.getElementById('ev_enabled').checked);
+      const stateEl = document.getElementById('ev_enabled_state');
+      stateEl.textContent = isEnabled ? 'ON' : 'OFF';
+      stateEl.style.color = isEnabled ? '#065f46' : '#334155';
+    }
+
     async function loadLicenseConfiguration() {
       const loading = document.getElementById('licenseLoading');
       const form = document.getElementById('licenseForm');
@@ -679,7 +765,7 @@
         if (response.ok && data.ok && data.config) {
           originalEvolutionConfig = { ...data.config };
 
-          document.getElementById('ev_enabled').value = data.config.enabled ? 1 : 0;
+          document.getElementById('ev_enabled').checked = Boolean(data.config.enabled);
           document.getElementById('ev_otp_ttl_minutes').value = data.config.otp_ttl_minutes || 10;
           document.getElementById('ev_base_url').value = data.config.base_url || '';
           document.getElementById('ev_instance_name').value = data.config.instance_name || '';
@@ -688,6 +774,7 @@
           document.getElementById('ev_from_number').value = data.config.from_number || '';
           document.getElementById('ev_send_timeout_ms').value = data.config.send_timeout_ms || 12000;
           document.getElementById('ev_template_text').value = data.config.template_text || '';
+          refreshEnabledSwitchLabel();
 
           form.style.display = 'block';
           setBadge('evolutionBadge', data.config.enabled ? 'Habilitado' : 'Deshabilitado', data.config.enabled ? 'ok' : '');
@@ -714,7 +801,7 @@
 
       try {
         const payload = {
-          enabled: Number(document.getElementById('ev_enabled').value) === 1,
+          enabled: Boolean(document.getElementById('ev_enabled').checked),
           otp_ttl_minutes: parseInt(document.getElementById('ev_otp_ttl_minutes').value, 10),
           base_url: document.getElementById('ev_base_url').value.trim(),
           instance_name: document.getElementById('ev_instance_name').value.trim(),
@@ -762,7 +849,7 @@
     });
 
     function resetEvolutionForm() {
-      document.getElementById('ev_enabled').value = originalEvolutionConfig.enabled ? 1 : 0;
+      document.getElementById('ev_enabled').checked = Boolean(originalEvolutionConfig.enabled);
       document.getElementById('ev_otp_ttl_minutes').value = originalEvolutionConfig.otp_ttl_minutes || 10;
       document.getElementById('ev_base_url').value = originalEvolutionConfig.base_url || '';
       document.getElementById('ev_instance_name').value = originalEvolutionConfig.instance_name || '';
@@ -771,8 +858,11 @@
       document.getElementById('ev_from_number').value = originalEvolutionConfig.from_number || '';
       document.getElementById('ev_send_timeout_ms').value = originalEvolutionConfig.send_timeout_ms || 12000;
       document.getElementById('ev_template_text').value = originalEvolutionConfig.template_text || '';
+      refreshEnabledSwitchLabel();
       document.getElementById('evolutionMessage').classList.remove('show');
     }
+
+    document.getElementById('ev_enabled').addEventListener('change', refreshEnabledSwitchLabel);
 
     async function verifySession() {
       try {
