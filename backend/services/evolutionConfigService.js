@@ -42,7 +42,7 @@ async function ensureRow() {
       id, enabled, base_url, instance_name, api_key, from_number,
       otp_ttl_minutes, send_timeout_ms, template_text, created_at, updated_at
     )
-    VALUES ($1, false, NULL, NULL, NULL, NULL, 10, 12000, $2, now(), now())
+    VALUES ($1, true, NULL, NULL, NULL, NULL, 10, 12000, $2, now(), now())
     ON CONFLICT (id) DO NOTHING`,
     [SINGLETON_ID, DEFAULT_TEMPLATE]
   );

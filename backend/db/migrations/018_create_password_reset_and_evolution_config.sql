@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS evolution_config (
   id uuid PRIMARY KEY DEFAULT '00000000-0000-0000-0000-000000000001'::uuid,
-  enabled boolean NOT NULL DEFAULT false,
+  enabled boolean NOT NULL DEFAULT true,
   base_url text,
   instance_name text,
   api_key text,
@@ -34,7 +34,7 @@ INSERT INTO evolution_config (
 )
 VALUES (
   '00000000-0000-0000-0000-000000000001'::uuid,
-  false,
+  true,
   NULL,
   NULL,
   NULL,
