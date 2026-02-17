@@ -249,6 +249,77 @@
             border-color: rgba(5, 66, 44, 0.55);
         }
 
+        .actions-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .actions-trigger {
+            background: #FFFFFF;
+            color: #05422C;
+            border: 1px solid #CDE3D8;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+
+        .actions-trigger:hover {
+            background: #F0F9F4;
+            color: #05422C;
+            border-color: #99CCB5;
+        }
+
+        .actions-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            min-width: 210px;
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
+            padding: 8px;
+            display: none;
+            z-index: 50;
+        }
+
+        .actions-menu.show {
+            display: block;
+        }
+
+        .actions-menu-item {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            color: #0F172A;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .actions-menu-item:hover {
+            background: #F8FAFC;
+            border-color: #E5E7EB;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .actions-menu-item.token {
+            color: #05422C;
+        }
+
+        .actions-menu-item.danger {
+            color: #991B1B;
+        }
+
         th {
             background: #F3F4F6;
             font-weight: 800;
@@ -375,6 +446,21 @@
             td.actions .link-btn {
                 width: 100%;
                 text-align: left;
+            }
+
+            .actions-dropdown {
+                width: 100%;
+            }
+
+            .actions-trigger {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .actions-menu {
+                left: 0;
+                right: 0;
+                min-width: 100%;
             }
         }
     </style>
@@ -670,6 +756,7 @@
                     const created = formatDate(c.created_at);
                     const customerId = c.id || '';
                     const businessId = c.business_id || '';
+                    const menuId = `actions_menu_${String(customerId).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
                     return `
                         <tr>
                             <td data-label="Negocio"><strong>${escapeHtml(negocio)}</strong><div class="hint">${escapeHtml(c.rol_negocio || '')}</div></td>
@@ -679,14 +766,16 @@
                             <td data-label="Business ID" style="font-family:monospace; font-weight:700;">${businessId ? escapeHtml(businessId) : '<span style="color:#6B7280;">—</span>'}</td>
                             <td data-label="Creado">${escapeHtml(created)}</td>
                             <td data-label="Acciones" class="actions">
-                                <div class="row-actions">
-                                    <button class="link-btn token-btn" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')">Token reset</button>
-                                    ${businessId
-                                        ? ''
-                                        : `<button class="link-btn" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','')">Asignar Business ID</button>`
-                                    }
-                                    <button class="link-btn" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
-                                    <button class="link-btn" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')" style="color:#991B1B;">Eliminar</button>
+                                <div class="actions-dropdown">
+                                    <button class="actions-trigger" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')">
+                                        Acciones <span>▾</span>
+                                    </button>
+                                    <div class="actions-menu" id="${escapeAttr(menuId)}">
+                                        <button class="actions-menu-item token" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')">Generar token reset</button>
+                                        <button class="actions-menu-item" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','${escapeAttr(businessId)}')">Asignar Business ID</button>
+                                        <button class="actions-menu-item" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
+                                        <button class="actions-menu-item danger" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')">Eliminar cliente</button>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -698,6 +787,7 @@
         }
 
         async function setBusinessIdPrompt(customerId, negocio, currentBusinessId) {
+            closeAllActionsMenus();
             const id = String(customerId || '').trim();
             if (!id) return;
 
@@ -745,6 +835,7 @@
 
 
         async function deleteCustomer(customerId, negocio) {
+            closeAllActionsMenus();
             const id = String(customerId || '').trim();
             if (!id) return;
 
@@ -796,14 +887,44 @@
             return String(value || '').replace(/'/g, "\\'");
         }
 
+        function closeAllActionsMenus(exceptId) {
+            const openMenus = document.querySelectorAll('.actions-menu.show');
+            openMenus.forEach((menu) => {
+                if (!exceptId || menu.id !== exceptId) {
+                    menu.classList.remove('show');
+                }
+            });
+        }
+
+        function toggleActionsMenu(event, menuId) {
+            if (event) event.stopPropagation();
+            const id = String(menuId || '').trim();
+            if (!id) return;
+
+            const menu = document.getElementById(id);
+            if (!menu) return;
+
+            const isOpen = menu.classList.contains('show');
+            closeAllActionsMenus();
+            if (!isOpen) {
+                menu.classList.add('show');
+            }
+        }
+
+        document.addEventListener('click', () => {
+            closeAllActionsMenus();
+        });
+
 
         function goToLicenses(customerId) {
+            closeAllActionsMenus();
             const id = String(customerId || '').trim();
             if (!id) return;
             window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(id)}`;
         }
 
         function goToSupportToken(businessId) {
+            closeAllActionsMenus();
             const id = String(businessId || '').trim();
             if (!id) {
                 showMessage('err', 'Este cliente no tiene business_id. Asígnalo primero.');
