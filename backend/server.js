@@ -47,6 +47,7 @@ const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
 const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
 const adminEvolutionConfigRoutes = require('./routes/adminEvolutionConfigRoutes');
+const adminSupportResetRoutes = require('./routes/adminSupportResetRoutes');
 const storePublicRoutes = require('./routes/storePublicRoutes');
 const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
@@ -197,6 +198,7 @@ app.use('/api/public', publicAssetsRoutes);
 app.use('/api/admin', adminProductsRoutes);
 app.use('/api/admin', adminStoreSettingsRoutes);
 app.use('/api/admin/evolution-config', adminEvolutionConfigRoutes);
+app.use('/api/admin/support-reset', adminSupportResetRoutes);
 
 // Recuperación de contraseña para login local FULLPOS (código OTP vía Evolution)
 app.use('/api/password-reset', passwordResetRoutes);

@@ -57,6 +57,7 @@ async function run() {
     '017_add_license_estado_eliminada.sql',
     '018_create_password_reset_and_evolution_config.sql',
     '019_set_evolution_enabled_default_true.sql',
+    '020_create_support_reset_tokens.sql',
     '011_create_store_settings.sql',
     '012_create_products.sql',
     '013_create_product_media.sql',
