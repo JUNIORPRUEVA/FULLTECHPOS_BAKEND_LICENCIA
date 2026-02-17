@@ -55,8 +55,6 @@ async function run() {
     '010_add_demo_trials_device_id.sql',
     '015_add_customers_business_id.sql',
     '017_add_license_estado_eliminada.sql',
-    '018_create_password_reset_and_evolution_config.sql',
-    '019_set_evolution_enabled_default_true.sql',
     '020_create_support_reset_tokens.sql',
     '011_create_store_settings.sql',
     '012_create_products.sql',

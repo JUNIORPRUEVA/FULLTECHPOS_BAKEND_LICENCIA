@@ -443,7 +443,7 @@
     <section class="hero">
       <h2>Panel de Configuración por Sesiones</h2>
       <p>
-        Administra licencias por defecto y recuperación de contraseña con Evolution API desde un solo lugar.
+        Administra licencias por defecto y recuperación de contraseña con token manual de soporte.
         El diseño está optimizado para escritorio y móvil para gestionar cambios incluso desde tu teléfono.
       </p>
     </section>
@@ -488,113 +488,41 @@
       <article class="session-card">
         <div class="session-head">
           <div>
-            <h3 class="session-title">Sesión 2 · Recuperación de contraseña (Evolution)</h3>
-            <p class="session-sub">Configura OTP por WhatsApp y genera tokens manuales de soporte (15 minutos).</p>
+            <h3 class="session-title">Sesión 2 · Recuperación con token de soporte</h3>
+            <p class="session-sub">Genera token manual temporal para resetear contraseña local del cliente.</p>
           </div>
-          <span class="badge" id="evolutionBadge">Cargando...</span>
+          <span class="badge ok" id="supportBadge">Activo</span>
         </div>
         <div class="session-body">
-          <div id="evolutionMessage" class="message"></div>
-          <div id="evolutionLoading" class="loading"><span class="spinner"></span> Cargando configuración Evolution...</div>
+          <div class="inline-note" style="margin-top:10px;">
+            Valida al cliente por teléfono, genera token temporal y compártelo. El token es de un solo uso.
+          </div>
 
-          <form id="evolutionForm" style="display:none;">
-            <div class="inline-note">
-              Puedes cambiar la API key cuando quieras. Si escribes una nueva, reemplaza la actual de inmediato.
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="ev_enabled">Habilitado</label>
-                <div class="switch-row">
-                  <span class="switch-label">Recuperación OTP</span>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <label class="switch-wrap" for="ev_enabled">
-                      <input type="checkbox" id="ev_enabled">
-                      <span class="switch-slider"></span>
-                    </label>
-                    <span class="switch-state" id="ev_enabled_state">OFF</span>
-                  </div>
-                </div>
-              </div>
-              <div class="field">
-                <label for="ev_otp_ttl_minutes">TTL del código (minutos)</label>
-                <input type="number" id="ev_otp_ttl_minutes" min="1" max="60" required>
-              </div>
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="ev_base_url">Base URL de Evolution</label>
-                <input type="text" id="ev_base_url" placeholder="https://evolution.tudominio.com">
-              </div>
-              <div class="field">
-                <label for="ev_instance_name">Nombre de instancia</label>
-                <input type="text" id="ev_instance_name" placeholder="fullpos-instance">
-              </div>
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="ev_api_key">Nueva API key (opcional)</label>
-                <input type="password" id="ev_api_key" placeholder="Escribe para reemplazar la key actual">
-              </div>
-              <div class="field">
-                <label for="ev_api_key_masked">API key actual</label>
-                <input type="text" id="ev_api_key_masked" disabled>
-              </div>
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="ev_from_number">Número remitente (opcional)</label>
-                <input type="text" id="ev_from_number" placeholder="18095551234">
-              </div>
-              <div class="field">
-                <label for="ev_send_timeout_ms">Timeout envío (ms)</label>
-                <input type="number" id="ev_send_timeout_ms" min="1000" max="60000" step="500">
-              </div>
-            </div>
-
+          <div class="fields-2">
             <div class="field">
-              <label for="ev_template_text">Plantilla del mensaje OTP</label>
-              <textarea id="ev_template_text" placeholder="FULLPOS: Tu código es {code} y vence en {ttl_minutes} minutos."></textarea>
+              <label for="support_business_id">Business ID del cliente</label>
+              <input type="text" id="support_business_id" placeholder="Ej: FT-123456">
             </div>
-
-            <div class="actions">
-              <button type="button" class="btn-muted" onclick="resetEvolutionForm()">Restaurar valores cargados</button>
-              <button type="submit" class="btn-primary" id="evolutionSubmitBtn">Guardar Evolution</button>
-            </div>
-
-            <div class="inline-note" style="margin-top:10px;">
-              Token manual de soporte: valida al cliente por teléfono, genera token temporal y compártelo.
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="support_business_id">Business ID del cliente</label>
-                <input type="text" id="support_business_id" placeholder="Ej: FT-123456">
-              </div>
-              <div class="field">
-                <label for="support_username">Usuario local a resetear</label>
-                <input type="text" id="support_username" value="admin" placeholder="admin">
-              </div>
-            </div>
-
-            <div class="actions">
-              <button type="button" class="btn-primary" id="supportGenerateBtn" onclick="generateSupportToken()">Generar token 15 min</button>
-            </div>
-
             <div class="field">
-              <label for="support_generated_token">Token generado</label>
-              <input type="text" id="support_generated_token" readonly placeholder="Aún no generado">
+              <label for="support_username">Usuario local a resetear</label>
+              <input type="text" id="support_username" value="admin" placeholder="admin">
             </div>
+          </div>
 
-            <div class="actions">
-              <button type="button" class="btn-muted" id="supportCopyBtn" onclick="copySupportToken()" disabled>Copiar token</button>
-            </div>
+          <div class="actions">
+            <button type="button" class="btn-primary" id="supportGenerateBtn" onclick="generateSupportToken()">Generar token 15 min</button>
+          </div>
 
-            <div id="supportTokenMessage" class="message"></div>
-          </form>
+          <div class="field">
+            <label for="support_generated_token">Token generado</label>
+            <input type="text" id="support_generated_token" readonly placeholder="Aún no generado">
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn-muted" id="supportCopyBtn" onclick="copySupportToken()" disabled>Copiar token</button>
+          </div>
+
+          <div id="supportTokenMessage" class="message"></div>
         </div>
       </article>
 
@@ -602,7 +530,7 @@
         <div class="session-head">
           <div>
             <h3 class="session-title">Sesión 3 · Estado actual</h3>
-            <p class="session-sub">Resumen rápido de licencias y recuperación OTP.</p>
+            <p class="session-sub">Resumen rápido de licencias y modo de recuperación activo.</p>
           </div>
           <span class="badge ok">Panel en línea</span>
         </div>
@@ -617,12 +545,12 @@
               <span class="status-v" id="statusFullDays">-</span>
             </div>
             <div class="status-item">
-              <span class="status-k">OTP habilitado</span>
-              <span class="status-v" id="statusOtpEnabled">-</span>
+              <span class="status-k">Recuperación</span>
+              <span class="status-v" id="statusRecoveryMode">Token soporte</span>
             </div>
             <div class="status-item">
-              <span class="status-k">Instancia Evolution</span>
-              <span class="status-v" id="statusInstance">-</span>
+              <span class="status-k">Validez token</span>
+              <span class="status-v" id="statusTokenTtl">15 min</span>
             </div>
           </div>
         </div>
@@ -641,7 +569,6 @@
 
     let sessionId = localStorage.getItem('sessionId');
     let originalLicenseConfig = {};
-    let originalEvolutionConfig = {};
 
     window.addEventListener('load', () => {
       if (!sessionId) {
@@ -658,7 +585,6 @@
 
       verifySession();
       loadLicenseConfiguration();
-      loadEvolutionConfiguration();
     });
 
     function showMessage(elId, message, type) {
@@ -676,15 +602,6 @@
     function refreshStatusPanel() {
       document.getElementById('statusDemoDays').textContent = originalLicenseConfig.demo_dias_validez || '-';
       document.getElementById('statusFullDays').textContent = originalLicenseConfig.full_dias_validez || '-';
-      document.getElementById('statusOtpEnabled').textContent = originalEvolutionConfig.enabled ? 'Sí' : 'No';
-      document.getElementById('statusInstance').textContent = originalEvolutionConfig.instance_name || '-';
-    }
-
-    function refreshEnabledSwitchLabel() {
-      const isEnabled = Boolean(document.getElementById('ev_enabled').checked);
-      const stateEl = document.getElementById('ev_enabled_state');
-      stateEl.textContent = isEnabled ? 'ON' : 'OFF';
-      stateEl.style.color = isEnabled ? '#065f46' : '#334155';
     }
 
     async function loadLicenseConfiguration() {
@@ -775,121 +692,7 @@
       document.getElementById('licenseMessage').classList.remove('show');
     }
 
-    async function loadEvolutionConfiguration() {
-      const loading = document.getElementById('evolutionLoading');
-      const form = document.getElementById('evolutionForm');
-
-      loading.style.display = 'flex';
-      form.style.display = 'none';
-
-      try {
-        const response = await fetch(`${API_URL}/api/admin/evolution-config`, {
-          method: 'GET',
-          cache: 'no-store',
-          headers: { 'x-session-id': sessionId }
-        });
-
-        const data = await response.json();
-        loading.style.display = 'none';
-
-        if (response.ok && data.ok && data.config) {
-          originalEvolutionConfig = { ...data.config };
-
-          document.getElementById('ev_enabled').checked = Boolean(data.config.enabled);
-          document.getElementById('ev_otp_ttl_minutes').value = data.config.otp_ttl_minutes || 10;
-          document.getElementById('ev_base_url').value = data.config.base_url || '';
-          document.getElementById('ev_instance_name').value = data.config.instance_name || '';
-          document.getElementById('ev_api_key').value = '';
-          document.getElementById('ev_api_key_masked').value = data.config.api_key_masked || '(sin API key guardada)';
-          document.getElementById('ev_from_number').value = data.config.from_number || '';
-          document.getElementById('ev_send_timeout_ms').value = data.config.send_timeout_ms || 12000;
-          document.getElementById('ev_template_text').value = data.config.template_text || '';
-          refreshEnabledSwitchLabel();
-
-          form.style.display = 'block';
-          setBadge('evolutionBadge', data.config.enabled ? 'Habilitado' : 'Deshabilitado', data.config.enabled ? 'ok' : '');
-          refreshStatusPanel();
-          return;
-        }
-
-        setBadge('evolutionBadge', 'Error', 'err');
-        showMessage('evolutionMessage', data.message || 'No se pudo cargar Evolution', 'error');
-      } catch (error) {
-        loading.style.display = 'none';
-        form.style.display = 'block';
-        setBadge('evolutionBadge', 'Error conexión', 'err');
-        showMessage('evolutionMessage', 'Error de conexión: ' + error.message, 'error');
-      }
-    }
-
-    document.getElementById('evolutionForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const btn = document.getElementById('evolutionSubmitBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner" style="display:inline-block; margin-right:8px;"></span> Guardando...';
-
-      try {
-        const payload = {
-          enabled: Boolean(document.getElementById('ev_enabled').checked),
-          otp_ttl_minutes: parseInt(document.getElementById('ev_otp_ttl_minutes').value, 10),
-          base_url: document.getElementById('ev_base_url').value.trim(),
-          instance_name: document.getElementById('ev_instance_name').value.trim(),
-          from_number: document.getElementById('ev_from_number').value.trim(),
-          send_timeout_ms: parseInt(document.getElementById('ev_send_timeout_ms').value, 10) || 12000,
-          template_text: document.getElementById('ev_template_text').value.trim()
-        };
-
-        const newApiKey = document.getElementById('ev_api_key').value.trim();
-        if (newApiKey) {
-          payload.api_key = newApiKey;
-        }
-
-        const response = await fetch(`${API_URL}/api/admin/evolution-config`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-session-id': sessionId
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-        if (response.ok && data.ok && data.config) {
-          originalEvolutionConfig = { ...data.config };
-
-          document.getElementById('ev_api_key').value = '';
-          document.getElementById('ev_api_key_masked').value = data.config.api_key_masked || '(sin API key guardada)';
-
-          refreshStatusPanel();
-          setBadge('evolutionBadge', data.config.enabled ? 'Habilitado' : 'Deshabilitado', data.config.enabled ? 'ok' : '');
-          showMessage('evolutionMessage', 'Configuración Evolution guardada correctamente.', 'success');
-          return;
-        }
-
-        setBadge('evolutionBadge', 'Error', 'err');
-        showMessage('evolutionMessage', data.message || 'No se pudo guardar Evolution', 'error');
-      } catch (error) {
-        setBadge('evolutionBadge', 'Error conexión', 'err');
-        showMessage('evolutionMessage', 'Error de conexión: ' + error.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Guardar Evolution';
-      }
-    });
-
-    function resetEvolutionForm() {
-      document.getElementById('ev_enabled').checked = Boolean(originalEvolutionConfig.enabled);
-      document.getElementById('ev_otp_ttl_minutes').value = originalEvolutionConfig.otp_ttl_minutes || 10;
-      document.getElementById('ev_base_url').value = originalEvolutionConfig.base_url || '';
-      document.getElementById('ev_instance_name').value = originalEvolutionConfig.instance_name || '';
-      document.getElementById('ev_api_key').value = '';
-      document.getElementById('ev_api_key_masked').value = originalEvolutionConfig.api_key_masked || '(sin API key guardada)';
-      document.getElementById('ev_from_number').value = originalEvolutionConfig.from_number || '';
-      document.getElementById('ev_send_timeout_ms').value = originalEvolutionConfig.send_timeout_ms || 12000;
-      document.getElementById('ev_template_text').value = originalEvolutionConfig.template_text || '';
-      refreshEnabledSwitchLabel();
-      document.getElementById('evolutionMessage').classList.remove('show');
+    function clearSupportMessage() {
       document.getElementById('supportTokenMessage').classList.remove('show');
     }
 
@@ -955,7 +758,8 @@
       }
     }
 
-    document.getElementById('ev_enabled').addEventListener('change', refreshEnabledSwitchLabel);
+    document.getElementById('support_business_id').addEventListener('input', clearSupportMessage);
+    document.getElementById('support_username').addEventListener('input', clearSupportMessage);
 
     async function verifySession() {
       try {
