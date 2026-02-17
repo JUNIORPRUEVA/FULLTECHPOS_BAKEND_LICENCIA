@@ -49,12 +49,32 @@ async function ensureRow() {
 }
 
 function envDefaults() {
+  const envBaseUrl =
+    process.env.EVOLUTION_API_URL ||
+    process.env.EVOLUTION_API_BASE_URL ||
+    '';
+
+  const envInstanceName =
+    process.env.EVOLUTION_API_INSTANCE_NAME ||
+    process.env.EVOLUTION_INSTANCE_NAME ||
+    '';
+
+  const envFromNumber =
+    process.env.EVOLUTION_OWNER_NUMBER ||
+    process.env.EVOLUTION_FROM_NUMBER ||
+    '';
+
+  const hasCore =
+    String(envBaseUrl || '').trim() &&
+    String(envInstanceName || '').trim() &&
+    String(process.env.EVOLUTION_API_KEY || '').trim();
+
   return {
-    enabled: asBool(process.env.EVOLUTION_ENABLED, false),
-    base_url: normalizeUrl(process.env.EVOLUTION_API_BASE_URL || ''),
-    instance_name: String(process.env.EVOLUTION_INSTANCE_NAME || '').trim(),
+    enabled: asBool(process.env.EVOLUTION_ENABLED, Boolean(hasCore)),
+    base_url: normalizeUrl(envBaseUrl),
+    instance_name: String(envInstanceName).trim(),
     api_key: String(process.env.EVOLUTION_API_KEY || '').trim(),
-    from_number: String(process.env.EVOLUTION_FROM_NUMBER || '').replace(/[^0-9]/g, ''),
+    from_number: String(envFromNumber).replace(/[^0-9]/g, ''),
     otp_ttl_minutes: asPositiveInt(process.env.EVOLUTION_OTP_TTL_MINUTES, 10),
     send_timeout_ms: asPositiveInt(process.env.EVOLUTION_SEND_TIMEOUT_MS, 12000),
     template_text: String(process.env.EVOLUTION_TEMPLATE_TEXT || '').trim() || DEFAULT_TEMPLATE
@@ -65,8 +85,17 @@ function mergedConfig(dbRow) {
   const env = envDefaults();
   const row = dbRow || {};
 
+  const dbHasCore =
+    String(row.base_url || '').trim() &&
+    String(row.instance_name || '').trim() &&
+    String(row.api_key || '').trim();
+
+  const enabled = dbHasCore
+    ? Boolean(row.enabled)
+    : Boolean(row.enabled || env.enabled);
+
   return {
-    enabled: Boolean(row.enabled ?? env.enabled),
+    enabled,
     base_url: normalizeUrl(row.base_url || env.base_url),
     instance_name: String(row.instance_name || env.instance_name || '').trim(),
     api_key: String(row.api_key || env.api_key || '').trim(),
