@@ -79,16 +79,17 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 40px 20px;
         }
 
         .section {
             background: white;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 30px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
             animation: slideInUp 0.6s ease;
         }
 
@@ -127,16 +128,18 @@
 
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
             gap: 20px;
             margin-top: 20px;
+            align-items: start;
         }
 
         .card {
             border: 1px solid #E5E7EB;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 20px;
-            background: #FFFFFF;
+            background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFD 100%);
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
         }
 
         .card h3 {
@@ -212,7 +215,7 @@
         }
 
         td.actions {
-            white-space: nowrap;
+            white-space: normal;
             text-align: right;
         }
 
@@ -220,14 +223,30 @@
             background: transparent;
             border: none;
             color: #05422C;
-            font-weight: 800;
+            font-weight: 700;
             cursor: pointer;
-            padding: 6px 8px;
+            padding: 7px 10px;
             border-radius: 8px;
+            font-size: 0.84rem;
+            border: 1px solid transparent;
         }
 
         .link-btn:hover {
             background: rgba(5, 66, 44, 0.08);
+            border-color: rgba(5, 66, 44, 0.18);
+        }
+
+        .token-btn {
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            color: #fff;
+            border: 1px solid rgba(5, 66, 44, 0.35);
+            box-shadow: 0 8px 18px rgba(5, 66, 44, 0.25);
+        }
+
+        .token-btn:hover {
+            background: linear-gradient(135deg, #065336 0%, #106a46 100%);
+            color: #fff;
+            border-color: rgba(5, 66, 44, 0.55);
         }
 
         th {
@@ -247,9 +266,10 @@
 
         .row-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
             justify-content: flex-end;
+            flex-wrap: wrap;
         }
 
         .secondary-btn {
@@ -297,6 +317,64 @@
 
             .grid {
                 grid-template-columns: 1fr;
+            }
+
+            .section {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            table thead {
+                display: none;
+            }
+
+            table,
+            tbody,
+            tr,
+            td {
+                display: block;
+                width: 100%;
+            }
+
+            tr {
+                border: 1px solid #E5E7EB;
+                border-radius: 12px;
+                padding: 10px;
+                margin-bottom: 10px;
+                background: #fff;
+            }
+
+            td {
+                border-bottom: 1px dashed #E5E7EB;
+                padding: 8px 4px;
+                text-align: left !important;
+            }
+
+            td:last-child {
+                border-bottom: none;
+            }
+
+            td::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 0.74rem;
+                color: #6B7280;
+                font-weight: 700;
+                margin-bottom: 4px;
+            }
+
+            td.actions .row-actions {
+                justify-content: flex-start;
+                gap: 6px;
+            }
+
+            td.actions .link-btn {
+                width: 100%;
+                text-align: left;
             }
         }
     </style>
@@ -594,19 +672,22 @@
                     const businessId = c.business_id || '';
                     return `
                         <tr>
-                            <td><strong>${escapeHtml(negocio)}</strong><div class="hint">${escapeHtml(c.rol_negocio || '')}</div></td>
-                            <td>${escapeHtml(contacto)}</td>
-                            <td>${escapeHtml(tel)}</td>
-                            <td>${escapeHtml(email)}</td>
-                            <td style="font-family:monospace; font-weight:700;">${businessId ? escapeHtml(businessId) : '<span style="color:#6B7280;">—</span>'}</td>
-                            <td>${escapeHtml(created)}</td>
-                            <td class="actions">
-                                ${businessId
-                                    ? ''
-                                    : `<button class="link-btn" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','')">Asignar Business ID</button>`
-                                }
-                                <button class="link-btn" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
-                                <button class="link-btn" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')" style="color:#991B1B;">Eliminar</button>
+                            <td data-label="Negocio"><strong>${escapeHtml(negocio)}</strong><div class="hint">${escapeHtml(c.rol_negocio || '')}</div></td>
+                            <td data-label="Contacto">${escapeHtml(contacto)}</td>
+                            <td data-label="Teléfono">${escapeHtml(tel)}</td>
+                            <td data-label="Email">${escapeHtml(email)}</td>
+                            <td data-label="Business ID" style="font-family:monospace; font-weight:700;">${businessId ? escapeHtml(businessId) : '<span style="color:#6B7280;">—</span>'}</td>
+                            <td data-label="Creado">${escapeHtml(created)}</td>
+                            <td data-label="Acciones" class="actions">
+                                <div class="row-actions">
+                                    <button class="link-btn token-btn" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')">Token reset</button>
+                                    ${businessId
+                                        ? ''
+                                        : `<button class="link-btn" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','')">Asignar Business ID</button>`
+                                    }
+                                    <button class="link-btn" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
+                                    <button class="link-btn" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')" style="color:#991B1B;">Eliminar</button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -720,6 +801,17 @@
             const id = String(customerId || '').trim();
             if (!id) return;
             window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(id)}`;
+        }
+
+        function goToSupportToken(businessId) {
+            const id = String(businessId || '').trim();
+            if (!id) {
+                showMessage('err', 'Este cliente no tiene business_id. Asígnalo primero.');
+                return;
+            }
+
+            const target = `/admin/license-config.html?support_business_id=${encodeURIComponent(id)}&support_username=admin&autogen=1`;
+            window.location.href = target;
         }
 
         async function logout() {

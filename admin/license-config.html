@@ -585,7 +585,28 @@
 
       verifySession();
       loadLicenseConfiguration();
+      applySupportTokenPrefillFromUrl();
     });
+
+    function applySupportTokenPrefillFromUrl() {
+      const params = new URLSearchParams(window.location.search || '');
+      const businessId = (params.get('support_business_id') || '').trim();
+      const username = (params.get('support_username') || '').trim();
+      const autoGen = (params.get('autogen') || '').trim();
+
+      if (businessId) {
+        document.getElementById('support_business_id').value = businessId;
+      }
+      if (username) {
+        document.getElementById('support_username').value = username;
+      }
+
+      if (businessId && autoGen === '1') {
+        setTimeout(() => {
+          generateSupportToken();
+        }, 250);
+      }
+    }
 
     function showMessage(elId, message, type) {
       const el = document.getElementById(elId);
