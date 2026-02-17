@@ -13,17 +13,16 @@
   <style>
     :root {
       --bg: #f3f4f6;
-      --surface: #ffffff;
-      --surface-soft: #f8fafc;
+      --surface: #fff;
+      --line: #e5e7eb;
       --text: #1f2937;
       --muted: #6b7280;
       --brand: #05422c;
       --brand-2: #0d5a3b;
       --ok: #10b981;
       --err: #ef4444;
-      --line: #e5e7eb;
-      --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
       --radius: 14px;
+      --shadow: 0 12px 28px rgba(15, 23, 42, .08);
     }
 
     * { box-sizing: border-box; }
@@ -38,15 +37,15 @@
     .navbar {
       position: sticky;
       top: 0;
-      z-index: 50;
-      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+      z-index: 40;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
       color: #fff;
       padding: 14px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .16);
     }
 
     .navbar-left {
@@ -56,20 +55,20 @@
       min-width: 0;
     }
 
+    .navbar h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .back-link {
       color: #fff;
       text-decoration: none;
       font-weight: 700;
       opacity: .95;
       white-space: nowrap;
-    }
-
-    .navbar h1 {
-      margin: 0;
-      font-size: 1.08rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     .navbar-right {
@@ -81,8 +80,8 @@
     }
 
     .logout-btn {
-      border: 1.5px solid rgba(255, 255, 255, 0.8);
-      background: rgba(255, 255, 255, 0.16);
+      border: 1.5px solid rgba(255,255,255,.85);
+      background: rgba(255,255,255,.14);
       color: #fff;
       border-radius: 9px;
       padding: 8px 12px;
@@ -93,220 +92,93 @@
     .logout-btn:hover { background: #fff; color: var(--brand); }
 
     .page {
-      width: min(1180px, calc(100% - 24px));
-      margin: 20px auto 36px;
+      width: min(1120px, calc(100% - 24px));
+      margin: 20px auto 32px;
       display: grid;
       gap: 16px;
     }
 
     .hero {
       background: linear-gradient(135deg, rgba(5,66,44,.95), rgba(13,90,59,.92));
-      border-radius: 18px;
       color: #fff;
+      border-radius: 18px;
       padding: 18px;
       box-shadow: var(--shadow);
       display: grid;
       gap: 8px;
     }
 
-    .hero h2 {
-      margin: 0;
-      font-size: 1.25rem;
-      letter-spacing: -.3px;
-    }
+    .hero h2 { margin: 0; font-size: 1.2rem; }
+    .hero p { margin: 0; line-height: 1.45; opacity: .95; }
 
-    .hero p {
-      margin: 0;
-      opacity: .95;
-      line-height: 1.45;
-      font-size: .95rem;
-    }
-
-    .sessions-grid {
+    .cards {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
-      gap: 16px;
+      gap: 14px;
     }
 
-    .session-card {
+    .card {
       grid-column: span 12;
       background: var(--surface);
-      border-radius: var(--radius);
       border: 1px solid var(--line);
-      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
-      overflow: hidden;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, .05);
+      padding: 16px;
+      display: grid;
+      gap: 10px;
     }
 
-    .session-head {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      background: var(--surface-soft);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .session-title {
+    .card-title {
       margin: 0;
-      font-size: 1.02rem;
       color: var(--brand);
+      font-size: 1rem;
       font-weight: 800;
+      letter-spacing: -.2px;
     }
 
-    .session-sub {
-      margin: 4px 0 0;
+    .card-sub {
+      margin: 0;
       color: var(--muted);
-      font-size: .88rem;
+      font-size: .9rem;
+      line-height: 1.35;
     }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .info {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 9px 10px;
+      display: grid;
+      gap: 3px;
+      min-height: 62px;
+    }
+
+    .info-k { color: #64748b; font-size: .78rem; font-weight: 700; }
+    .info-v { color: #0f172a; font-size: .9rem; font-weight: 800; word-break: break-word; }
 
     .badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
       border-radius: 999px;
-      padding: 6px 10px;
+      padding: 5px 9px;
       font-size: .78rem;
       font-weight: 700;
       border: 1px solid var(--line);
-      background: #fff;
       color: #334155;
-      white-space: nowrap;
-    }
-
-    .badge.ok { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }
-    .badge.err { color: #7f1d1d; background: #fee2e2; border-color: #fecaca; }
-
-    .session-body { padding: 16px; display: grid; gap: 14px; }
-
-    .inline-note {
-      background: #eff6ff;
-      color: #1e40af;
-      border-left: 4px solid #3b82f6;
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: .9rem;
-      line-height: 1.45;
-    }
-
-    .fields-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .field { display: grid; gap: 6px; }
-
-    .switch-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      border: 1.8px solid var(--line);
-      border-radius: 10px;
-      padding: 10px 12px;
       background: #fff;
-      min-height: 44px;
     }
 
-    .switch-label {
-      font-size: .9rem;
-      font-weight: 700;
-      color: #334155;
-    }
+    .badge.ok { color: #065f46; border-color: #a7f3d0; background: #d1fae5; }
+    .badge.err { color: #7f1d1d; border-color: #fecaca; background: #fee2e2; }
 
-    .switch-wrap {
-      position: relative;
-      width: 52px;
-      height: 30px;
-      flex: 0 0 auto;
-    }
-
-    .switch-wrap input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-    }
-
-    .switch-slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background: #cbd5e1;
-      transition: .2s;
-      border-radius: 999px;
-    }
-
-    .switch-slider::before {
-      content: '';
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      left: 3px;
-      top: 3px;
-      background: #fff;
-      border-radius: 50%;
-      transition: .2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,.2);
-    }
-
-    .switch-wrap input:checked + .switch-slider {
-      background: var(--ok);
-    }
-
-    .switch-wrap input:checked + .switch-slider::before {
-      transform: translateX(22px);
-    }
-
-    .switch-state {
-      font-size: .82rem;
-      font-weight: 800;
-      color: #334155;
-      min-width: 34px;
-      text-align: right;
-    }
-
-    label {
-      font-size: .87rem;
-      font-weight: 700;
-      color: #334155;
-    }
-
-    input[type="number"],
-    input[type="text"],
-    input[type="password"],
-    textarea {
-      width: 100%;
-      border: 1.8px solid var(--line);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: .93rem;
-      color: var(--text);
-      background: #fff;
-      font-family: inherit;
-    }
-
-    textarea { min-height: 84px; resize: vertical; }
-
-    input:focus,
-    textarea:focus {
-      outline: none;
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
-    }
-
-    input:disabled {
-      background: #f8fafc;
-      color: #64748b;
-    }
-
-    .actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      margin-top: 2px;
-    }
-
-    button {
+    .btn {
       border: none;
       border-radius: 10px;
       padding: 10px 14px;
@@ -315,18 +187,80 @@
       cursor: pointer;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      color: #fff;
+    .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; }
+    .btn-muted { background: #e5e7eb; color: #1f2937; }
+    .btn:disabled { opacity: .65; cursor: not-allowed; }
+
+    dialog {
+      border: none;
+      width: min(640px, calc(100% - 20px));
+      border-radius: 14px;
+      padding: 0;
+      box-shadow: 0 26px 48px rgba(0,0,0,.26);
     }
 
-    .btn-muted {
-      background: #e5e7eb;
-      color: #1f2937;
+    dialog::backdrop { background: rgba(2, 6, 23, .55); }
+
+    .modal-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
 
-    .btn-primary:disabled,
-    .btn-muted:disabled { opacity: .65; cursor: not-allowed; }
+    .modal-head h3 { margin: 0; font-size: 1rem; color: var(--brand); }
+
+    .modal-body {
+      padding: 14px 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .note {
+      background: #eff6ff;
+      color: #1e40af;
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: .88rem;
+      line-height: 1.4;
+    }
+
+    form { display: grid; gap: 10px; }
+    .fields-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { display: grid; gap: 6px; }
+    label { font-size: .85rem; font-weight: 700; color: #334155; }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      border: 1.8px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: .92rem;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, .14);
+    }
+
+    input[disabled], input[readonly] { background: #f8fafc; color: #64748b; }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
     .message {
       display: none;
@@ -340,47 +274,18 @@
     .message.success { background: #d1fae5; color: #065f46; border: 1px solid #86efac; }
     .message.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-    }
-
-    .status-item {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #fff;
-      padding: 10px;
-      display: grid;
-      gap: 4px;
-      min-height: 88px;
-    }
-
-    .status-k {
-      color: #64748b;
-      font-size: .8rem;
-      font-weight: 700;
-    }
-
-    .status-v {
-      color: #0f172a;
-      font-size: .92rem;
-      font-weight: 800;
-      word-break: break-word;
-    }
-
     .loading {
-      color: #64748b;
-      font-weight: 600;
-      font-size: .9rem;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
+      color: #64748b;
+      font-weight: 700;
+      font-size: .86rem;
     }
 
     .spinner {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       border: 2.5px solid #e2e8f0;
       border-top-color: #10b981;
       border-radius: 50%;
@@ -389,41 +294,19 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    @media (max-width: 1024px) {
-      .status-grid { grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 920px) {
+      .card.span-6 { grid-column: span 6; }
+      .card.span-4 { grid-column: span 4; }
     }
 
     @media (max-width: 760px) {
-      .navbar {
-        padding: 12px;
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .navbar-left,
-      .navbar-right { justify-content: space-between; }
-
-      .page {
-        width: calc(100% - 14px);
-        margin-top: 12px;
-        gap: 12px;
-      }
-
-      .hero {
-        border-radius: 14px;
-        padding: 14px;
-      }
-
+      .navbar { padding: 12px; flex-direction: column; align-items: stretch; }
+      .navbar-left, .navbar-right { justify-content: space-between; }
+      .page { width: calc(100% - 14px); margin-top: 12px; gap: 12px; }
+      .hero { border-radius: 14px; padding: 14px; }
       .fields-2 { grid-template-columns: 1fr; }
-
-      .actions { flex-direction: column-reverse; }
-
-      .actions button {
-        width: 100%;
-        padding: 12px;
-      }
-
-      .status-grid { grid-template-columns: 1fr; }
+      .info-grid { grid-template-columns: 1fr; }
+      .actions .btn { width: 100%; }
     }
   </style>
 </head>
@@ -441,202 +324,160 @@
 
   <main class="page">
     <section class="hero">
-      <h2>Panel de Configuración por Sesiones</h2>
-      <p>
-        Administra licencias, token manual de recuperación y mensajería de soporte por Evolution.
-        El diseño está optimizado para escritorio y móvil para gestionar cambios incluso desde tu teléfono.
-      </p>
+      <h2>Configuración por sesiones</h2>
+      <p>Cada sesión se administra desde una tarjeta y se edita en diálogo. Diseño limpio para escritorio y móvil.</p>
     </section>
 
-    <section class="sessions-grid">
-      <article class="session-card">
-        <div class="session-head">
-          <div>
-            <h3 class="session-title">Sesión 1 · Licencias por defecto</h3>
-            <p class="session-sub">Valores predeterminados usados al crear nuevas licencias.</p>
+    <section class="cards">
+      <article class="card span-4">
+        <span class="badge" id="licenseBadge">Cargando...</span>
+        <h3 class="card-title">Sesión 1 · Licencias por defecto</h3>
+        <p class="card-sub">Define días predeterminados para nuevas licencias DEMO y FULL/ANUAL.</p>
+        <div class="info-grid">
+          <div class="info">
+            <span class="info-k">DEMO (días)</span>
+            <span class="info-v" id="summaryDemoDays">-</span>
           </div>
-          <span class="badge" id="licenseBadge">Cargando...</span>
+          <div class="info">
+            <span class="info-k">FULL/ANUAL (días)</span>
+            <span class="info-v" id="summaryFullDays">-</span>
+          </div>
         </div>
-        <div class="session-body">
-          <div id="licenseMessage" class="message"></div>
-          <div id="licenseLoading" class="loading"><span class="spinner"></span> Cargando configuración de licencias...</div>
-
-          <form id="licenseForm" style="display:none;">
-            <div class="inline-note">
-              Los cambios aplican solo a licencias nuevas. Las ya emitidas no cambian automáticamente.
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="demo_dias_validez">Días DEMO</label>
-                <input type="number" id="demo_dias_validez" min="1" max="999" required>
-              </div>
-              <div class="field">
-                <label for="full_dias_validez">Días FULL / ANUAL</label>
-                <input type="number" id="full_dias_validez" min="1" max="9999" required>
-              </div>
-            </div>
-
-            <div class="actions">
-              <button type="button" class="btn-muted" onclick="resetLicenseForm()">Restaurar valores cargados</button>
-              <button type="submit" class="btn-primary" id="licenseSubmitBtn">Guardar licencias</button>
-            </div>
-          </form>
+        <div class="actions">
+          <button class="btn btn-primary" type="button" onclick="openModal('licenseModal')">Configurar</button>
         </div>
       </article>
 
-      <article class="session-card">
-        <div class="session-head">
-          <div>
-            <h3 class="session-title">Sesión 2 · Soporte por Evolution (mínimo)</h3>
-            <p class="session-sub">Configura solo lo necesario para enviar solicitudes de soporte desde la app sin salir.</p>
+      <article class="card span-4">
+        <span class="badge" id="supportMsgBadge">Cargando...</span>
+        <h3 class="card-title">Sesión 2 · Evolution soporte</h3>
+        <p class="card-sub">Solo 3 campos: URL, instancia y API key para envío automático desde backend.</p>
+        <div class="info-grid">
+          <div class="info">
+            <span class="info-k">Base URL</span>
+            <span class="info-v" id="summaryBaseUrl">-</span>
           </div>
-          <span class="badge" id="supportMsgBadge">Cargando...</span>
+          <div class="info">
+            <span class="info-k">Instancia</span>
+            <span class="info-v" id="summaryInstance">-</span>
+          </div>
         </div>
-        <div class="session-body">
-          <div id="supportMsgMessage" class="message"></div>
-          <div id="supportMsgLoading" class="loading"><span class="spinner"></span> Cargando configuración de mensajería...</div>
-
-          <form id="supportMsgForm" style="display:none;">
-            <div class="inline-note">
-              Cuando el cliente toque "Solicitar soporte" en FULLPOS, el backend enviará el WhatsApp usando esta instancia.
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="sm_enabled">Habilitado</label>
-                <div class="switch-row">
-                  <span class="switch-label">Mensajería soporte</span>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <label class="switch-wrap" for="sm_enabled">
-                      <input type="checkbox" id="sm_enabled">
-                      <span class="switch-slider"></span>
-                    </label>
-                    <span class="switch-state" id="sm_enabled_state">OFF</span>
-                  </div>
-                </div>
-              </div>
-              <div class="field">
-                <label for="sm_support_phone">WhatsApp de soporte (destino)</label>
-                <input type="text" id="sm_support_phone" placeholder="Ej: 18295319442">
-              </div>
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="sm_base_url">Base URL Evolution</label>
-                <input type="text" id="sm_base_url" placeholder="https://evolution.tudominio.com">
-              </div>
-              <div class="field">
-                <label for="sm_instance_name">Nombre de instancia</label>
-                <input type="text" id="sm_instance_name" placeholder="fullpos-instance">
-              </div>
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="sm_api_key">Nueva API key (opcional)</label>
-                <input type="password" id="sm_api_key" placeholder="Escribe para reemplazar la key actual">
-              </div>
-              <div class="field">
-                <label for="sm_api_key_masked">API key actual</label>
-                <input type="text" id="sm_api_key_masked" disabled>
-              </div>
-            </div>
-
-            <div class="fields-2">
-              <div class="field">
-                <label for="sm_send_timeout_ms">Timeout envío (ms)</label>
-                <input type="number" id="sm_send_timeout_ms" min="3000" max="60000" step="500">
-              </div>
-              <div class="field"></div>
-            </div>
-
-            <div class="field">
-              <label for="sm_template_text">Plantilla del mensaje</label>
-              <textarea id="sm_template_text" placeholder="Solicitud de soporte FULLPOS..."></textarea>
-            </div>
-
-            <div class="actions">
-              <button type="button" class="btn-muted" onclick="resetSupportMessageForm()">Restaurar valores cargados</button>
-              <button type="submit" class="btn-primary" id="supportMsgSubmitBtn">Guardar mensajería</button>
-            </div>
-          </form>
+        <div class="actions">
+          <button class="btn btn-primary" type="button" onclick="openModal('supportMsgModal')">Configurar</button>
         </div>
       </article>
 
-      <article class="session-card">
-        <div class="session-head">
-          <div>
-            <h3 class="session-title">Sesión 3 · Recuperación con token de soporte</h3>
-            <p class="session-sub">Genera token manual temporal para resetear contraseña local del cliente.</p>
+      <article class="card span-4">
+        <span class="badge ok">Activo</span>
+        <h3 class="card-title">Sesión 3 · Token de soporte</h3>
+        <p class="card-sub">Genera token manual de 15 minutos para resetear contraseña local del cliente.</p>
+        <div class="info-grid">
+          <div class="info">
+            <span class="info-k">Último token</span>
+            <span class="info-v" id="summaryToken">No generado</span>
           </div>
-          <span class="badge ok" id="supportBadge">Activo</span>
+          <div class="info">
+            <span class="info-k">Usuario objetivo</span>
+            <span class="info-v" id="summaryTokenUser">admin</span>
+          </div>
         </div>
-        <div class="session-body">
-          <div class="inline-note" style="margin-top:10px;">
-            Valida al cliente por teléfono, genera token temporal y compártelo. El token es de un solo uso.
-          </div>
-
-          <div class="fields-2">
-            <div class="field">
-              <label for="support_business_id">Business ID del cliente</label>
-              <input type="text" id="support_business_id" placeholder="Ej: FT-123456">
-            </div>
-            <div class="field">
-              <label for="support_username">Usuario local a resetear</label>
-              <input type="text" id="support_username" value="admin" placeholder="admin">
-            </div>
-          </div>
-
-          <div class="actions">
-            <button type="button" class="btn-primary" id="supportGenerateBtn" onclick="generateSupportToken()">Generar token 15 min</button>
-          </div>
-
-          <div class="field">
-            <label for="support_generated_token">Token generado</label>
-            <input type="text" id="support_generated_token" readonly placeholder="Aún no generado">
-          </div>
-
-          <div class="actions">
-            <button type="button" class="btn-muted" id="supportCopyBtn" onclick="copySupportToken()" disabled>Copiar token</button>
-          </div>
-
-          <div id="supportTokenMessage" class="message"></div>
-        </div>
-      </article>
-
-      <article class="session-card">
-        <div class="session-head">
-          <div>
-            <h3 class="session-title">Sesión 4 · Estado actual</h3>
-            <p class="session-sub">Resumen rápido de licencias y modo de recuperación activo.</p>
-          </div>
-          <span class="badge ok">Panel en línea</span>
-        </div>
-        <div class="session-body">
-          <div class="status-grid">
-            <div class="status-item">
-              <span class="status-k">DEMO (días)</span>
-              <span class="status-v" id="statusDemoDays">-</span>
-            </div>
-            <div class="status-item">
-              <span class="status-k">FULL (días)</span>
-              <span class="status-v" id="statusFullDays">-</span>
-            </div>
-            <div class="status-item">
-              <span class="status-k">Recuperación</span>
-              <span class="status-v" id="statusRecoveryMode">Token soporte</span>
-            </div>
-            <div class="status-item">
-              <span class="status-k">Mensajería soporte</span>
-              <span class="status-v" id="statusSupportMsgEnabled">-</span>
-            </div>
-          </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="button" onclick="openModal('tokenModal')">Generar token</button>
         </div>
       </article>
     </section>
   </main>
+
+  <dialog id="licenseModal">
+    <div class="modal-head">
+      <h3>Configurar licencias por defecto</h3>
+      <button class="btn btn-muted" type="button" onclick="closeModal('licenseModal')">Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div class="note">Estos valores aplican a licencias nuevas; no cambian licencias ya emitidas.</div>
+      <div id="licenseMessage" class="message"></div>
+      <form id="licenseForm">
+        <div class="fields-2">
+          <div class="field">
+            <label for="demo_dias_validez">Días DEMO</label>
+            <input type="number" id="demo_dias_validez" min="1" max="999" required>
+          </div>
+          <div class="field">
+            <label for="full_dias_validez">Días FULL / ANUAL</label>
+            <input type="number" id="full_dias_validez" min="1" max="9999" required>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-muted" onclick="resetLicenseForm()">Restaurar</button>
+          <button type="submit" class="btn btn-primary" id="licenseSubmitBtn">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="supportMsgModal">
+    <div class="modal-head">
+      <h3>Configurar Evolution (3 campos)</h3>
+      <button class="btn btn-muted" type="button" onclick="closeModal('supportMsgModal')">Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div class="note">El mensaje se genera de forma fija en backend con datos del cliente y su licencia activa.</div>
+      <div id="supportMsgMessage" class="message"></div>
+      <form id="supportMsgForm">
+        <div class="field">
+          <label for="sm_base_url">Base URL Evolution</label>
+          <input type="text" id="sm_base_url" placeholder="https://evolution.tudominio.com" required>
+        </div>
+        <div class="field">
+          <label for="sm_instance_name">Nombre de instancia</label>
+          <input type="text" id="sm_instance_name" placeholder="fullpos-instance" required>
+        </div>
+        <div class="fields-2">
+          <div class="field">
+            <label for="sm_api_key">API key (nueva o actual)</label>
+            <input type="password" id="sm_api_key" placeholder="Deja vacío para conservar la actual">
+          </div>
+          <div class="field">
+            <label for="sm_api_key_masked">API key guardada</label>
+            <input type="text" id="sm_api_key_masked" disabled>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-muted" onclick="resetSupportMessageForm()">Restaurar</button>
+          <button type="submit" class="btn btn-primary" id="supportMsgSubmitBtn">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="tokenModal">
+    <div class="modal-head">
+      <h3>Generar token de soporte</h3>
+      <button class="btn btn-muted" type="button" onclick="closeModal('tokenModal')">Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div class="note">Valida identidad del cliente antes de compartir el token. Vigencia: 15 minutos y un solo uso.</div>
+      <div id="supportTokenMessage" class="message"></div>
+      <div class="fields-2">
+        <div class="field">
+          <label for="support_business_id">Business ID del cliente</label>
+          <input type="text" id="support_business_id" placeholder="Ej: FT-123456">
+        </div>
+        <div class="field">
+          <label for="support_username">Usuario local</label>
+          <input type="text" id="support_username" value="admin">
+        </div>
+      </div>
+      <div class="field">
+        <label for="support_generated_token">Token generado</label>
+        <input type="text" id="support_generated_token" readonly placeholder="Aún no generado">
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-muted" id="supportCopyBtn" onclick="copySupportToken()" disabled>Copiar token</button>
+        <button type="button" class="btn btn-primary" id="supportGenerateBtn" onclick="generateSupportToken()">Generar token 15 min</button>
+      </div>
+    </div>
+  </dialog>
 
   <script>
     const API_URL = (() => {
@@ -651,7 +492,7 @@
     let originalLicenseConfig = {};
     let originalSupportMessageConfig = {};
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       if (!sessionId) {
         window.location.href = '/admin/login.html';
         return;
@@ -664,11 +505,42 @@
         localStorage.setItem('sessionId', sessionId);
       }
 
-      verifySession();
-      loadLicenseConfiguration();
-      loadSupportMessageConfiguration();
+      await verifySession();
+      await loadLicenseConfiguration();
+      await loadSupportMessageConfiguration();
       applySupportTokenPrefillFromUrl();
     });
+
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (modal && typeof modal.showModal === 'function') {
+        modal.showModal();
+      }
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.close();
+    }
+
+    function showMessage(elId, message, type) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.textContent = message;
+      el.className = `message show ${type}`;
+    }
+
+    function hideMessage(elId) {
+      const el = document.getElementById(elId);
+      if (el) el.classList.remove('show');
+    }
+
+    function setBadge(elId, text, type) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.textContent = text;
+      el.className = `badge ${type || ''}`.trim();
+    }
 
     function applySupportTokenPrefillFromUrl() {
       const params = new URLSearchParams(window.location.search || '');
@@ -676,52 +548,18 @@
       const username = (params.get('support_username') || '').trim();
       const autoGen = (params.get('autogen') || '').trim();
 
-      if (businessId) {
-        document.getElementById('support_business_id').value = businessId;
-      }
-      if (username) {
-        document.getElementById('support_username').value = username;
-      }
+      if (businessId) document.getElementById('support_business_id').value = businessId;
+      if (username) document.getElementById('support_username').value = username;
 
       if (businessId && autoGen === '1') {
         setTimeout(() => {
+          openModal('tokenModal');
           generateSupportToken();
         }, 250);
       }
     }
 
-    function showMessage(elId, message, type) {
-      const el = document.getElementById(elId);
-      el.textContent = message;
-      el.className = `message show ${type}`;
-    }
-
-    function setBadge(badgeId, text, type) {
-      const el = document.getElementById(badgeId);
-      el.textContent = text;
-      el.className = `badge ${type || ''}`.trim();
-    }
-
-    function refreshStatusPanel() {
-      document.getElementById('statusDemoDays').textContent = originalLicenseConfig.demo_dias_validez || '-';
-      document.getElementById('statusFullDays').textContent = originalLicenseConfig.full_dias_validez || '-';
-      document.getElementById('statusSupportMsgEnabled').textContent = originalSupportMessageConfig.enabled ? 'Activo' : 'Inactivo';
-    }
-
-    function refreshSupportMessageEnabledLabel() {
-      const isEnabled = Boolean(document.getElementById('sm_enabled').checked);
-      const stateEl = document.getElementById('sm_enabled_state');
-      stateEl.textContent = isEnabled ? 'ON' : 'OFF';
-      stateEl.style.color = isEnabled ? '#065f46' : '#334155';
-    }
-
     async function loadLicenseConfiguration() {
-      const loading = document.getElementById('licenseLoading');
-      const form = document.getElementById('licenseForm');
-
-      loading.style.display = 'flex';
-      form.style.display = 'none';
-
       try {
         const response = await fetch(`${API_URL}/api/admin/license-config`, {
           method: 'GET',
@@ -729,25 +567,20 @@
           headers: { 'x-session-id': sessionId }
         });
 
-        const data = await response.json();
-        loading.style.display = 'none';
-
+        const data = await response.json().catch(() => ({}));
         if (response.ok && data.ok && data.config) {
           originalLicenseConfig = { ...data.config };
           document.getElementById('demo_dias_validez').value = data.config.demo_dias_validez;
           document.getElementById('full_dias_validez').value = data.config.full_dias_validez;
-
-          form.style.display = 'block';
-          setBadge('licenseBadge', 'Cargado', 'ok');
-          refreshStatusPanel();
+          document.getElementById('summaryDemoDays').textContent = data.config.demo_dias_validez || '-';
+          document.getElementById('summaryFullDays').textContent = data.config.full_dias_validez || '-';
+          setBadge('licenseBadge', 'Configurado', 'ok');
           return;
         }
 
         setBadge('licenseBadge', 'Error', 'err');
         showMessage('licenseMessage', data.message || 'No se pudo cargar la configuración de licencias', 'error');
       } catch (error) {
-        loading.style.display = 'none';
-        form.style.display = 'block';
         setBadge('licenseBadge', 'Error conexión', 'err');
         showMessage('licenseMessage', 'Error de conexión: ' + error.message, 'error');
       }
@@ -755,10 +588,11 @@
 
     document.getElementById('licenseForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      hideMessage('licenseMessage');
 
       const btn = document.getElementById('licenseSubmitBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner" style="display:inline-block; margin-right:8px;"></span> Guardando...';
+      btn.innerHTML = '<span class="loading"><span class="spinner"></span>Guardando...</span>';
 
       try {
         const payload = {
@@ -777,10 +611,11 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         if (response.ok && data.ok && data.config) {
           originalLicenseConfig = { ...data.config };
-          refreshStatusPanel();
+          document.getElementById('summaryDemoDays').textContent = data.config.demo_dias_validez || '-';
+          document.getElementById('summaryFullDays').textContent = data.config.full_dias_validez || '-';
           setBadge('licenseBadge', 'Guardado', 'ok');
           showMessage('licenseMessage', 'Configuración de licencias guardada correctamente.', 'success');
           return;
@@ -793,23 +628,17 @@
         showMessage('licenseMessage', 'Error de conexión: ' + error.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Guardar licencias';
+        btn.textContent = 'Guardar';
       }
     });
 
     function resetLicenseForm() {
       document.getElementById('demo_dias_validez').value = originalLicenseConfig.demo_dias_validez || 15;
       document.getElementById('full_dias_validez').value = originalLicenseConfig.full_dias_validez || 365;
-      document.getElementById('licenseMessage').classList.remove('show');
+      hideMessage('licenseMessage');
     }
 
     async function loadSupportMessageConfiguration() {
-      const loading = document.getElementById('supportMsgLoading');
-      const form = document.getElementById('supportMsgForm');
-
-      loading.style.display = 'flex';
-      form.style.display = 'none';
-
       try {
         const response = await fetch(`${API_URL}/api/admin/support-message-config`, {
           method: 'GET',
@@ -818,33 +647,23 @@
         });
 
         const data = await response.json().catch(() => ({}));
-        loading.style.display = 'none';
-
         if (response.ok && data.ok && data.config) {
           originalSupportMessageConfig = { ...data.config };
-
-          document.getElementById('sm_enabled').checked = Boolean(data.config.enabled);
           document.getElementById('sm_base_url').value = data.config.base_url || '';
           document.getElementById('sm_instance_name').value = data.config.instance_name || '';
           document.getElementById('sm_api_key').value = '';
           document.getElementById('sm_api_key_masked').value = data.config.api_key_masked || '(sin API key guardada)';
-          document.getElementById('sm_support_phone').value = data.config.support_phone || '';
-          document.getElementById('sm_send_timeout_ms').value = data.config.send_timeout_ms || 12000;
-          document.getElementById('sm_template_text').value = data.config.template_text || '';
+          document.getElementById('summaryBaseUrl').textContent = data.config.base_url || '-';
+          document.getElementById('summaryInstance').textContent = data.config.instance_name || '-';
 
-          refreshSupportMessageEnabledLabel();
-          form.style.display = 'block';
-          setBadge('supportMsgBadge', data.config.enabled ? 'Habilitado' : 'Deshabilitado', data.config.enabled ? 'ok' : '');
-          refreshStatusPanel();
+          const isConfigured = Boolean(data.config.base_url && data.config.instance_name);
+          setBadge('supportMsgBadge', isConfigured ? 'Configurado' : 'Pendiente', isConfigured ? 'ok' : '');
           return;
         }
 
-        form.style.display = 'block';
         setBadge('supportMsgBadge', 'Error', 'err');
-        showMessage('supportMsgMessage', data.message || 'No se pudo cargar configuración de mensajería', 'error');
+        showMessage('supportMsgMessage', data.message || 'No se pudo cargar configuración de Evolution', 'error');
       } catch (error) {
-        loading.style.display = 'none';
-        form.style.display = 'block';
         setBadge('supportMsgBadge', 'Error conexión', 'err');
         showMessage('supportMsgMessage', 'Error de conexión: ' + error.message, 'error');
       }
@@ -852,24 +671,21 @@
 
     document.getElementById('supportMsgForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      hideMessage('supportMsgMessage');
 
       const btn = document.getElementById('supportMsgSubmitBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner" style="display:inline-block; margin-right:8px;"></span> Guardando...';
+      btn.innerHTML = '<span class="loading"><span class="spinner"></span>Guardando...</span>';
 
       try {
+        const apiKeyInput = document.getElementById('sm_api_key').value.trim();
         const payload = {
-          enabled: Boolean(document.getElementById('sm_enabled').checked),
           base_url: document.getElementById('sm_base_url').value.trim(),
-          instance_name: document.getElementById('sm_instance_name').value.trim(),
-          support_phone: document.getElementById('sm_support_phone').value.trim(),
-          send_timeout_ms: parseInt(document.getElementById('sm_send_timeout_ms').value, 10) || 12000,
-          template_text: document.getElementById('sm_template_text').value.trim()
+          instance_name: document.getElementById('sm_instance_name').value.trim()
         };
 
-        const newApiKey = document.getElementById('sm_api_key').value.trim();
-        if (newApiKey) {
-          payload.api_key = newApiKey;
+        if (apiKeyInput) {
+          payload.api_key = apiKeyInput;
         }
 
         const response = await fetch(`${API_URL}/api/admin/support-message-config`, {
@@ -884,43 +700,32 @@
         const data = await response.json().catch(() => ({}));
         if (response.ok && data.ok && data.config) {
           originalSupportMessageConfig = { ...data.config };
-
           document.getElementById('sm_api_key').value = '';
           document.getElementById('sm_api_key_masked').value = data.config.api_key_masked || '(sin API key guardada)';
-
-          refreshSupportMessageEnabledLabel();
-          refreshStatusPanel();
-          setBadge('supportMsgBadge', data.config.enabled ? 'Habilitado' : 'Deshabilitado', data.config.enabled ? 'ok' : '');
-          showMessage('supportMsgMessage', 'Configuración de mensajería guardada correctamente.', 'success');
+          document.getElementById('summaryBaseUrl').textContent = payload.base_url || '-';
+          document.getElementById('summaryInstance').textContent = payload.instance_name || '-';
+          setBadge('supportMsgBadge', 'Guardado', 'ok');
+          showMessage('supportMsgMessage', 'Configuración de Evolution guardada correctamente.', 'success');
           return;
         }
 
         setBadge('supportMsgBadge', 'Error', 'err');
-        showMessage('supportMsgMessage', data.message || 'No se pudo guardar configuración de mensajería', 'error');
+        showMessage('supportMsgMessage', data.message || 'No se pudo guardar configuración de Evolution', 'error');
       } catch (error) {
         setBadge('supportMsgBadge', 'Error conexión', 'err');
         showMessage('supportMsgMessage', 'Error de conexión: ' + error.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Guardar mensajería';
+        btn.textContent = 'Guardar';
       }
     });
 
     function resetSupportMessageForm() {
-      document.getElementById('sm_enabled').checked = Boolean(originalSupportMessageConfig.enabled);
       document.getElementById('sm_base_url').value = originalSupportMessageConfig.base_url || '';
       document.getElementById('sm_instance_name').value = originalSupportMessageConfig.instance_name || '';
       document.getElementById('sm_api_key').value = '';
       document.getElementById('sm_api_key_masked').value = originalSupportMessageConfig.api_key_masked || '(sin API key guardada)';
-      document.getElementById('sm_support_phone').value = originalSupportMessageConfig.support_phone || '';
-      document.getElementById('sm_send_timeout_ms').value = originalSupportMessageConfig.send_timeout_ms || 12000;
-      document.getElementById('sm_template_text').value = originalSupportMessageConfig.template_text || '';
-      refreshSupportMessageEnabledLabel();
-      document.getElementById('supportMsgMessage').classList.remove('show');
-    }
-
-    function clearSupportMessage() {
-      document.getElementById('supportTokenMessage').classList.remove('show');
+      hideMessage('supportMsgMessage');
     }
 
     async function generateSupportToken() {
@@ -934,7 +739,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner" style="display:inline-block; margin-right:8px;"></span> Generando...';
+      btn.innerHTML = '<span class="loading"><span class="spinner"></span>Generando...</span>';
 
       try {
         const response = await fetch(`${API_URL}/api/admin/support-reset/token`, {
@@ -943,21 +748,16 @@
             'Content-Type': 'application/json',
             'x-session-id': sessionId
           },
-          body: JSON.stringify({
-            business_id: businessId,
-            username
-          })
+          body: JSON.stringify({ business_id: businessId, username })
         });
 
         const data = await response.json().catch(() => ({}));
         if (response.ok && data.ok && data.token) {
           document.getElementById('support_generated_token').value = data.token;
           document.getElementById('supportCopyBtn').disabled = false;
-          showMessage(
-            'supportTokenMessage',
-            `Token generado. Vence en ${data.ttl_minutes || 15} minutos.`,
-            'success'
-          );
+          document.getElementById('summaryToken').textContent = data.token;
+          document.getElementById('summaryTokenUser').textContent = username;
+          showMessage('supportTokenMessage', `Token generado. Vence en ${data.ttl_minutes || 15} minutos.`, 'success');
           return;
         }
 
@@ -984,10 +784,6 @@
         showMessage('supportTokenMessage', 'No se pudo copiar automáticamente. Cópialo manualmente.', 'error');
       }
     }
-
-    document.getElementById('support_business_id').addEventListener('input', clearSupportMessage);
-    document.getElementById('support_username').addEventListener('input', clearSupportMessage);
-    document.getElementById('sm_enabled').addEventListener('change', refreshSupportMessageEnabledLabel);
 
     async function verifySession() {
       try {

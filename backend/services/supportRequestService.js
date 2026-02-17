@@ -1,17 +1,12 @@
 const { pool } = require('../db/pool');
 const supportMessageConfigService = require('./supportMessageConfigService');
 
+const SUPPORT_DEST_PHONE = supportMessageConfigService.normalizePhone(
+  process.env.SUPPORT_WHATSAPP_PHONE || process.env.WHATSAPP_SUPPORT_PHONE || '18295319442'
+);
+
 function normalizeText(value) {
   return String(value || '').trim();
-}
-
-function fillTemplate(template, fields) {
-  let text = String(template || '');
-  Object.entries(fields).forEach(([key, value]) => {
-    const safe = String(value == null ? '' : value);
-    text = text.split(`{${key}}`).join(safe);
-  });
-  return text;
 }
 
 async function findCustomerByBusinessId(businessId) {
@@ -23,6 +18,44 @@ async function findCustomerByBusinessId(businessId) {
     [businessId]
   );
   return res.rows[0] || null;
+}
+
+async function findActiveLicenseByBusinessId(businessId) {
+  const res = await pool.query(
+    `SELECT l.license_key, l.license_type, l.estado, l.fecha_inicio, l.fecha_fin, l.max_dispositivos
+     FROM licenses l
+     WHERE l.business_id = $1
+     ORDER BY (l.estado = 'ACTIVA') DESC, l.fecha_fin DESC NULLS LAST, l.created_at DESC
+     LIMIT 1`,
+    [businessId]
+  );
+  return res.rows[0] || null;
+}
+
+function formatDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toISOString().slice(0, 10);
+}
+
+function buildSupportMessage(fields) {
+  return [
+    'SOLICITUD DE SOPORTE FULLPOS',
+    `Business ID: ${fields.businessId}`,
+    `Negocio: ${fields.businessName}`,
+    `Propietario: ${fields.ownerName}`,
+    `Teléfono: ${fields.phone}`,
+    `Email: ${fields.email}`,
+    `Usuario local: ${fields.username}`,
+    `Licencia activa: ${fields.licenseKey}`,
+    `Tipo licencia: ${fields.licenseType}`,
+    `Estado licencia: ${fields.licenseStatus}`,
+    `Vigencia: ${fields.licenseStart} -> ${fields.licenseEnd}`,
+    `Máx dispositivos: ${fields.licenseMaxDevices}`,
+    `Detalle: ${fields.clientMessage}`,
+    `Fecha: ${fields.timestamp}`
+  ].join('\n');
 }
 
 async function sendSupportMessage({
@@ -42,19 +75,21 @@ async function sendSupportMessage({
   }
 
   const cfg = await supportMessageConfigService.getRuntimeConfig();
-  if (!cfg.enabled) {
-    const err = new Error('Soporte por mensajería está deshabilitado');
-    err.status = 503;
-    throw err;
-  }
 
-  if (!cfg.base_url || !cfg.instance_name || !cfg.api_key || !cfg.support_phone) {
+  if (!cfg.base_url || !cfg.instance_name || !cfg.api_key) {
     const err = new Error('Configuración de Evolution incompleta en admin');
     err.status = 503;
     throw err;
   }
 
+  if (!SUPPORT_DEST_PHONE) {
+    const err = new Error('No hay número de soporte configurado en el servidor');
+    err.status = 503;
+    throw err;
+  }
+
   const customer = await findCustomerByBusinessId(normalizedBusinessId);
+  const license = await findActiveLicenseByBusinessId(normalizedBusinessId);
 
   const effectiveBusinessName = normalizeText(customer?.nombre_negocio) || normalizeText(businessName) || '-';
   const effectiveOwnerName = normalizeText(customer?.contacto_nombre) || normalizeText(ownerName) || '-';
@@ -64,15 +99,21 @@ async function sendSupportMessage({
   const effectiveMessage = normalizeText(message) || 'Cliente solicita soporte para recuperación de contraseña.';
   const ts = new Date().toISOString();
 
-  const text = fillTemplate(cfg.template_text, {
-    business_id: normalizedBusinessId,
-    business_name: effectiveBusinessName,
-    owner_name: effectiveOwnerName,
+  const text = buildSupportMessage({
+    businessId: normalizedBusinessId,
+    businessName: effectiveBusinessName,
+    ownerName: effectiveOwnerName,
     phone: effectivePhone,
     email: effectiveEmail,
     username: effectiveUsername,
-    client_message: effectiveMessage,
-    ts
+    licenseKey: normalizeText(license?.license_key) || '-',
+    licenseType: normalizeText(license?.license_type) || '-',
+    licenseStatus: normalizeText(license?.estado) || '-',
+    licenseStart: formatDate(license?.fecha_inicio),
+    licenseEnd: formatDate(license?.fecha_fin),
+    licenseMaxDevices: String(license?.max_dispositivos ?? '-'),
+    clientMessage: effectiveMessage,
+    timestamp: ts
   });
 
   const base = String(cfg.base_url).replace(/\/+$/, '');
@@ -85,10 +126,10 @@ async function sendSupportMessage({
       apikey: cfg.api_key
     },
     body: JSON.stringify({
-      number: cfg.support_phone,
+      number: SUPPORT_DEST_PHONE,
       text
     }),
-    signal: AbortSignal.timeout(Math.max(3000, Number(cfg.send_timeout_ms || 12000)))
+    signal: AbortSignal.timeout(Math.max(3000, Number(process.env.EVOLUTION_SEND_TIMEOUT_MS || 12000) || 12000))
   });
 
   const raw = await response.text();
