@@ -174,7 +174,8 @@ async function register(req, res) {
           return res.status(409).json({
             ok: false,
             code: 'BUSINESS_ID_CONFLICT',
-            message: 'Este cliente ya tiene otro business_id asignado'
+            message: 'Este cliente ya tiene otro business_id asignado',
+            existing_business_id: existingBiz,
           });
         }
 
