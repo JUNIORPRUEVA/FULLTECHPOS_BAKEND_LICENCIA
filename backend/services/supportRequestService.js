@@ -32,6 +32,7 @@ async function findActiveLicenseByBusinessId(businessId) {
      FROM licenses l
      INNER JOIN customers c ON c.id = l.customer_id
      WHERE c.business_id = $1
+       AND COALESCE(to_jsonb(l) ->> 'estado', '') <> 'ELIMINADA'
      ORDER BY (l.estado = 'ACTIVA') DESC, l.fecha_fin DESC NULLS LAST, l.created_at DESC
      LIMIT 1`,
     [businessId]

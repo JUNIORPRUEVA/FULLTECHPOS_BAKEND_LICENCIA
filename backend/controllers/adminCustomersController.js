@@ -149,9 +149,32 @@ async function setBusinessId(req, res) {
   }
 }
 
+async function getCustomerByBusinessId(req, res) {
+  try {
+    const businessId = String(req.params.businessId || '').trim();
+    if (!businessId) {
+      return res.status(400).json({ ok: false, message: 'business_id es requerido' });
+    }
+
+    const customer = await customersModel.getCustomerByBusinessId(businessId);
+    if (!customer) {
+      return res.status(404).json({ ok: false, message: 'Cliente no encontrado para ese business_id' });
+    }
+
+    return res.json({ ok: true, customer });
+  } catch (error) {
+    console.error('admin.getCustomerByBusinessId error:', error);
+    if (error && error.code === 'MIGRATION_PENDING') {
+      return res.status(501).json({ ok: false, message: 'Migración pendiente: falta columna business_id en customers' });
+    }
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
   deleteCustomer,
-  setBusinessId
+  setBusinessId,
+  getCustomerByBusinessId
 };

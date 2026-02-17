@@ -274,6 +274,21 @@
     .message.success { background: #d1fae5; color: #065f46; border: 1px solid #86efac; }
     .message.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
+    .customer-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .customer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
     .loading {
       display: inline-flex;
       align-items: center;
@@ -306,6 +321,7 @@
       .hero { border-radius: 14px; padding: 14px; }
       .fields-2 { grid-template-columns: 1fr; }
       .info-grid { grid-template-columns: 1fr; }
+      .customer-grid { grid-template-columns: 1fr; }
       .actions .btn { width: 100%; }
     }
   </style>
@@ -468,6 +484,23 @@
           <input type="text" id="support_username" value="admin">
         </div>
       </div>
+      <div class="customer-box">
+        <div class="loading" id="customerLookupLoading" style="display:none;"><span class="spinner"></span> Buscando datos del cliente...</div>
+        <div class="customer-grid">
+          <div class="info">
+            <span class="info-k">Negocio</span>
+            <span class="info-v" id="supportCustomerBusiness">-</span>
+          </div>
+          <div class="info">
+            <span class="info-k">Dueño</span>
+            <span class="info-v" id="supportCustomerOwner">-</span>
+          </div>
+          <div class="info">
+            <span class="info-k">Teléfono dueño</span>
+            <span class="info-v" id="supportCustomerPhone">-</span>
+          </div>
+        </div>
+      </div>
       <div class="field">
         <label for="support_generated_token">Token generado</label>
         <input type="text" id="support_generated_token" readonly placeholder="Aún no generado">
@@ -491,6 +524,7 @@
     let sessionId = localStorage.getItem('sessionId');
     let originalLicenseConfig = {};
     let originalSupportMessageConfig = {};
+    let customerLookupTimer = null;
 
     window.addEventListener('load', async () => {
       if (!sessionId) {
@@ -551,12 +585,61 @@
       if (businessId) document.getElementById('support_business_id').value = businessId;
       if (username) document.getElementById('support_username').value = username;
 
+      refreshCustomerInfoByBusinessId();
+
       if (businessId && autoGen === '1') {
         setTimeout(() => {
           openModal('tokenModal');
           generateSupportToken();
         }, 250);
       }
+    }
+
+    function setCustomerSummary(customer) {
+      document.getElementById('supportCustomerBusiness').textContent = customer?.nombre_negocio || '-';
+      document.getElementById('supportCustomerOwner').textContent = customer?.contacto_nombre || '-';
+      document.getElementById('supportCustomerPhone').textContent = customer?.contacto_telefono || '-';
+    }
+
+    async function refreshCustomerInfoByBusinessId() {
+      const businessId = (document.getElementById('support_business_id').value || '').trim();
+      const loadingEl = document.getElementById('customerLookupLoading');
+
+      if (!businessId) {
+        setCustomerSummary(null);
+        loadingEl.style.display = 'none';
+        return;
+      }
+
+      loadingEl.style.display = 'inline-flex';
+      try {
+        const encoded = encodeURIComponent(businessId);
+        const response = await fetch(`${API_URL}/api/admin/customers/by-business/${encoded}`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { 'x-session-id': sessionId }
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && data.ok && data.customer) {
+          setCustomerSummary(data.customer);
+        } else {
+          setCustomerSummary(null);
+        }
+      } catch (_) {
+        setCustomerSummary(null);
+      } finally {
+        loadingEl.style.display = 'none';
+      }
+    }
+
+    function scheduleCustomerLookup() {
+      if (customerLookupTimer) {
+        clearTimeout(customerLookupTimer);
+      }
+      customerLookupTimer = setTimeout(() => {
+        refreshCustomerInfoByBusinessId();
+      }, 250);
     }
 
     async function loadLicenseConfiguration() {
@@ -769,6 +852,8 @@
         btn.textContent = 'Generar token 15 min';
       }
     }
+
+    document.getElementById('support_business_id').addEventListener('input', scheduleCustomerLookup);
 
     async function copySupportToken() {
       const token = document.getElementById('support_generated_token').value.trim();
