@@ -22,9 +22,16 @@ async function findCustomerByBusinessId(businessId) {
 
 async function findActiveLicenseByBusinessId(businessId) {
   const res = await pool.query(
-    `SELECT l.license_key, l.license_type, l.estado, l.fecha_inicio, l.fecha_fin, l.max_dispositivos
+    `SELECT
+        l.license_key,
+        COALESCE(to_jsonb(l) ->> 'license_type', to_jsonb(l) ->> 'tipo') AS license_type,
+        l.estado,
+        l.fecha_inicio,
+        l.fecha_fin,
+        l.max_dispositivos
      FROM licenses l
-     WHERE l.business_id = $1
+     INNER JOIN customers c ON c.id = l.customer_id
+     WHERE c.business_id = $1
      ORDER BY (l.estado = 'ACTIVA') DESC, l.fecha_fin DESC NULLS LAST, l.created_at DESC
      LIMIT 1`,
     [businessId]
