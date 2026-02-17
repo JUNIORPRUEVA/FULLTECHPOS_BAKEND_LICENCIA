@@ -10,174 +10,233 @@
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background-color: #F3F4F6;
+            background: #F3F4F6;
             color: #1F2937;
         }
 
-        .navbar {
-            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
-            color: white;
-            padding: 20px 40px;
+        .admin-layout {
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 270px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, #031026 0%, #062B63 30%, #0B7C61 74%, #043523 100%);
+            color: #fff;
+            padding: 24px 0;
+            box-shadow: 4px 0 24px rgba(2, 6, 23, 0.24);
+            overflow-y: auto;
+            z-index: 30;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .sidebar-logo {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-logo img {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            object-fit: contain;
+        }
+
+        .sidebar h2 {
+            font-size: 1.06rem;
+            font-weight: 900;
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 8px;
+        }
+
+        .sidebar-nav a {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            gap: 10px;
+            margin: 3px 0;
+            padding: 11px 14px;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            border-radius: 10px;
+            border-left: 3px solid transparent;
+            font-weight: 700;
+            transition: .2s ease;
         }
 
-        .navbar h1 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
+        .sidebar-nav a:hover {
+            background: rgba(255, 255, 255, 0.10);
+            transform: translateX(2px);
         }
 
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 20px;
+        .sidebar-nav a.active {
+            background: rgba(30, 201, 255, 0.14);
+            border-left-color: rgba(30, 201, 255, 0.95);
         }
 
-        .navbar-user p {
-            font-size: 0.9rem;
-            opacity: 0.9;
+        .sidebar-footer {
+            padding: 14px 16px 0 16px;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.14);
         }
 
         .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            width: 100%;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            font-weight: 800;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.3s ease;
         }
 
         .logout-btn:hover {
-            background: white;
-            color: #05422C;
+            background: #fff;
+            color: #031026;
         }
 
-        .back-link {
-            color: white;
-            text-decoration: none;
-            margin-right: 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+        .main {
+            margin-left: 270px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .back-link:hover {
-            opacity: 0.8;
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: linear-gradient(135deg, #031026 0%, #0A6CFF 45%, #0B7C61 100%);
+            color: #fff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 12px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
         }
 
-        .container {
-            max-width: 1280px;
+        .topbar h1 {
+            font-size: 1.15rem;
+            font-weight: 900;
+            letter-spacing: -0.3px;
+        }
+
+        .topbar-user {
+            font-size: .9rem;
+            opacity: .95;
+        }
+
+        .menu-btn {
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.36);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .content {
+            width: min(100%, 1800px);
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 24px;
         }
 
-        .section {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
+        .panel {
+            background: #fff;
             border: 1px solid #E5E7EB;
+            border-radius: 16px;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-            animation: slideInUp 0.6s ease;
+            padding: 20px;
         }
 
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
         }
 
         .section-title {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #05422C;
-            margin-bottom: 30px;
-            letter-spacing: -0.5px;
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #062B63;
         }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            background: #F3F4F6;
+            border: 1px solid #E5E7EB;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: .88rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #031026 0%, #0A6CFF 45%, #0B7C61 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover { box-shadow: 0 10px 26px rgba(2, 6, 23, 0.28); }
+
+        .btn-muted {
+            background: #fff;
+            color: #062B63;
+            border: 1px solid #CBD5E1;
+        }
+
+        .btn-muted:hover { background: #F8FAFC; }
 
         .alert {
-            background-color: #DBEAFE;
+            background: #DBEAFE;
             border-left: 4px solid #3B82F6;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
             color: #1E40AF;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-            gap: 20px;
-            margin-top: 20px;
-            align-items: start;
-        }
-
-        .card {
-            border: 1px solid #E5E7EB;
-            border-radius: 14px;
-            padding: 20px;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFD 100%);
-            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
-        }
-
-        .card h3 {
-            margin-bottom: 12px;
-            color: #05422C;
-            font-weight: 800;
-            font-size: 1.05rem;
-        }
-
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 12px;
-        }
-
-        .field label {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #374151;
-        }
-
-        .field input {
-            padding: 10px 12px;
-            border: 1px solid #D1D5DB;
-            border-radius: 10px;
-            outline: none;
-            font-size: 0.95rem;
-        }
-
-        .field input:focus {
-            border-color: #0d5a3b;
-            box-shadow: 0 0 0 3px rgba(13, 90, 59, 0.15);
-        }
-
-        .hint {
-            font-size: 0.8rem;
-            color: #6B7280;
+            font-size: .92rem;
+            font-weight: 600;
         }
 
         .msg {
@@ -185,6 +244,7 @@
             padding: 12px;
             border-radius: 10px;
             display: none;
+            font-weight: 700;
         }
 
         .msg.ok {
@@ -201,8 +261,16 @@
             color: #991B1B;
         }
 
+        .table-wrap {
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            overflow: auto;
+            background: #fff;
+        }
+
         table {
             width: 100%;
+            min-width: 980px;
             border-collapse: collapse;
         }
 
@@ -210,8 +278,17 @@
             padding: 10px 12px;
             border-bottom: 1px solid #E5E7EB;
             text-align: left;
-            font-size: 0.92rem;
+            font-size: 0.91rem;
             vertical-align: top;
+        }
+
+        th {
+            background: #F8FAFC;
+            color: #0F172A;
+            font-weight: 900;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
 
         td.actions {
@@ -219,34 +296,17 @@
             text-align: right;
         }
 
-        .link-btn {
-            background: transparent;
-            border: none;
-            color: #05422C;
-            font-weight: 700;
-            cursor: pointer;
-            padding: 7px 10px;
-            border-radius: 8px;
-            font-size: 0.84rem;
-            border: 1px solid transparent;
+        .hint {
+            font-size: 0.79rem;
+            color: #6B7280;
         }
 
-        .link-btn:hover {
-            background: rgba(5, 66, 44, 0.08);
-            border-color: rgba(5, 66, 44, 0.18);
-        }
-
-        .token-btn {
-            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
-            color: #fff;
-            border: 1px solid rgba(5, 66, 44, 0.35);
-            box-shadow: 0 8px 18px rgba(5, 66, 44, 0.25);
-        }
-
-        .token-btn:hover {
-            background: linear-gradient(135deg, #065336 0%, #106a46 100%);
-            color: #fff;
-            border-color: rgba(5, 66, 44, 0.55);
+        .pagination {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
         }
 
         .actions-dropdown {
@@ -266,11 +326,11 @@
             align-items: center;
             gap: 6px;
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+            cursor: pointer;
         }
 
         .actions-trigger:hover {
             background: #F0F9F4;
-            color: #05422C;
             border-color: #99CCB5;
         }
 
@@ -278,19 +338,17 @@
             position: absolute;
             right: 0;
             top: calc(100% + 8px);
-            min-width: 210px;
+            min-width: 220px;
             background: #FFFFFF;
             border: 1px solid #E5E7EB;
             border-radius: 12px;
             box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
             padding: 8px;
             display: none;
-            z-index: 50;
+            z-index: 60;
         }
 
-        .actions-menu.show {
-            display: block;
-        }
+        .actions-menu.show { display: block; }
 
         .actions-menu-item {
             width: 100%;
@@ -308,100 +366,153 @@
         .actions-menu-item:hover {
             background: #F8FAFC;
             border-color: #E5E7EB;
-            transform: none;
-            box-shadow: none;
         }
 
-        .actions-menu-item.token {
-            color: #05422C;
-        }
+        .actions-menu-item.token { color: #05422C; }
+        .actions-menu-item.danger { color: #991B1B; }
 
-        .actions-menu-item.danger {
-            color: #991B1B;
-        }
-
-        th {
-            background: #F3F4F6;
-            font-weight: 800;
-        }
-
-        .pill {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            background: #F3F4F6;
-            border: 1px solid #E5E7EB;
-            color: #374151;
-        }
-
-        .row-actions {
-            display: flex;
-            gap: 8px;
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.55);
+            display: none;
             align-items: center;
-            justify-content: flex-end;
-            flex-wrap: wrap;
+            justify-content: center;
+            z-index: 80;
+            padding: 14px;
         }
 
-        .secondary-btn {
-            background: #FFFFFF;
-            color: #05422C;
-            border: 2px solid #05422C;
+        .modal.show { display: flex; }
+
+        .modal-card {
+            width: min(760px, 100%);
+            max-height: calc(100vh - 32px);
+            overflow: auto;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            box-shadow: 0 24px 50px rgba(2, 6, 23, 0.32);
+            padding: 18px;
         }
 
-        .secondary-btn:hover {
-            background: #05422C;
-            color: #FFFFFF;
+        .modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
         }
 
-        button {
-            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
+        .modal-head h3 {
+            color: #062B63;
+            font-size: 1.1rem;
+            font-weight: 900;
+        }
+
+        .close-btn {
+            border: 1px solid #CBD5E1;
+            background: #fff;
+            color: #334155;
+            border-radius: 10px;
+            padding: 7px 10px;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        button:hover {
-            box-shadow: 0 8px 20px rgba(5, 66, 44, 0.3);
-            transform: translateY(-2px);
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
-        @media (max-width: 768px) {
-            .navbar {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            font-size: 0.84rem;
+            font-weight: 800;
+            color: #334155;
+        }
+
+        .field input {
+            padding: 10px 11px;
+            border: 1px solid #D1D5DB;
+            border-radius: 10px;
+            outline: none;
+            font-size: 0.92rem;
+        }
+
+        .field input:focus {
+            border-color: #0A6CFF;
+            box-shadow: 0 0 0 3px rgba(10, 108, 255, 0.15);
+        }
+
+        .drawer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.45);
+            z-index: 25;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                padding: 16px;
+                width: 100%;
             }
 
-            .navbar-user {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .container {
-                padding: 20px;
-            }
-
-            .grid {
+            .form-grid {
                 grid-template-columns: 1fr;
             }
 
-            .section {
-                padding: 16px;
-                border-radius: 14px;
+            .field.full {
+                grid-column: auto;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform .25s ease;
             }
 
-            .card {
-                padding: 14px;
+            body.drawer-open .sidebar {
+                transform: translateX(0);
             }
 
-            table thead {
-                display: none;
+            .drawer-overlay {
+                display: block;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity .2s ease;
             }
+
+            body.drawer-open .drawer-overlay {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .menu-btn {
+                display: inline-flex;
+            }
+
+            .topbar {
+                padding: 10px 12px;
+            }
+
+            table thead { display: none; }
 
             table,
             tbody,
@@ -409,14 +520,12 @@
             td {
                 display: block;
                 width: 100%;
+                min-width: 0;
             }
 
             tr {
-                border: 1px solid #E5E7EB;
-                border-radius: 12px;
-                padding: 10px;
-                margin-bottom: 10px;
-                background: #fff;
+                border-bottom: 1px solid #E5E7EB;
+                padding: 8px 0;
             }
 
             td {
@@ -425,9 +534,7 @@
                 text-align: left !important;
             }
 
-            td:last-child {
-                border-bottom: none;
-            }
+            td:last-child { border-bottom: none; }
 
             td::before {
                 content: attr(data-label);
@@ -435,22 +542,10 @@
                 font-size: 0.74rem;
                 color: #6B7280;
                 font-weight: 700;
-                margin-bottom: 4px;
+                margin-bottom: 3px;
             }
 
-            td.actions .row-actions {
-                justify-content: flex-start;
-                gap: 6px;
-            }
-
-            td.actions .link-btn {
-                width: 100%;
-                text-align: left;
-            }
-
-            .actions-dropdown {
-                width: 100%;
-            }
+            .actions-dropdown { width: 100%; }
 
             .actions-trigger {
                 width: 100%;
@@ -462,94 +557,67 @@
                 right: 0;
                 min-width: 100%;
             }
+
+            .pagination {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .pagination .btn {
+                width: 100%;
+            }
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
 </head>
 <body class="jr-admin">
-    <!-- NAVBAR -->
-    <div class="navbar">
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <a href="admin-hub.html" class="back-link">← Volver</a>
-            <h1>
-                <span class="jr-admin-brand">
-                    <img src="../assets/img/logo/logoprincipal.png" alt="JR Digital" class="jr-admin-brandLogo" />
-                    <span class="jr-admin-brandText">
-                        <span class="jr-admin-brandName">JR Digital</span>
-                        <span class="jr-admin-brandPage">Gestionar Clientes</span>
-                    </span>
-                </span>
-            </h1>
-        </div>
-        <div class="navbar-user">
-            <p>Bienvenido, <strong id="userName">Admin</strong></p>
-            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="section">
-            <h2 class="section-title">Gestión de Clientes</h2>
-
-            <div class="alert">
-                ℹ️ Aquí creas los clientes a los que asignarás licencias.
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <img src="../assets/img/logo/logoprincipal.png" alt="JR Digital" />
+                </div>
+                <h2>JR Digital</h2>
             </div>
 
-            <div id="msg" class="msg"></div>
+            <ul class="sidebar-nav">
+                <li><a href="admin-hub.html"><span>🏠</span> Panel Principal</a></li>
+                <li><a class="active" href="customers.html"><span>👥</span> Gestionar Clientes</a></li>
+                <li><a href="licenses.html"><span>📜</span> Gestionar Licencias</a></li>
+                <li><a href="license-config.html"><span>🔐</span> Tokens Reset</a></li>
+                <li><a href="products.html"><span>🧩</span> Productos</a></li>
+                <li><a href="store-settings.html"><span>🏷️</span> Store Settings</a></li>
+            </ul>
 
-            <div class="grid">
-                <div class="card">
-                    <h3>➕ Nuevo Cliente</h3>
-                    <form id="createForm">
-                        <div class="field">
-                            <label for="business_id">Business ID (opcional)</label>
-                            <input id="business_id" name="business_id" placeholder="Ej: a1b2c3d4e5f6..." />
-                            <div class="hint">Debe ser el mismo Business ID que genera el sistema del cliente (para activación por Internet).</div>
-                        </div>
+            <div class="sidebar-footer">
+                <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+            </div>
+        </aside>
 
-                        <div class="field">
-                            <label for="nombre_negocio">Nombre del negocio *</label>
-                            <input id="nombre_negocio" name="nombre_negocio" placeholder="Ej: Colmado La Esquina" required />
-                        </div>
+        <div class="drawer-overlay" onclick="closeDrawer()"></div>
 
-                        <div class="field">
-                            <label for="contacto_nombre">Nombre de contacto</label>
-                            <input id="contacto_nombre" name="contacto_nombre" placeholder="Ej: Juan Pérez" />
-                        </div>
+        <main class="main">
+            <header class="topbar">
+                <button class="menu-btn" type="button" onclick="toggleDrawer()">☰ Menú</button>
+                <h1>Gestión de Clientes</h1>
+                <div class="topbar-user">Bienvenido, <strong id="userName">Admin</strong></div>
+            </header>
 
-                        <div class="field">
-                            <label for="contacto_telefono">Teléfono *</label>
-                            <input id="contacto_telefono" name="contacto_telefono" placeholder="Ej: 8290000000" required />
-                            <div class="hint">Debe coincidir con el teléfono que usarás para soporte/activación.</div>
-                        </div>
-
-                        <div class="field">
-                            <label for="contacto_email">Email</label>
-                            <input id="contacto_email" name="contacto_email" placeholder="Ej: cliente@correo.com" />
-                        </div>
-
-                        <div class="field">
-                            <label for="rol_negocio">Rol del negocio</label>
-                            <input id="rol_negocio" name="rol_negocio" placeholder="Ej: Ferretería, Colmado, Restaurante" />
-                        </div>
-
-                        <div class="button-group">
-                            <button type="submit">Crear cliente</button>
-                            <button type="button" class="secondary-btn" onclick="resetForm()">Limpiar</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="card">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                        <h3 style="margin:0;">📋 Clientes</h3>
-                        <div class="row-actions">
+            <section class="content">
+                <div class="panel">
+                    <div class="panel-head">
+                        <h2 class="section-title">Clientes Registrados</h2>
+                        <div class="toolbar">
+                            <button class="btn btn-primary" type="button" onclick="openCreateModal()">+ Crear cliente</button>
                             <span class="pill" id="totalPill">Total: 0</span>
-                            <button type="button" class="secondary-btn" onclick="loadCustomers(1)">Refrescar</button>
+                            <button class="btn btn-muted" type="button" onclick="loadCustomers(1)">Refrescar</button>
                         </div>
                     </div>
 
-                    <div style="margin-top: 12px; overflow:auto;">
+                    <div class="alert">Gestiona clientes y usa el menú Acciones para token reset, licencias y más.</div>
+                    <div id="msg" class="msg"></div>
+
+                    <div class="table-wrap">
                         <table>
                             <thead>
                                 <tr>
@@ -568,13 +636,62 @@
                         </table>
                     </div>
 
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top: 12px;">
-                        <button type="button" class="secondary-btn" id="prevBtn" onclick="prevPage()">← Anterior</button>
-                        <div style="color:#6B7280; font-weight:600;" id="pageInfo">Página 1</div>
-                        <button type="button" class="secondary-btn" id="nextBtn" onclick="nextPage()">Siguiente →</button>
+                    <div class="pagination">
+                        <button type="button" class="btn btn-muted" id="prevBtn" onclick="prevPage()">← Anterior</button>
+                        <div style="color:#6B7280; font-weight:700; text-align:center;" id="pageInfo">Página 1</div>
+                        <button type="button" class="btn btn-muted" id="nextBtn" onclick="nextPage()">Siguiente →</button>
                     </div>
                 </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="createCustomerModal" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="createClientTitle">
+            <div class="modal-head">
+                <h3 id="createClientTitle">Crear cliente</h3>
+                <button type="button" class="close-btn" onclick="closeCreateModal()">✕</button>
             </div>
+
+            <form id="createForm">
+                <div class="form-grid">
+                    <div class="field full">
+                        <label for="business_id">Business ID (opcional)</label>
+                        <input id="business_id" name="business_id" placeholder="Ej: a1b2c3d4e5f6..." />
+                        <div class="hint">Debe ser el mismo Business ID generado por el sistema del cliente.</div>
+                    </div>
+
+                    <div class="field full">
+                        <label for="nombre_negocio">Nombre del negocio *</label>
+                        <input id="nombre_negocio" name="nombre_negocio" placeholder="Ej: Colmado La Esquina" required />
+                    </div>
+
+                    <div class="field">
+                        <label for="contacto_nombre">Nombre de contacto</label>
+                        <input id="contacto_nombre" name="contacto_nombre" placeholder="Ej: Juan Pérez" />
+                    </div>
+
+                    <div class="field">
+                        <label for="contacto_telefono">Teléfono *</label>
+                        <input id="contacto_telefono" name="contacto_telefono" placeholder="Ej: 8290000000" required />
+                    </div>
+
+                    <div class="field">
+                        <label for="contacto_email">Email</label>
+                        <input id="contacto_email" name="contacto_email" placeholder="Ej: cliente@correo.com" />
+                    </div>
+
+                    <div class="field">
+                        <label for="rol_negocio">Rol del negocio</label>
+                        <input id="rol_negocio" name="rol_negocio" placeholder="Ej: Ferretería, Colmado, Restaurante" />
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-muted" onclick="resetForm()">Limpiar</button>
+                    <button type="submit" class="btn btn-primary">Crear cliente</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -582,18 +699,12 @@
         const API_URL = (() => {
             const host = (window.location && window.location.hostname) ? String(window.location.hostname) : '';
             const origin = (window.location && typeof window.location.origin === 'string') ? window.location.origin : '';
-
-            // Local dev: keep the historical localhost backend.
             if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:3000';
-
-            // Production: same-origin (EasyPanel domain).
             if (origin && origin !== 'null') return origin;
-
-            // Fallback when opened from file://
             return '';
         })();
-        let sessionId = localStorage.getItem('sessionId');
 
+        let sessionId = localStorage.getItem('sessionId');
         let currentPage = 1;
         const limit = 20;
 
@@ -615,8 +726,37 @@
             const form = document.getElementById('createForm');
             form.addEventListener('submit', createCustomer);
 
+            const modal = document.getElementById('createCustomerModal');
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) closeCreateModal();
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeCreateModal();
+                    closeAllActionsMenus();
+                    closeDrawer();
+                }
+            });
+
             loadCustomers(1);
         });
+
+        function toggleDrawer() {
+            document.body.classList.toggle('drawer-open');
+        }
+
+        function closeDrawer() {
+            document.body.classList.remove('drawer-open');
+        }
+
+        function openCreateModal() {
+            document.getElementById('createCustomerModal').classList.add('show');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createCustomerModal').classList.remove('show');
+        }
 
         function showMessage(type, text) {
             const el = document.getElementById('msg');
@@ -641,9 +781,7 @@
             try {
                 const response = await fetch(`${API_URL}/api/verify-session`, {
                     cache: 'no-store',
-                    headers: {
-                        'x-session-id': sessionId
-                    }
+                    headers: { 'x-session-id': sessionId }
                 });
                 const data = await response.json().catch(() => ({}));
 
@@ -653,14 +791,12 @@
                     logout();
                 }
             } catch (error) {
-                // No forzar logout en errores transitorios de red.
                 console.warn('verifySession failed (transient):', error && error.message ? error.message : error);
             }
         }
 
         function resetForm() {
             document.getElementById('createForm').reset();
-            clearMessage();
         }
 
         async function createCustomer(e) {
@@ -702,8 +838,10 @@
                     showMessage('err', data?.message || `Error creando cliente (${res.status})`);
                     return;
                 }
+
                 showMessage('ok', '✅ Cliente creado correctamente');
                 document.getElementById('createForm').reset();
+                closeCreateModal();
                 await loadCustomers(1);
             } catch (err) {
                 showMessage('err', 'No se pudo conectar con el servidor');
@@ -767,9 +905,7 @@
                             <td data-label="Creado">${escapeHtml(created)}</td>
                             <td data-label="Acciones" class="actions">
                                 <div class="actions-dropdown">
-                                    <button class="actions-trigger" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')">
-                                        Acciones <span>▾</span>
-                                    </button>
+                                    <button class="actions-trigger" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')">Acciones <span>▾</span></button>
                                     <div class="actions-menu" id="${escapeAttr(menuId)}">
                                         <button class="actions-menu-item token" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')">Generar token reset</button>
                                         <button class="actions-menu-item" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','${escapeAttr(businessId)}')">Asignar Business ID</button>
@@ -833,7 +969,6 @@
             }
         }
 
-
         async function deleteCustomer(customerId, negocio) {
             closeAllActionsMenus();
             const id = String(customerId || '').trim();
@@ -883,7 +1018,6 @@
         }
 
         function escapeAttr(value) {
-            // Para valores usados dentro de onclick='...'
             return String(value || '').replace(/'/g, "\\'");
         }
 
@@ -906,15 +1040,12 @@
 
             const isOpen = menu.classList.contains('show');
             closeAllActionsMenus();
-            if (!isOpen) {
-                menu.classList.add('show');
-            }
+            if (!isOpen) menu.classList.add('show');
         }
 
         document.addEventListener('click', () => {
             closeAllActionsMenus();
         });
-
 
         function goToLicenses(customerId) {
             closeAllActionsMenus();
@@ -947,7 +1078,6 @@
             } catch (e) {}
 
             localStorage.removeItem('sessionId');
-            // Volver a la página principal (no al login)
             window.location.href = '/';
         }
     </script>
