@@ -47,9 +47,11 @@ const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
 const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
 const adminSupportResetRoutes = require('./routes/adminSupportResetRoutes');
+const adminSupportMessageConfigRoutes = require('./routes/adminSupportMessageConfigRoutes');
 const storePublicRoutes = require('./routes/storePublicRoutes');
 const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
+const supportRequestRoutes = require('./routes/supportRequestRoutes');
 
 // Módulos opcionales (solo cuando se usa el backend completo)
 const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
@@ -197,9 +199,13 @@ app.use('/api/public', publicAssetsRoutes);
 app.use('/api/admin', adminProductsRoutes);
 app.use('/api/admin', adminStoreSettingsRoutes);
 app.use('/api/admin/support-reset', adminSupportResetRoutes);
+app.use('/api/admin/support-message-config', adminSupportMessageConfigRoutes);
 
 // Recuperación de contraseña para login local FULLPOS (código OTP vía Evolution)
 app.use('/api/password-reset', passwordResetRoutes);
+
+// Solicitudes de soporte desde FULLPOS (envío server-side vía Evolution)
+app.use('/api/support', supportRequestRoutes);
 
 // ==========================================
 // RUTAS DE AUTENTICACIÓN

@@ -443,7 +443,7 @@
     <section class="hero">
       <h2>Panel de Configuración por Sesiones</h2>
       <p>
-        Administra licencias por defecto y recuperación de contraseña con token manual de soporte.
+        Administra licencias, token manual de recuperación y mensajería de soporte por Evolution.
         El diseño está optimizado para escritorio y móvil para gestionar cambios incluso desde tu teléfono.
       </p>
     </section>
@@ -488,7 +488,87 @@
       <article class="session-card">
         <div class="session-head">
           <div>
-            <h3 class="session-title">Sesión 2 · Recuperación con token de soporte</h3>
+            <h3 class="session-title">Sesión 2 · Soporte por Evolution (mínimo)</h3>
+            <p class="session-sub">Configura solo lo necesario para enviar solicitudes de soporte desde la app sin salir.</p>
+          </div>
+          <span class="badge" id="supportMsgBadge">Cargando...</span>
+        </div>
+        <div class="session-body">
+          <div id="supportMsgMessage" class="message"></div>
+          <div id="supportMsgLoading" class="loading"><span class="spinner"></span> Cargando configuración de mensajería...</div>
+
+          <form id="supportMsgForm" style="display:none;">
+            <div class="inline-note">
+              Cuando el cliente toque "Solicitar soporte" en FULLPOS, el backend enviará el WhatsApp usando esta instancia.
+            </div>
+
+            <div class="fields-2">
+              <div class="field">
+                <label for="sm_enabled">Habilitado</label>
+                <div class="switch-row">
+                  <span class="switch-label">Mensajería soporte</span>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <label class="switch-wrap" for="sm_enabled">
+                      <input type="checkbox" id="sm_enabled">
+                      <span class="switch-slider"></span>
+                    </label>
+                    <span class="switch-state" id="sm_enabled_state">OFF</span>
+                  </div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="sm_support_phone">WhatsApp de soporte (destino)</label>
+                <input type="text" id="sm_support_phone" placeholder="Ej: 18295319442">
+              </div>
+            </div>
+
+            <div class="fields-2">
+              <div class="field">
+                <label for="sm_base_url">Base URL Evolution</label>
+                <input type="text" id="sm_base_url" placeholder="https://evolution.tudominio.com">
+              </div>
+              <div class="field">
+                <label for="sm_instance_name">Nombre de instancia</label>
+                <input type="text" id="sm_instance_name" placeholder="fullpos-instance">
+              </div>
+            </div>
+
+            <div class="fields-2">
+              <div class="field">
+                <label for="sm_api_key">Nueva API key (opcional)</label>
+                <input type="password" id="sm_api_key" placeholder="Escribe para reemplazar la key actual">
+              </div>
+              <div class="field">
+                <label for="sm_api_key_masked">API key actual</label>
+                <input type="text" id="sm_api_key_masked" disabled>
+              </div>
+            </div>
+
+            <div class="fields-2">
+              <div class="field">
+                <label for="sm_send_timeout_ms">Timeout envío (ms)</label>
+                <input type="number" id="sm_send_timeout_ms" min="3000" max="60000" step="500">
+              </div>
+              <div class="field"></div>
+            </div>
+
+            <div class="field">
+              <label for="sm_template_text">Plantilla del mensaje</label>
+              <textarea id="sm_template_text" placeholder="Solicitud de soporte FULLPOS..."></textarea>
+            </div>
+
+            <div class="actions">
+              <button type="button" class="btn-muted" onclick="resetSupportMessageForm()">Restaurar valores cargados</button>
+              <button type="submit" class="btn-primary" id="supportMsgSubmitBtn">Guardar mensajería</button>
+            </div>
+          </form>
+        </div>
+      </article>
+
+      <article class="session-card">
+        <div class="session-head">
+          <div>
+            <h3 class="session-title">Sesión 3 · Recuperación con token de soporte</h3>
             <p class="session-sub">Genera token manual temporal para resetear contraseña local del cliente.</p>
           </div>
           <span class="badge ok" id="supportBadge">Activo</span>
@@ -529,7 +609,7 @@
       <article class="session-card">
         <div class="session-head">
           <div>
-            <h3 class="session-title">Sesión 3 · Estado actual</h3>
+            <h3 class="session-title">Sesión 4 · Estado actual</h3>
             <p class="session-sub">Resumen rápido de licencias y modo de recuperación activo.</p>
           </div>
           <span class="badge ok">Panel en línea</span>
@@ -549,8 +629,8 @@
               <span class="status-v" id="statusRecoveryMode">Token soporte</span>
             </div>
             <div class="status-item">
-              <span class="status-k">Validez token</span>
-              <span class="status-v" id="statusTokenTtl">15 min</span>
+              <span class="status-k">Mensajería soporte</span>
+              <span class="status-v" id="statusSupportMsgEnabled">-</span>
             </div>
           </div>
         </div>
@@ -569,6 +649,7 @@
 
     let sessionId = localStorage.getItem('sessionId');
     let originalLicenseConfig = {};
+    let originalSupportMessageConfig = {};
 
     window.addEventListener('load', () => {
       if (!sessionId) {
@@ -585,6 +666,7 @@
 
       verifySession();
       loadLicenseConfiguration();
+      loadSupportMessageConfiguration();
       applySupportTokenPrefillFromUrl();
     });
 
@@ -623,6 +705,14 @@
     function refreshStatusPanel() {
       document.getElementById('statusDemoDays').textContent = originalLicenseConfig.demo_dias_validez || '-';
       document.getElementById('statusFullDays').textContent = originalLicenseConfig.full_dias_validez || '-';
+      document.getElementById('statusSupportMsgEnabled').textContent = originalSupportMessageConfig.enabled ? 'Activo' : 'Inactivo';
+    }
+
+    function refreshSupportMessageEnabledLabel() {
+      const isEnabled = Boolean(document.getElementById('sm_enabled').checked);
+      const stateEl = document.getElementById('sm_enabled_state');
+      stateEl.textContent = isEnabled ? 'ON' : 'OFF';
+      stateEl.style.color = isEnabled ? '#065f46' : '#334155';
     }
 
     async function loadLicenseConfiguration() {
@@ -713,6 +803,122 @@
       document.getElementById('licenseMessage').classList.remove('show');
     }
 
+    async function loadSupportMessageConfiguration() {
+      const loading = document.getElementById('supportMsgLoading');
+      const form = document.getElementById('supportMsgForm');
+
+      loading.style.display = 'flex';
+      form.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_URL}/api/admin/support-message-config`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { 'x-session-id': sessionId }
+        });
+
+        const data = await response.json().catch(() => ({}));
+        loading.style.display = 'none';
+
+        if (response.ok && data.ok && data.config) {
+          originalSupportMessageConfig = { ...data.config };
+
+          document.getElementById('sm_enabled').checked = Boolean(data.config.enabled);
+          document.getElementById('sm_base_url').value = data.config.base_url || '';
+          document.getElementById('sm_instance_name').value = data.config.instance_name || '';
+          document.getElementById('sm_api_key').value = '';
+          document.getElementById('sm_api_key_masked').value = data.config.api_key_masked || '(sin API key guardada)';
+          document.getElementById('sm_support_phone').value = data.config.support_phone || '';
+          document.getElementById('sm_send_timeout_ms').value = data.config.send_timeout_ms || 12000;
+          document.getElementById('sm_template_text').value = data.config.template_text || '';
+
+          refreshSupportMessageEnabledLabel();
+          form.style.display = 'block';
+          setBadge('supportMsgBadge', data.config.enabled ? 'Habilitado' : 'Deshabilitado', data.config.enabled ? 'ok' : '');
+          refreshStatusPanel();
+          return;
+        }
+
+        form.style.display = 'block';
+        setBadge('supportMsgBadge', 'Error', 'err');
+        showMessage('supportMsgMessage', data.message || 'No se pudo cargar configuración de mensajería', 'error');
+      } catch (error) {
+        loading.style.display = 'none';
+        form.style.display = 'block';
+        setBadge('supportMsgBadge', 'Error conexión', 'err');
+        showMessage('supportMsgMessage', 'Error de conexión: ' + error.message, 'error');
+      }
+    }
+
+    document.getElementById('supportMsgForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('supportMsgSubmitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" style="display:inline-block; margin-right:8px;"></span> Guardando...';
+
+      try {
+        const payload = {
+          enabled: Boolean(document.getElementById('sm_enabled').checked),
+          base_url: document.getElementById('sm_base_url').value.trim(),
+          instance_name: document.getElementById('sm_instance_name').value.trim(),
+          support_phone: document.getElementById('sm_support_phone').value.trim(),
+          send_timeout_ms: parseInt(document.getElementById('sm_send_timeout_ms').value, 10) || 12000,
+          template_text: document.getElementById('sm_template_text').value.trim()
+        };
+
+        const newApiKey = document.getElementById('sm_api_key').value.trim();
+        if (newApiKey) {
+          payload.api_key = newApiKey;
+        }
+
+        const response = await fetch(`${API_URL}/api/admin/support-message-config`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-id': sessionId
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.ok && data.config) {
+          originalSupportMessageConfig = { ...data.config };
+
+          document.getElementById('sm_api_key').value = '';
+          document.getElementById('sm_api_key_masked').value = data.config.api_key_masked || '(sin API key guardada)';
+
+          refreshSupportMessageEnabledLabel();
+          refreshStatusPanel();
+          setBadge('supportMsgBadge', data.config.enabled ? 'Habilitado' : 'Deshabilitado', data.config.enabled ? 'ok' : '');
+          showMessage('supportMsgMessage', 'Configuración de mensajería guardada correctamente.', 'success');
+          return;
+        }
+
+        setBadge('supportMsgBadge', 'Error', 'err');
+        showMessage('supportMsgMessage', data.message || 'No se pudo guardar configuración de mensajería', 'error');
+      } catch (error) {
+        setBadge('supportMsgBadge', 'Error conexión', 'err');
+        showMessage('supportMsgMessage', 'Error de conexión: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar mensajería';
+      }
+    });
+
+    function resetSupportMessageForm() {
+      document.getElementById('sm_enabled').checked = Boolean(originalSupportMessageConfig.enabled);
+      document.getElementById('sm_base_url').value = originalSupportMessageConfig.base_url || '';
+      document.getElementById('sm_instance_name').value = originalSupportMessageConfig.instance_name || '';
+      document.getElementById('sm_api_key').value = '';
+      document.getElementById('sm_api_key_masked').value = originalSupportMessageConfig.api_key_masked || '(sin API key guardada)';
+      document.getElementById('sm_support_phone').value = originalSupportMessageConfig.support_phone || '';
+      document.getElementById('sm_send_timeout_ms').value = originalSupportMessageConfig.send_timeout_ms || 12000;
+      document.getElementById('sm_template_text').value = originalSupportMessageConfig.template_text || '';
+      refreshSupportMessageEnabledLabel();
+      document.getElementById('supportMsgMessage').classList.remove('show');
+    }
+
     function clearSupportMessage() {
       document.getElementById('supportTokenMessage').classList.remove('show');
     }
@@ -781,6 +987,7 @@
 
     document.getElementById('support_business_id').addEventListener('input', clearSupportMessage);
     document.getElementById('support_username').addEventListener('input', clearSupportMessage);
+    document.getElementById('sm_enabled').addEventListener('change', refreshSupportMessageEnabledLabel);
 
     async function verifySession() {
       try {
