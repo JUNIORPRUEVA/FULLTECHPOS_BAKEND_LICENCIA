@@ -612,7 +612,7 @@
                         const biz = license.business_id || '';
                         html += `
                             <tr style="border-bottom: 1px solid #E5E7EB;">
-                                <td style="padding: 12px; font-weight: 900;">${(license.project_code || 'DEFAULT')}</td>
+                                <td style="padding: 12px; font-weight: 900;">${(license.project_code || 'FULLPOS')}</td>
                                 <td style="padding: 12px; font-weight: 600;">${license.nombre_negocio || '—'}</td>
                                 <td style="padding: 12px; font-family:monospace; font-weight:800;">${biz ? biz : '<span style=\"color:#6B7280;\">—</span>'}</td>
                                 <td style="padding: 12px;">${license.license_key}</td>
@@ -629,7 +629,7 @@
                                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                         <button onclick="openDetailModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#3B82F6; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Ver</button>
                                         <button onclick="openEditModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#10B981; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
-                                        <button onclick="activateCloudLicense('${String(biz).replace(/'/g, "\\'")}', { projectCode: '${(license.project_code || 'DEFAULT')}', licenseId: '${license.id}' })" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#065F46; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🚀 Activar licencia</button>
+                                        <button onclick="activateCloudLicense('${String(biz).replace(/'/g, "\\'")}', { projectCode: ${license.project_code ? `'${String(license.project_code).replace(/'/g, "\\'")}'` : 'null'}, licenseId: '${license.id}' })" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#065F46; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🚀 Activar licencia</button>
                                         <button onclick="checkCloudLicense('${String(biz).replace(/'/g, "\\'")}')" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#0F766E; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🌐 Ver estado</button>
                                         <button onclick="promptOfflineDownload('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#111827; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">📄 Descargar</button>
                                         <button onclick="deleteLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#6B7280; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">Eliminar</button>

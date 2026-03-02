@@ -3,6 +3,12 @@ const customersModel = require('../models/customersModel');
 const licensesModel = require('../models/licensesModel');
 const projectsModel = require('../models/projectsModel');
 
+function isPgMissingColumnOrTable(e) {
+  const code = e && e.code;
+  // 42703 undefined_column, 42P01 undefined_table
+  return code === '42703' || code === '42P01';
+}
+
 function asTrimmed(value) {
   const v = String(value || '').trim();
   return v ? v : '';
@@ -18,9 +24,14 @@ async function resolveProject({ project_id, project_code } = {}) {
     return projectsModel.getProjectById(String(project_id).trim());
   }
 
-  const code = asTrimmed(project_code) || 'FULLPOS';
-  let project = await projectsModel.getProjectByCode(code);
-  if (!project && code !== 'DEFAULT') project = await projectsModel.getDefaultProject();
+  // Treat "DEFAULT" as "no explicit project" (older admin UI sent DEFAULT even
+  // when the license list lacked projects support). This allows safe fallback.
+  const incoming = asTrimmed(project_code);
+  const code = incoming && incoming.toUpperCase() === 'DEFAULT' ? '' : incoming;
+  const effectiveCode = code || 'FULLPOS';
+
+  let project = await projectsModel.getProjectByCode(effectiveCode);
+  if (!project && effectiveCode !== 'DEFAULT') project = await projectsModel.getDefaultProject();
   return project;
 }
 
@@ -36,6 +47,18 @@ async function getNewestLicenseRow({ customerId, projectId }) {
   return res.rows[0] || null;
 }
 
+async function getNewestLicenseRowLegacy({ customerId }) {
+  const res = await pool.query(
+    `SELECT *
+     FROM licenses
+     WHERE customer_id = $1
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [customerId]
+  );
+  return res.rows[0] || null;
+}
+
 async function activateLicenseForBusiness(req, res) {
   try {
     const businessId = asTrimmed(req.params?.business_id);
@@ -43,11 +66,26 @@ async function activateLicenseForBusiness(req, res) {
       return res.status(400).json({ ok: false, message: 'business_id es requerido' });
     }
 
-    const project = await resolveProject({
-      project_id: req.body?.project_id,
-      project_code: req.body?.project_code
-    });
-    if (!project) {
+    // Project resolution is optional for backward compatibility.
+    // If projects table is missing, we still allow activation by license_id/key.
+    let project = null;
+    let projectsSupported = true;
+    try {
+      project = await resolveProject({
+        project_id: req.body?.project_id,
+        project_code: req.body?.project_code
+      });
+    } catch (e) {
+      if (isPgMissingColumnOrTable(e)) {
+        projectsSupported = false;
+        project = null;
+      } else {
+        throw e;
+      }
+    }
+
+    // If projects are supported but we couldn't resolve one, keep old behavior.
+    if (projectsSupported && !project) {
       return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
     }
 
@@ -65,19 +103,35 @@ async function activateLicenseForBusiness(req, res) {
       return res.status(404).json({ ok: false, code: 'BUSINESS_NOT_FOUND', message: 'Negocio no encontrado' });
     }
 
-    const newest = await getNewestLicenseRow({ customerId: customer.id, projectId: project.id });
-    if (!newest) {
-      return res.status(404).json({
-        ok: false,
-        code: 'NO_LICENSE_FOR_BUSINESS',
-        message: 'Este negocio no tiene licencias creadas para este proyecto'
-      });
-    }
-
     const licenseId = asTrimmed(req.body?.license_id);
     const licenseKey = asTrimmed(req.body?.license_key);
 
     let chosen = null;
+
+    // Preload newest (needed for block checks and default selection).
+    // If licenses.project_id doesn't exist, fall back to legacy per-customer newest.
+    let newest = null;
+    if (projectsSupported) {
+      try {
+        newest = await getNewestLicenseRow({ customerId: customer.id, projectId: project.id });
+      } catch (e) {
+        if (isPgMissingColumnOrTable(e) && String(e.message || '').toLowerCase().includes('project_id')) {
+          newest = await getNewestLicenseRowLegacy({ customerId: customer.id });
+        } else {
+          throw e;
+        }
+      }
+    } else {
+      newest = await getNewestLicenseRowLegacy({ customerId: customer.id });
+    }
+
+    if (!newest && !licenseId && !licenseKey) {
+      return res.status(404).json({
+        ok: false,
+        code: 'NO_LICENSE_FOR_BUSINESS',
+        message: 'Este negocio no tiene licencias creadas'
+      });
+    }
 
     if (licenseId) {
       if (!isUuid(licenseId)) {
@@ -90,7 +144,7 @@ async function activateLicenseForBusiness(req, res) {
       if (String(lic.customer_id || '') !== String(customer.id)) {
         return res.status(409).json({ ok: false, code: 'LICENSE_CUSTOMER_MISMATCH', message: 'La licencia no pertenece a este negocio' });
       }
-      if (String(lic.project_id || '') !== String(project.id)) {
+      if (projectsSupported && lic.project_id && String(lic.project_id || '') !== String(project.id)) {
         return res.status(409).json({ ok: false, code: 'LICENSE_PROJECT_MISMATCH', message: 'La licencia no corresponde a este proyecto' });
       }
       chosen = lic;
@@ -102,7 +156,7 @@ async function activateLicenseForBusiness(req, res) {
       if (String(lic.customer_id || '') !== String(customer.id)) {
         return res.status(409).json({ ok: false, code: 'LICENSE_CUSTOMER_MISMATCH', message: 'La licencia no pertenece a este negocio' });
       }
-      if (String(lic.project_id || '') !== String(project.id)) {
+      if (projectsSupported && lic.project_id && String(lic.project_id || '') !== String(project.id)) {
         return res.status(409).json({ ok: false, code: 'LICENSE_PROJECT_MISMATCH', message: 'La licencia no corresponde a este proyecto' });
       }
       chosen = lic;
@@ -112,8 +166,8 @@ async function activateLicenseForBusiness(req, res) {
 
     // IMPORTANT: the public /businesses/:business_id/license endpoint stops if the newest license is BLOQUEADA.
     // If admin tries to activate an older license while there is a newer blocked one, cloud will still return 204.
-    const newestEstado = String(newest.estado || '').toUpperCase();
-    if (newestEstado === 'BLOQUEADA' && String(newest.id) !== String(chosen.id)) {
+    const newestEstado = String(newest?.estado || '').toUpperCase();
+    if (newest && newestEstado === 'BLOQUEADA' && String(newest.id) !== String(chosen.id)) {
       return res.status(409).json({
         ok: false,
         code: 'NEWER_BLOCKED_LICENSE',
@@ -130,7 +184,7 @@ async function activateLicenseForBusiness(req, res) {
       ok: true,
       business_id: businessId,
       customer_id: customer.id,
-      project_code: project.code,
+      project_code: project?.code || chosen?.project_code || null,
       license: updated
     });
   } catch (error) {
