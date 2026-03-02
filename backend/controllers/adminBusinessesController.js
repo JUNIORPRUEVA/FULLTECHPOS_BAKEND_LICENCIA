@@ -2,6 +2,7 @@ const { pool } = require('../db/pool');
 const customersModel = require('../models/customersModel');
 const licensesModel = require('../models/licensesModel');
 const projectsModel = require('../models/projectsModel');
+const licenseChangeBus = require('../services/licenseChangeBus');
 
 function isPgMissingColumnOrTable(e) {
   const code = e && e.code;
@@ -179,6 +180,14 @@ async function activateLicenseForBusiness(req, res) {
     if (!updated) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
+
+    // Notify connected clients (SSE) to refresh license status.
+    try {
+      licenseChangeBus.emitBusinessLicenseChanged(businessId, {
+        reason: 'admin_activate_business',
+        licenseId: String(chosen.id),
+      });
+    } catch (_) {}
 
     return res.json({
       ok: true,

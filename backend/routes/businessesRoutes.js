@@ -13,4 +13,9 @@ router.get('/:business_id/license', (req, res, next) => {
   Promise.resolve(businessesController.getLicense(req, res)).catch(next);
 });
 
+// GET /businesses/:business_id/license/stream (SSE)
+router.get('/:business_id/license/stream', (req, res, next) => {
+  Promise.resolve(businessesController.streamLicenseChanges(req, res)).catch(next);
+});
+
 module.exports = router;

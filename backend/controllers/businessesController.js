@@ -2,6 +2,7 @@ const { pool } = require('../db/pool');
 const projectsModel = require('../models/projectsModel');
 const crypto = require('crypto');
 const { getPrivateKeyPem } = require('../utils/licenseFile');
+const licenseChangeBus = require('../services/licenseChangeBus');
 
 function asTrimmed(value) {
   const v = String(value || '').trim();
@@ -452,7 +453,65 @@ async function getLicense(req, res) {
   }
 }
 
+async function streamLicenseChanges(req, res) {
+  const businessId = asTrimmed(req.params?.business_id);
+  if (!businessId) {
+    return res.status(400).json({ ok: false, message: 'business_id es requerido' });
+  }
+
+  // Server-Sent Events (SSE) stream.
+  res.status(200);
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  // Prevent buffering on some reverse proxies.
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  try {
+    res.flushHeaders?.();
+  } catch (_) {}
+
+  // Suggest client retry delay (ms) when disconnected.
+  res.write('retry: 1000\n');
+
+  // Initial event so clients know the stream is up.
+  res.write(
+    `event: ready\n` +
+      `data: ${JSON.stringify({ ok: true, business_id: businessId, ts: new Date().toISOString() })}\n\n`
+  );
+
+  const keepAlive = setInterval(() => {
+    try {
+      // SSE comment line as heartbeat.
+      res.write(`: ping ${Date.now()}\n\n`);
+    } catch (_) {}
+  }, 15000);
+
+  const unsubscribe = licenseChangeBus.onBusinessLicenseChanged(businessId, (payload) => {
+    try {
+      res.write(`event: license_changed\ndata: ${JSON.stringify(payload || { business_id: businessId, ts: new Date().toISOString() })}\n\n`);
+    } catch (_) {}
+  });
+
+  const cleanup = () => {
+    try {
+      clearInterval(keepAlive);
+    } catch (_) {}
+    try {
+      unsubscribe();
+    } catch (_) {}
+    try {
+      res.end();
+    } catch (_) {}
+  };
+
+  // Close events
+  req.on('close', cleanup);
+  req.on('aborted', cleanup);
+}
+
 module.exports = {
   register,
-  getLicense
+  getLicense,
+  streamLicenseChanges
 };

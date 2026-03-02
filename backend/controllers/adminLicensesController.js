@@ -4,6 +4,7 @@ const licenseConfigService = require('../services/licenseConfigService');
 const { generateLicenseKey } = require('../utils/licenseKey');
 const projectsModel = require('../models/projectsModel');
 const licenseFile = require('../utils/licenseFile');
+const licenseChangeBus = require('../services/licenseChangeBus');
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
@@ -213,10 +214,22 @@ async function bloquearLicense(req, res) {
 async function activarManual(req, res) {
   try {
     const licenseId = req.params.id;
+    const current = await licensesModel.getLicenseById(licenseId);
     const updated = await licensesModel.activateLicenseManually(licenseId);
     if (!updated) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
+
+    try {
+      const biz = String(current?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_activate_manual',
+          licenseId: String(licenseId),
+        });
+      }
+    } catch (_) {}
+
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('activarManual error:', error);
