@@ -1,0 +1,147 @@
+/* JR Digital - Admin mobile drawer (UI only) */
+
+.jr-admin {
+  --jr-drawer-z: 60;
+  --jr-drawer-w: 288px;
+}
+
+.jr-adminDrawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.52);
+  z-index: var(--jr-drawer-z);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.jr-adminDrawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(var(--jr-drawer-w), 92vw);
+  background: var(--jr-grad-brand-vert);
+  color: #fff;
+  z-index: calc(var(--jr-drawer-z) + 1);
+  transform: translateX(-102%);
+  transition: transform 0.22s ease;
+  box-shadow: 10px 0 26px rgba(2, 6, 23, 0.26);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+body.jr-admin-drawer-open .jr-adminDrawer {
+  transform: translateX(0);
+}
+
+body.jr-admin-drawer-open .jr-adminDrawerOverlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.jr-adminDrawerHeader {
+  padding: 18px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jr-adminDrawerHeader img {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 6px;
+}
+
+.jr-adminDrawerTitle {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.jr-adminDrawerTitle strong {
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jr-adminDrawerTitle span {
+  font-size: 0.85rem;
+  opacity: 0.92;
+  font-weight: 700;
+}
+
+.jr-adminDrawerNav {
+  padding: 10px;
+  overflow: auto;
+}
+
+.jr-adminDrawerNav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px;
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 800;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.jr-adminDrawerNav a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(2px);
+}
+
+.jr-adminDrawerNav a[aria-current="page"] {
+  background: rgba(30, 201, 255, 0.14);
+  outline: 2px solid rgba(30, 201, 255, 0.28);
+}
+
+.jr-adminDrawerFooter {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.jr-adminDrawerFooter .jr-adminDrawerClose {
+  width: 100%;
+  border: 1.5px solid rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.jr-adminDrawerFooter .jr-adminDrawerClose:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #031026;
+}
+
+/* Hamburger button (opt-in, doesn't break existing layouts) */
+.jr-adminDrawerBtn {
+  display: none;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .jr-adminDrawerBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

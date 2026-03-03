@@ -8,6 +8,7 @@
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
+    <script defer src="../assets/js/adminDrawer.js"></script>
     <title>Dashboard Administrativo - JR Digital</title>
     <style>
         * {
@@ -355,11 +356,13 @@
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
+    <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
 </head>
 <body class="jr-admin">
     <!-- NAVBAR -->
     <div class="navbar">
         <div style="display:flex; align-items:center; gap: 16px;">
+            <button class="jr-adminDrawerBtn" type="button" data-jr-admin-drawer-open aria-label="Abrir menú">☰</button>
             <a href="admin-hub.html" class="back-link">← Volver</a>
             <h1>
                 <span class="jr-admin-brand">

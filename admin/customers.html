@@ -193,6 +193,149 @@
             flex-wrap: wrap;
         }
 
+        .list-controls {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 10px;
+            margin: 12px 0 10px;
+        }
+
+        .list-controls input,
+        .list-controls select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 12px;
+            outline: none;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+
+        .list-controls input:focus,
+        .list-controls select:focus {
+            border-color: #0A6CFF;
+            box-shadow: 0 0 0 3px rgba(10, 108, 255, 0.14);
+        }
+
+        .customers-list {
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .customer-item {
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .customer-item:last-child {
+            border-bottom: none;
+        }
+
+        .customer-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 12px;
+            cursor: pointer;
+        }
+
+        .customer-line:hover {
+            background: #F8FAFC;
+        }
+
+        .customer-text {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .customer-name {
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 54%;
+        }
+
+        .customer-metaInline {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-size: 0.86rem;
+            color: #64748B;
+            font-weight: 800;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .customer-actions {
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .icon-btn {
+            border: 1px solid #E5E7EB;
+            background: #fff;
+            color: #0F172A;
+            border-radius: 12px;
+            width: 44px;
+            height: 40px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .icon-btn:hover {
+            background: #F8FAFC;
+            border-color: #CBD5E1;
+        }
+
+        .customer-details {
+            display: none;
+            padding: 12px;
+            background: #fff;
+        }
+
+        .customer-item.open .customer-details {
+            display: grid;
+            gap: 10px;
+            border-top: 1px dashed #E5E7EB;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .detail-box {
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 10px;
+            background: #F8FAFC;
+            min-width: 0;
+        }
+
+        .detail-k {
+            font-size: 0.76rem;
+            color: #64748B;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .detail-v {
+            font-size: 0.92rem;
+            font-weight: 900;
+            color: #0F172A;
+            word-break: break-word;
+        }
+
         .pill {
             display: inline-block;
             padding: 5px 10px;
@@ -566,6 +709,14 @@
             .pagination .btn {
                 width: 100%;
             }
+
+            .list-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
@@ -587,6 +738,7 @@
                 <li><a href="license-config.html"><span>🔐</span> Tokens Reset</a></li>
                 <li><a href="products.html"><span>🧩</span> Productos</a></li>
                 <li><a href="store-settings.html"><span>🏷️</span> Store Settings</a></li>
+                <li><a href="dashboard.html"><span>📊</span> Dashboard</a></li>
             </ul>
 
             <div class="sidebar-footer">
@@ -617,23 +769,18 @@
                     <div class="alert">Gestiona clientes y usa el menú Acciones para token reset, licencias y más.</div>
                     <div id="msg" class="msg"></div>
 
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Negocio</th>
-                                    <th>Contacto</th>
-                                    <th>Teléfono</th>
-                                    <th>Email</th>
-                                    <th>Business ID</th>
-                                    <th>Creado</th>
-                                    <th style="text-align:right;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="customersBody">
-                                <tr><td colspan="7" style="color:#6B7280;">Cargando...</td></tr>
-                            </tbody>
-                        </table>
+                    <div class="list-controls">
+                        <input id="searchInput" type="search" placeholder="Buscar: negocio, contacto, teléfono, email, business id..." autocomplete="off" />
+                        <select id="filterSelect" aria-label="Filtro">
+                            <option value="all">Todos</option>
+                            <option value="has_business_id">Con Business ID</option>
+                            <option value="no_business_id">Sin Business ID</option>
+                            <option value="has_email">Con Email</option>
+                        </select>
+                    </div>
+
+                    <div class="customers-list" id="customersList">
+                        <div style="padding: 14px; color:#6B7280; font-weight:700;">Cargando...</div>
                     </div>
 
                     <div class="pagination">
@@ -707,6 +854,7 @@
         let sessionId = localStorage.getItem('sessionId');
         let currentPage = 1;
         const limit = 20;
+        let lastCustomers = [];
 
         window.addEventListener('load', () => {
             if (!sessionId) {
@@ -738,6 +886,19 @@
                     closeDrawer();
                 }
             });
+
+            const searchInput = document.getElementById('searchInput');
+            const filterSelect = document.getElementById('filterSelect');
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    renderCustomersList();
+                });
+            }
+            if (filterSelect) {
+                filterSelect.addEventListener('change', () => {
+                    renderCustomersList();
+                });
+            }
 
             loadCustomers(1);
         });
@@ -860,14 +1021,14 @@
 
         async function loadCustomers(page) {
             currentPage = Math.max(1, Number(page || 1) || 1);
-            const body = document.getElementById('customersBody');
-            body.innerHTML = '<tr><td colspan="7" style="color:#6B7280;">Cargando...</td></tr>';
+            const list = document.getElementById('customersList');
+            list.innerHTML = '<div style="padding: 14px; color:#6B7280; font-weight:700;">Cargando...</div>';
 
             try {
                 const res = await apiFetch(`/api/admin/customers?page=${encodeURIComponent(currentPage)}&limit=${encodeURIComponent(limit)}`);
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
-                    body.innerHTML = `<tr><td colspan="7" style="color:#991B1B;">${data?.message || 'Error cargando clientes'}</td></tr>`;
+                    list.innerHTML = `<div style="padding: 14px; color:#991B1B; font-weight:800;">${escapeHtml(data?.message || 'Error cargando clientes')}</div>`;
                     return;
                 }
 
@@ -881,45 +1042,117 @@
                 document.getElementById('prevBtn').disabled = !hasPrev;
                 document.getElementById('nextBtn').disabled = !hasNext;
 
-                if (!customers.length) {
-                    body.innerHTML = '<tr><td colspan="7" style="color:#6B7280;">No hay clientes aún.</td></tr>';
-                    return;
-                }
-
-                body.innerHTML = customers.map(c => {
-                    const negocio = c.nombre_negocio || '';
-                    const contacto = c.contacto_nombre || '';
-                    const tel = c.contacto_telefono || '';
-                    const email = c.contacto_email || '';
-                    const created = formatDate(c.created_at);
-                    const customerId = c.id || '';
-                    const businessId = c.business_id || '';
-                    const menuId = `actions_menu_${String(customerId).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-                    return `
-                        <tr>
-                            <td data-label="Negocio"><strong>${escapeHtml(negocio)}</strong><div class="hint">${escapeHtml(c.rol_negocio || '')}</div></td>
-                            <td data-label="Contacto">${escapeHtml(contacto)}</td>
-                            <td data-label="Teléfono">${escapeHtml(tel)}</td>
-                            <td data-label="Email">${escapeHtml(email)}</td>
-                            <td data-label="Business ID" style="font-family:monospace; font-weight:700;">${businessId ? escapeHtml(businessId) : '<span style="color:#6B7280;">—</span>'}</td>
-                            <td data-label="Creado">${escapeHtml(created)}</td>
-                            <td data-label="Acciones" class="actions">
-                                <div class="actions-dropdown">
-                                    <button class="actions-trigger" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')">Acciones <span>▾</span></button>
-                                    <div class="actions-menu" id="${escapeAttr(menuId)}">
-                                        <button class="actions-menu-item token" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')">Generar token reset</button>
-                                        <button class="actions-menu-item" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','${escapeAttr(businessId)}')">Asignar Business ID</button>
-                                        <button class="actions-menu-item" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
-                                        <button class="actions-menu-item danger" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')">Eliminar cliente</button>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
+                lastCustomers = customers;
+                renderCustomersList();
             } catch (err) {
-                body.innerHTML = '<tr><td colspan="7" style="color:#991B1B;">No se pudo conectar con el servidor.</td></tr>';
+                list.innerHTML = '<div style="padding: 14px; color:#991B1B; font-weight:800;">No se pudo conectar con el servidor.</div>';
             }
+        }
+
+        function getFilterState() {
+            const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+            const filter = String(document.getElementById('filterSelect')?.value || 'all');
+            return { q, filter };
+        }
+
+        function matchesQuery(customer, q) {
+            if (!q) return true;
+            const parts = [
+                customer?.nombre_negocio,
+                customer?.contacto_nombre,
+                customer?.contacto_telefono,
+                customer?.contacto_email,
+                customer?.business_id,
+                customer?.rol_negocio,
+                customer?.id
+            ].map(v => String(v || '').toLowerCase());
+            return parts.some(p => p.includes(q));
+        }
+
+        function matchesFilter(customer, filter) {
+            const businessId = String(customer?.business_id || '').trim();
+            const email = String(customer?.contacto_email || '').trim();
+
+            if (filter === 'has_business_id') return Boolean(businessId);
+            if (filter === 'no_business_id') return !businessId;
+            if (filter === 'has_email') return Boolean(email);
+            return true;
+        }
+
+        function renderCustomersList() {
+            const list = document.getElementById('customersList');
+            if (!list) return;
+
+            const { q, filter } = getFilterState();
+
+            const rows = (lastCustomers || [])
+                .filter(c => matchesQuery(c, q))
+                .filter(c => matchesFilter(c, filter));
+
+            if (!rows.length) {
+                list.innerHTML = '<div style="padding: 14px; color:#6B7280; font-weight:800;">No hay clientes para mostrar.</div>';
+                return;
+            }
+
+            list.innerHTML = rows.map(c => {
+                const negocio = c.nombre_negocio || '';
+                const contacto = c.contacto_nombre || '';
+                const tel = c.contacto_telefono || '';
+                const email = c.contacto_email || '';
+                const created = formatDate(c.created_at);
+                const role = c.rol_negocio || '';
+                const customerId = c.id || '';
+                const businessId = c.business_id || '';
+                const menuId = `actions_menu_${String(customerId).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+
+                const meta = [contacto, tel, email].filter(Boolean).join(' • ');
+
+                return `
+                    <div class="customer-item" data-customer-id="${escapeAttr(customerId)}">
+                        <div class="customer-line" onclick="toggleCustomerDetails(event, '${escapeAttr(customerId)}')" title="Toca para ver detalle">
+                            <div class="customer-text">
+                                <div class="customer-name">${escapeHtml(negocio || '—')}</div>
+                                <div class="customer-metaInline">${escapeHtml(meta || role || '—')}</div>
+                            </div>
+                            <div class="customer-actions">
+                                <button class="icon-btn" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')" aria-label="Acciones">⋮</button>
+                                <div class="actions-menu" id="${escapeAttr(menuId)}">
+                                    <button class="actions-menu-item token" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')">Generar token reset</button>
+                                    <button class="actions-menu-item" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','${escapeAttr(businessId)}')">Asignar Business ID</button>
+                                    <button class="actions-menu-item" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
+                                    <button class="actions-menu-item danger" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')">Eliminar cliente</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="customer-details">
+                            <div class="detail-grid">
+                                <div class="detail-box"><div class="detail-k">Contacto</div><div class="detail-v">${escapeHtml(contacto || '—')}</div></div>
+                                <div class="detail-box"><div class="detail-k">Teléfono</div><div class="detail-v">${escapeHtml(tel || '—')}</div></div>
+                                <div class="detail-box"><div class="detail-k">Email</div><div class="detail-v">${escapeHtml(email || '—')}</div></div>
+                                <div class="detail-box"><div class="detail-k">Business ID</div><div class="detail-v">${escapeHtml(businessId || '—')}</div></div>
+                                <div class="detail-box"><div class="detail-k">Rol</div><div class="detail-v">${escapeHtml(role || '—')}</div></div>
+                                <div class="detail-box"><div class="detail-k">Creado</div><div class="detail-v">${escapeHtml(created || '—')}</div></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCustomerDetails(event, customerId) {
+            if (event) event.stopPropagation();
+            const id = String(customerId || '').trim();
+            if (!id) return;
+
+            closeAllActionsMenus();
+
+            const item = Array.from(document.querySelectorAll('.customer-item'))
+                .find((el) => String(el.getAttribute('data-customer-id') || '') === id);
+            if (!item) return;
+
+            const isOpen = item.classList.contains('open');
+            document.querySelectorAll('.customer-item.open').forEach((el) => el.classList.remove('open'));
+            if (!isOpen) item.classList.add('open');
         }
 
         async function setBusinessIdPrompt(customerId, negocio, currentBusinessId) {

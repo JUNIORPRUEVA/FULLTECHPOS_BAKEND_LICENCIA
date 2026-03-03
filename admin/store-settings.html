@@ -9,6 +9,7 @@
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
     <script defer src="../assets/js/adminCommon.js"></script>
+    <script defer src="../assets/js/adminDrawer.js"></script>
     <title>Store Settings - Panel Admin</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -138,10 +139,12 @@
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
+    <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
 </head>
 <body class="jr-admin">
     <div class="navbar">
         <div style="display:flex; align-items:center; gap: 16px;">
+            <button class="jr-adminDrawerBtn" type="button" data-jr-admin-drawer-open aria-label="Abrir menú">☰</button>
             <a href="admin-hub.html" class="back-link">← Volver</a>
             <h1>
                 <span class="jr-admin-brand">

@@ -8,6 +8,7 @@
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
+    <script defer src="../assets/js/adminDrawer.js"></script>
     <title>Gestionar Licencias - JR Digital</title>
     <style>
         * {
@@ -27,6 +28,7 @@
             color: white;
             padding: 20px 40px;
             display: flex;
+                if (!container) return;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -37,19 +39,8 @@
             font-weight: 800;
             letter-spacing: -0.5px;
         }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .navbar-user p {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .logout-btn {
+                lastLicenses = Array.isArray(data.licenses) ? data.licenses : [];
+                renderLicensesList();
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid white;
             color: white;
@@ -117,6 +108,166 @@
             color: #6B7280;
             margin-bottom: 30px;
         }
+
+        /* Mobile-first list UI for licenses */
+        .list-controls {
+            display: grid;
+            grid-template-columns: 1fr 200px 200px;
+            gap: 10px;
+            margin: 12px 0 10px;
+        }
+
+        .list-controls input,
+        .list-controls select {
+            width: 100%;
+            padding: 12px 12px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            background: #fff;
+            transition: all 0.2s ease;
+        }
+
+        .list-controls input:focus,
+        .list-controls select:focus {
+            outline: none;
+            border-color: #10B981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+        }
+
+        .licenses-list {
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .license-item {
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .license-item:last-child {
+            border-bottom: none;
+        }
+
+        .license-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 12px;
+            cursor: pointer;
+        }
+
+        .license-line:hover {
+            background: #F9FAFB;
+        }
+
+        .license-text {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .license-title {
+            font-weight: 900;
+            color: #111827;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 54%;
+        }
+
+        .license-meta {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-size: 0.86rem;
+            color: #6B7280;
+            font-weight: 800;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .license-actions {
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .icon-btn {
+            border: 1px solid #E5E7EB;
+            background: #fff;
+            color: #111827;
+            border-radius: 12px;
+            width: 44px;
+            height: 40px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .icon-btn:hover {
+            background: #F8FAFC;
+            border-color: #CBD5E1;
+        }
+
+        .actions-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            min-width: 240px;
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
+            padding: 8px;
+            display: none;
+            z-index: 60;
+        }
+
+        .actions-menu.show { display: block; }
+
+        .actions-menu-item {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            color: #0F172A;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 9px 10px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .actions-menu-item:hover {
+            background: #F8FAFC;
+            border-color: #E5E7EB;
+        }
+
+        .actions-menu-item.danger { color: #991B1B; }
+        .actions-menu-item.token { color: #065F46; }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 0.78rem;
+            font-weight: 900;
+            border: 1px solid #E5E7EB;
+            background: #fff;
+            white-space: nowrap;
+        }
+
+        .status-pill.ok { color: #065F46; border-color: #A7F3D0; background: #ECFDF5; }
+        .status-pill.warn { color: #92400E; border-color: #FDE68A; background: #FFFBEB; }
+        .status-pill.err { color: #991B1B; border-color: #FECACA; background: #FEF2F2; }
+        .status-pill.neutral { color: #334155; border-color: #CBD5E1; background: #F8FAFC; }
 
         .form-group {
             display: flex;
@@ -243,14 +394,20 @@
             .container {
                 padding: 20px;
             }
+
+            .list-controls {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
+    <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
 </head>
 <body class="jr-admin">
     <!-- NAVBAR -->
     <div class="navbar">
         <div style="display: flex; align-items: center; gap: 20px;">
+            <button class="jr-adminDrawerBtn" type="button" data-jr-admin-drawer-open aria-label="Abrir menú">☰</button>
             <a href="admin-hub.html" class="back-link">← Volver</a>
             <h1>
                 <span class="jr-admin-brand">
@@ -398,7 +555,23 @@
                 </div>
             </div>
 
-            <div id="licensesList">
+            <div class="list-controls">
+                <input id="licenseSearch" type="search" placeholder="Buscar: cliente, business id, clave, proyecto..." autocomplete="off" />
+                <select id="licenseStatusFilter" aria-label="Estado">
+                    <option value="ALL">Estado: Todos</option>
+                    <option value="ACTIVA">Estado: Activa</option>
+                    <option value="PENDIENTE">Estado: Pendiente</option>
+                    <option value="VENCIDA">Estado: Vencida</option>
+                    <option value="BLOQUEADA">Estado: Bloqueada</option>
+                </select>
+                <select id="licenseTypeFilter" aria-label="Tipo">
+                    <option value="ALL">Tipo: Todos</option>
+                    <option value="DEMO">Tipo: DEMO</option>
+                    <option value="FULL">Tipo: FULL</option>
+                </select>
+            </div>
+
+            <div id="licensesList" class="licenses-list">
                 <div style="text-align: center; padding: 40px; color: #6B7280;">
                     <p>⏳ Cargando licencias...</p>
                 </div>
@@ -421,6 +594,7 @@
         // Deep-link support: /admin/licenses.html?customer_id=...
         let deepLinkCustomerId = null;
         let deepLinkAppliedToList = false;
+        let lastLicenses = [];
 
         window.addEventListener('load', () => {
             if (!sessionId) {
@@ -439,7 +613,145 @@
             verifySession();
             initializeForm();
             loadLicenses();
+
+            setupLicensesListUi();
         });
+
+        function setupLicensesListUi() {
+            const search = document.getElementById('licenseSearch');
+            const status = document.getElementById('licenseStatusFilter');
+            const tipo = document.getElementById('licenseTypeFilter');
+            if (search) search.addEventListener('input', () => renderLicensesList());
+            if (status) status.addEventListener('change', () => renderLicensesList());
+            if (tipo) tipo.addEventListener('change', () => renderLicensesList());
+
+            document.addEventListener('click', () => closeAllActionsMenus());
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeAllActionsMenus();
+            });
+        }
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+        }
+
+        function escapeAttr(value) {
+            return String(value ?? '').replace(/'/g, "\\'");
+        }
+
+        function shortKey(k) {
+            const s = String(k || '').trim();
+            if (!s) return '—';
+            if (s.length <= 16) return s;
+            return `${s.slice(0, 8)}…${s.slice(-4)}`;
+        }
+
+        function statusPill(estado) {
+            const s = String(estado || '').toUpperCase();
+            const cls = (s === 'ACTIVA') ? 'ok' : (s === 'PENDIENTE' ? 'warn' : (s === 'VENCIDA' ? 'err' : (s === 'BLOQUEADA' ? 'neutral' : 'neutral')));
+            return `<span class="status-pill ${cls}">${esc(s || '—')}</span>`;
+        }
+
+        function getListFilters() {
+            const q = String(document.getElementById('licenseSearch')?.value || '').trim().toLowerCase();
+            const status = String(document.getElementById('licenseStatusFilter')?.value || 'ALL').toUpperCase();
+            const tipo = String(document.getElementById('licenseTypeFilter')?.value || 'ALL').toUpperCase();
+            return { q, status, tipo };
+        }
+
+        function matchesFilters(license, { q, status, tipo }) {
+            if (status !== 'ALL' && String(license?.estado || '').toUpperCase() !== status) return false;
+            if (tipo !== 'ALL' && String(license?.tipo || '').toUpperCase() !== tipo) return false;
+            if (!q) return true;
+            const hay = [
+                license?.nombre_negocio,
+                license?.business_id,
+                license?.license_key,
+                license?.project_code,
+                license?.estado,
+                license?.tipo,
+                license?.id
+            ].map(v => String(v || '').toLowerCase());
+            return hay.some(v => v.includes(q));
+        }
+
+        function renderLicensesList() {
+            const container = document.getElementById('licensesList');
+            if (!container) return;
+
+            const filters = getListFilters();
+            const rows = (lastLicenses || []).filter(l => matchesFilters(l, filters));
+
+            if (!rows.length) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 26px 12px; color: #6B7280; font-weight:800;">
+                        <p>📭 No hay licencias para mostrar.</p>
+                        <p style="font-size: 0.9rem; margin-top: 8px; font-weight:700;">Prueba cambiando el filtro o el texto de búsqueda.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = rows.map((license) => {
+                const id = String(license?.id || '');
+                const project = String(license?.project_code || 'FULLPOS');
+                const cliente = String(license?.nombre_negocio || '—');
+                const biz = String(license?.business_id || '').trim();
+                const tipo = String(license?.tipo || '').toUpperCase();
+                const icon = (tipo === 'DEMO') ? '🧪' : '⭐';
+                const estado = String(license?.estado || '').toUpperCase();
+                const fechaFin = license?.fecha_fin ? new Date(license.fecha_fin).toLocaleDateString('es-ES') : '—';
+                const keyShort = shortKey(license?.license_key);
+                const menuId = `lic_actions_${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+
+                const meta = `${project} • ${icon} ${tipo || '—'} • ${fechaFin !== '—' ? ('Vence: ' + fechaFin) : 'Sin fecha'}`;
+
+                return `
+                    <div class="license-item" data-license-id="${esc(id)}">
+                        <div class="license-line" onclick="openDetailModal('${escapeAttr(id)}')" title="Toca para ver detalle">
+                            <div class="license-text">
+                                <div class="license-title">${esc(cliente)}</div>
+                                <div class="license-meta">${esc(meta)} • ${biz ? ('BID: ' + biz) : 'Sin BID'} • Key: ${esc(keyShort)}</div>
+                            </div>
+                            <div class="license-actions" onclick="event.stopPropagation();">
+                                ${statusPill(estado)}
+                                <button class="icon-btn" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')" aria-label="Acciones">⋮</button>
+                                <div class="actions-menu" id="${esc(menuId)}">
+                                    <button class="actions-menu-item" type="button" onclick="openDetailModal('${escapeAttr(id)}')">Ver detalle</button>
+                                    <button class="actions-menu-item" type="button" onclick="openEditModal('${escapeAttr(id)}')">Editar</button>
+                                    <button class="actions-menu-item token" type="button" onclick="activateCloudLicense('${escapeAttr(biz)}', { projectCode: ${license.project_code ? `'${String(license.project_code).replace(/'/g, "\\'")}'` : 'null'}, licenseId: '${escapeAttr(id)}' })" ${biz ? '' : 'disabled'}>🚀 Activar licencia</button>
+                                    <button class="actions-menu-item" type="button" onclick="checkCloudLicense('${escapeAttr(biz)}')" ${biz ? '' : 'disabled'}>🌐 Ver estado</button>
+                                    <button class="actions-menu-item" type="button" onclick="promptOfflineDownload('${escapeAttr(id)}')">📄 Descargar</button>
+                                    ${estado === 'BLOQUEADA'
+                                        ? `<button class="actions-menu-item" type="button" onclick="activarManual('${escapeAttr(id)}')">Desbloquear</button>`
+                                        : `<button class="actions-menu-item" type="button" onclick="bloquearLicense('${escapeAttr(id)}')">Bloquear</button>`
+                                    }
+                                    <button class="actions-menu-item danger" type="button" onclick="deleteLicense('${escapeAttr(id)}')">Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closeAllActionsMenus(exceptId) {
+            const openMenus = document.querySelectorAll('.actions-menu.show');
+            openMenus.forEach((menu) => {
+                if (!exceptId || menu.id !== exceptId) menu.classList.remove('show');
+            });
+        }
+
+        function toggleActionsMenu(event, menuId) {
+            if (event) event.stopPropagation();
+            const id = String(menuId || '').trim();
+            if (!id) return;
+            const menu = document.getElementById(id);
+            if (!menu) return;
+            const isOpen = menu.classList.contains('show');
+            closeAllActionsMenus();
+            if (!isOpen) menu.classList.add('show');
+        }
 
         /**
          * Inicializar el formulario con auto-fill
@@ -565,8 +877,8 @@
                 }
 
                 const data = await response.json().catch(() => ({}));
-
                 const container = document.getElementById('licensesList');
+                if (!container) return;
 
                 if (!response.ok || !data.ok) {
                     container.innerHTML = `
@@ -578,84 +890,13 @@
                     return;
                 }
 
-                if (Array.isArray(data.licenses) && data.licenses.length > 0) {
-                    let html = `
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: #F3F4F6; border-bottom: 2px solid #E5E7EB;">
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Proyecto</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Cliente</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Business ID</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Clave</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Tipo</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Días</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Estado</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Válida Hasta</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 700;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-
-                    data.licenses.forEach(license => {
-                        const icon = license.tipo === 'DEMO' ? '🧪' : '⭐';
-                        const statusColor = {
-                            'PENDIENTE': '#FFA500',
-                            'ACTIVA': '#10B981',
-                            'VENCIDA': '#EF4444',
-                            'BLOQUEADA': '#6B7280'
-                        }[license.estado] || '#6B7280';
-
-                        const fechaFin = license.fecha_fin ? 
-                            new Date(license.fecha_fin).toLocaleDateString('es-ES') : 'N/A';
-
-                        const biz = license.business_id || '';
-                        html += `
-                            <tr style="border-bottom: 1px solid #E5E7EB;">
-                                <td style="padding: 12px; font-weight: 900;">${(license.project_code || 'FULLPOS')}</td>
-                                <td style="padding: 12px; font-weight: 600;">${license.nombre_negocio || '—'}</td>
-                                <td style="padding: 12px; font-family:monospace; font-weight:800;">${biz ? biz : '<span style=\"color:#6B7280;\">—</span>'}</td>
-                                <td style="padding: 12px;">${license.license_key}</td>
-                                <td style="padding: 12px;">${icon} ${license.tipo}</td>
-                                <td style="padding: 12px;">${license.dias_validez}</td>
-                                <td style="padding: 12px;">
-                                    <span style="background: ${statusColor}20; color: ${statusColor}; 
-                                    padding: 4px 8px; border-radius: 4px; font-weight: 600;">
-                                        ${license.estado}
-                                    </span>
-                                </td>
-                                <td style="padding: 12px;">${fechaFin}</td>
-                                <td style="padding: 12px;">
-                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                        <button onclick="openDetailModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#3B82F6; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Ver</button>
-                                        <button onclick="openEditModal('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#10B981; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
-                                        <button onclick="activateCloudLicense('${String(biz).replace(/'/g, "\\'")}', { projectCode: ${license.project_code ? `'${String(license.project_code).replace(/'/g, "\\'")}'` : 'null'}, licenseId: '${license.id}' })" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#065F46; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🚀 Activar licencia</button>
-                                        <button onclick="checkCloudLicense('${String(biz).replace(/'/g, "\\'")}')" ${biz ? '' : 'disabled'} style="padding:6px 10px; border:none; border-radius:6px; background:#0F766E; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">🌐 Ver estado</button>
-                                        <button onclick="promptOfflineDownload('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#111827; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">📄 Descargar</button>
-                                        <button onclick="deleteLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#6B7280; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">Eliminar</button>
-                                        ${license.estado === 'BLOQUEADA'
-                                            ? `<button onclick="activarManual('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#F59E0B; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Desbloquear</button>`
-                                            : `<button onclick="bloquearLicense('${license.id}')" style="padding:6px 10px; border:none; border-radius:6px; background:#EF4444; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Bloquear</button>`
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
-
-                    html += `</tbody></table>`;
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: #6B7280;">
-                            <p>📭 No hay licencias creadas aún.</p>
-                            <p style="font-size: 0.9rem; margin-top: 10px;">Crea una nueva licencia usando el formulario arriba.</p>
-                        </div>
-                    `;
-                }
+                lastLicenses = Array.isArray(data.licenses) ? data.licenses : [];
+                renderLicensesList();
             } catch (error) {
                 console.error('Error loading licenses:', error);
-                document.getElementById('licensesList').innerHTML = `
+                const container = document.getElementById('licensesList');
+                if (!container) return;
+                container.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: #991B1B;">
                         <p>⚠️ Error al cargar licencias: ${error.message}</p>
                     </div>

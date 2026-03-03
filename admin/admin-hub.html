@@ -39,6 +39,34 @@
             height: 100vh;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
             overflow-y: auto;
+            transition: transform .25s ease;
+        }
+
+        .drawer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.45);
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease;
+        }
+
+        body.drawer-open .drawer-overlay {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .menu-btn {
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.36);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-radius: 10px;
+            padding: 9px 11px;
+            font-weight: 800;
+            cursor: pointer;
         }
 
         .sidebar-header {
@@ -241,10 +269,17 @@
 
         @media (max-width: 768px) {
             .sidebar {
-                width: 100%;
-                height: auto;
-                position: static;
-                border-bottom: 1px solid #E5E7EB;
+                width: min(300px, 88vw);
+                transform: translateX(-102%);
+                z-index: 20;
+            }
+
+            body.drawer-open .sidebar {
+                transform: translateX(0);
+            }
+
+            .drawer-overlay {
+                display: block;
             }
 
             .main-content {
@@ -252,19 +287,14 @@
             }
 
             .sidebar-nav {
-                display: flex;
-                flex-wrap: wrap;
-            }
-
-            .sidebar-nav li {
-                flex: 1;
-                min-width: 150px;
+                display: block;
             }
 
             .sidebar-footer {
-                position: static;
-                margin-top: 10px;
-                padding-top: 10px;
+                position: absolute;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
             }
 
             .content-area {
@@ -276,9 +306,14 @@
             }
 
             .top-navbar {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
+                padding: 14px 16px;
+                gap: 10px;
+            }
+
+            .menu-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
         }
     </style>
@@ -316,8 +351,8 @@
                 </li>
                 <li>
                     <a href="license-config.html">
-                        <span class="icon">⚙️</span>
-                        Config. Licencias
+                        <span class="icon">🔐</span>
+                        Tokens Reset
                     </a>
                 </li>
                 <li>
@@ -332,6 +367,12 @@
                         Store Settings
                     </a>
                 </li>
+                <li>
+                    <a href="dashboard.html">
+                        <span class="icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
             </ul>
 
             <div class="sidebar-footer">
@@ -339,9 +380,12 @@
             </div>
         </div>
 
+        <div class="drawer-overlay" onclick="closeDrawer()"></div>
+
         <!-- MAIN CONTENT -->
         <div class="main-content">
             <div class="top-navbar">
+                <button class="menu-btn" type="button" onclick="toggleDrawer()" aria-label="Abrir menú">☰</button>
                 <h1>Panel Administrativo</h1>
                 <div class="user-info">
                     <p>Bienvenido, <strong id="userName">Admin</strong></p>
@@ -427,6 +471,18 @@
             }
 
             verifySession();
+        });
+
+        function toggleDrawer() {
+            document.body.classList.toggle('drawer-open');
+        }
+
+        function closeDrawer() {
+            document.body.classList.remove('drawer-open');
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeDrawer();
         });
 
         /**

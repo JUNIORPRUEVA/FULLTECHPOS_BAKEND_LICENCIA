@@ -334,7 +334,7 @@
                     // Redirigir al dashboard
                     setTimeout(() => {
                         const rt = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : '';
-                        window.location.href = '/admin/admin-hub.html?sessionId=' + data.sessionId + rt;
+                        window.location.href = '/admin/customers.html?sessionId=' + data.sessionId + rt;
                     }, 1000);
                 } else {
                     errorMessage.textContent = '❌ ' + data.message;
@@ -357,7 +357,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            window.location.href = '/admin/admin-hub.html';
+                            window.location.href = '/admin/customers.html';
                         }
                     })
                     .catch(() => {
