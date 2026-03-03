@@ -20,6 +20,8 @@
   function buildDrawer() {
     const overlay = document.createElement('div');
     overlay.className = 'jr-adminDrawerOverlay';
+    // On mobile, pointerdown is more reliable than click.
+    overlay.addEventListener('pointerdown', close);
     overlay.addEventListener('click', close);
 
     const drawer = document.createElement('nav');
