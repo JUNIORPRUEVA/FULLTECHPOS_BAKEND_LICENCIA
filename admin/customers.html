@@ -9,6 +9,7 @@
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
+    <script defer src="../assets/js/adminActionsDialog.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -720,6 +721,7 @@
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
+    <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
 </head>
 <body class="jr-admin">
     <div class="admin-layout">
@@ -1103,7 +1105,6 @@
                 const role = c.rol_negocio || '';
                 const customerId = c.id || '';
                 const businessId = c.business_id || '';
-                const menuId = `actions_menu_${String(customerId).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
                 const meta = [contacto, tel, email].filter(Boolean).join(' • ');
 
@@ -1115,13 +1116,7 @@
                                 <div class="customer-metaInline">${escapeHtml(meta || role || '—')}</div>
                             </div>
                             <div class="customer-actions">
-                                <button class="icon-btn" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')" aria-label="Acciones">⋮</button>
-                                <div class="actions-menu" id="${escapeAttr(menuId)}">
-                                    <button class="actions-menu-item token" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')">Generar token reset</button>
-                                    <button class="actions-menu-item" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}','${escapeAttr(negocio)}','${escapeAttr(businessId)}')">Asignar Business ID</button>
-                                    <button class="actions-menu-item" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
-                                    <button class="actions-menu-item danger" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}','${escapeAttr(negocio)}')">Eliminar cliente</button>
-                                </div>
+                                <button class="icon-btn" type="button" onclick="openCustomerActionsDialog(event, '${escapeAttr(customerId)}')" aria-label="Acciones">⋮</button>
                             </div>
                         </div>
                         <div class="customer-details">
@@ -1139,12 +1134,56 @@
             }).join('');
         }
 
+        function openCustomerActionsDialog(event, customerId) {
+            if (event) event.stopPropagation();
+            const id = String(customerId || '').trim();
+            if (!id) return;
+
+            const customer = (lastCustomers || []).find(c => String(c?.id || '').trim() === id);
+            const negocio = String(customer?.nombre_negocio || '').trim();
+            const businessId = String(customer?.business_id || '').trim();
+
+            if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') {
+                // Fallback: no-op
+                return;
+            }
+
+            window.JrAdminActionsDialog.open({
+                title: negocio || 'Acciones del cliente',
+                subtitle: businessId ? `Business ID: ${businessId}` : 'Sin Business ID',
+                actions: [
+                    {
+                        label: '🔐 Generar token reset',
+                        kind: 'token',
+                        disabled: !businessId,
+                        onClick: () => goToSupportToken(businessId)
+                    },
+                    {
+                        label: '🆔 Asignar Business ID',
+                        onClick: () => setBusinessIdPrompt(id, negocio, businessId)
+                    },
+                    {
+                        label: '📜 Crear licencia',
+                        onClick: () => goToLicenses(id)
+                    },
+                    {
+                        label: '🗑️ Eliminar cliente',
+                        kind: 'danger',
+                        onClick: () => deleteCustomer(id, negocio)
+                    }
+                ]
+            });
+        }
+
         function toggleCustomerDetails(event, customerId) {
             if (event) event.stopPropagation();
             const id = String(customerId || '').trim();
             if (!id) return;
 
             closeAllActionsMenus();
+            if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
+                window.JrAdminActionsDialog.close();
+            }
 
             const item = Array.from(document.querySelectorAll('.customer-item'))
                 .find((el) => String(el.getAttribute('data-customer-id') || '') === id);
@@ -1157,6 +1196,9 @@
 
         async function setBusinessIdPrompt(customerId, negocio, currentBusinessId) {
             closeAllActionsMenus();
+            if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
+                window.JrAdminActionsDialog.close();
+            }
             const id = String(customerId || '').trim();
             if (!id) return;
 
@@ -1204,6 +1246,9 @@
 
         async function deleteCustomer(customerId, negocio) {
             closeAllActionsMenus();
+            if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
+                window.JrAdminActionsDialog.close();
+            }
             const id = String(customerId || '').trim();
             if (!id) return;
 
@@ -1282,6 +1327,9 @@
 
         function goToLicenses(customerId) {
             closeAllActionsMenus();
+            if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
+                window.JrAdminActionsDialog.close();
+            }
             const id = String(customerId || '').trim();
             if (!id) return;
             window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(id)}`;
@@ -1289,6 +1337,9 @@
 
         function goToSupportToken(businessId) {
             closeAllActionsMenus();
+            if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
+                window.JrAdminActionsDialog.close();
+            }
             const id = String(businessId || '').trim();
             if (!id) {
                 showMessage('err', 'Este cliente no tiene business_id. Asígnalo primero.');

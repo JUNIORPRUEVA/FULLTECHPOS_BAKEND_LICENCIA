@@ -9,6 +9,7 @@
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
     <script defer src="../assets/js/adminDrawer.js"></script>
+    <script defer src="../assets/js/adminActionsDialog.js"></script>
     <title>Gestionar Licencias - JR Digital</title>
     <style>
         * {
@@ -402,6 +403,7 @@
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
+    <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
 </head>
 <body class="jr-admin">
     <!-- NAVBAR -->
@@ -702,7 +704,6 @@
                 const estado = String(license?.estado || '').toUpperCase();
                 const fechaFin = license?.fecha_fin ? new Date(license.fecha_fin).toLocaleDateString('es-ES') : '—';
                 const keyShort = shortKey(license?.license_key);
-                const menuId = `lic_actions_${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
                 const meta = `${project} • ${icon} ${tipo || '—'} • ${fechaFin !== '—' ? ('Vence: ' + fechaFin) : 'Sin fecha'}`;
 
@@ -715,24 +716,72 @@
                             </div>
                             <div class="license-actions" onclick="event.stopPropagation();">
                                 ${statusPill(estado)}
-                                <button class="icon-btn" type="button" onclick="toggleActionsMenu(event, '${escapeAttr(menuId)}')" aria-label="Acciones">⋮</button>
-                                <div class="actions-menu" id="${esc(menuId)}">
-                                    <button class="actions-menu-item" type="button" onclick="openDetailModal('${escapeAttr(id)}')">Ver detalle</button>
-                                    <button class="actions-menu-item" type="button" onclick="openEditModal('${escapeAttr(id)}')">Editar</button>
-                                    <button class="actions-menu-item token" type="button" onclick="activateCloudLicense('${escapeAttr(biz)}', { projectCode: ${license.project_code ? `'${String(license.project_code).replace(/'/g, "\\'")}'` : 'null'}, licenseId: '${escapeAttr(id)}' })" ${biz ? '' : 'disabled'}>🚀 Activar licencia</button>
-                                    <button class="actions-menu-item" type="button" onclick="checkCloudLicense('${escapeAttr(biz)}')" ${biz ? '' : 'disabled'}>🌐 Ver estado</button>
-                                    <button class="actions-menu-item" type="button" onclick="promptOfflineDownload('${escapeAttr(id)}')">📄 Descargar</button>
-                                    ${estado === 'BLOQUEADA'
-                                        ? `<button class="actions-menu-item" type="button" onclick="activarManual('${escapeAttr(id)}')">Desbloquear</button>`
-                                        : `<button class="actions-menu-item" type="button" onclick="bloquearLicense('${escapeAttr(id)}')">Bloquear</button>`
-                                    }
-                                    <button class="actions-menu-item danger" type="button" onclick="deleteLicense('${escapeAttr(id)}')">Eliminar</button>
-                                </div>
+                                <button class="icon-btn" type="button" onclick="openLicenseActionsDialog(event, '${escapeAttr(id)}')" aria-label="Acciones">⋮</button>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function openLicenseActionsDialog(event, licenseId) {
+            if (event) event.stopPropagation();
+            const id = String(licenseId || '').trim();
+            if (!id) return;
+
+            const license = (lastLicenses || []).find(l => String(l?.id || '').trim() === id);
+            const cliente = String(license?.nombre_negocio || '').trim();
+            const biz = String(license?.business_id || '').trim();
+            const projectCode = license?.project_code ? String(license.project_code) : null;
+            const estado = String(license?.estado || '').toUpperCase();
+
+            if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') {
+                return;
+            }
+
+            window.JrAdminActionsDialog.open({
+                title: cliente ? `Acciones — ${cliente}` : 'Acciones de licencia',
+                subtitle: biz ? `Business ID: ${biz}` : 'Sin Business ID',
+                actions: [
+                    {
+                        label: 'Ver detalle',
+                        onClick: () => openDetailModal(id)
+                    },
+                    {
+                        label: 'Editar',
+                        onClick: () => openEditModal(id)
+                    },
+                    {
+                        label: '🚀 Activar licencia',
+                        kind: 'token',
+                        disabled: !biz,
+                        onClick: () => activateCloudLicense(biz, { projectCode, licenseId: id })
+                    },
+                    {
+                        label: '🌐 Ver estado',
+                        disabled: !biz,
+                        onClick: () => checkCloudLicense(biz)
+                    },
+                    {
+                        label: '📄 Descargar',
+                        onClick: () => promptOfflineDownload(id)
+                    },
+                    (estado === 'BLOQUEADA')
+                        ? {
+                            label: 'Desbloquear',
+                            onClick: () => activarManual(id)
+                        }
+                        : {
+                            label: 'Bloquear',
+                            onClick: () => bloquearLicense(id)
+                        },
+                    {
+                        label: 'Eliminar',
+                        kind: 'danger',
+                        onClick: () => deleteLicense(id)
+                    }
+                ]
+            });
         }
 
         function closeAllActionsMenus(exceptId) {
