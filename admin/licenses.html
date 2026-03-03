@@ -74,6 +74,7 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
+            padding-bottom: 96px;
         }
 
         .section {
@@ -109,6 +110,69 @@
             color: #6B7280;
             margin-bottom: 30px;
         }
+
+        /* Clean UI: hide informational boxes/hints */
+        .alert,
+        .auto-fill-hint {
+            display: none;
+        }
+
+        /* Floating action button (AppSheet-like) */
+        .jr-fab {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 55%, #031026 100%);
+            color: #fff;
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 0;
+            cursor: pointer;
+            box-shadow: 0 18px 34px rgba(2, 6, 23, 0.28);
+            z-index: 1200;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .jr-fab:hover { box-shadow: 0 22px 44px rgba(2, 6, 23, 0.34); }
+        .jr-fab:active { transform: translateY(1px); }
+
+        .pagination {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            background: #F8FAFC;
+        }
+
+        .pager-info {
+            display: flex;
+            justify-content: center;
+        }
+
+        .pager-btn {
+            border: 1px solid #CBD5E1;
+            background: #fff;
+            color: #05422C;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            font-weight: 900;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .pager-btn:hover { background: #FFFFFF; box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10); }
+        .pager-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
 
         /* Mobile-first list UI for licenses */
         .list-controls {
@@ -399,6 +463,11 @@
             .list-controls {
                 grid-template-columns: 1fr;
             }
+
+            .pagination {
+                grid-template-columns: auto 1fr auto;
+                gap: 8px;
+            }
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
@@ -429,7 +498,7 @@
 
     <div class="container">
         <!-- SECCIÓN: Crear Nueva Licencia -->
-        <div class="section">
+        <div class="section" id="createLicenseSection">
             <h2 class="section-title">➕ Crear Nueva Licencia</h2>
             <p class="section-subtitle">
                 Completa el formulario para crear una nueva licencia. Los días se rellenarán automáticamente 
@@ -578,8 +647,16 @@
                     <p>⏳ Cargando licencias...</p>
                 </div>
             </div>
+
+            <div class="pagination">
+                <button type="button" class="pager-btn" id="licensesPrevBtn" onclick="prevLicensesPage()" disabled>← Atrás</button>
+                <div class="pager-info"><span class="status-pill neutral" id="licensesPageInfo">Página 1</span></div>
+                <button type="button" class="pager-btn" id="licensesNextBtn" onclick="nextLicensesPage()">Siguiente →</button>
+            </div>
         </div>
     </div>
+
+    <button class="jr-fab" type="button" onclick="scrollToCreateLicense()" aria-label="Agregar licencia">+</button>
 
     <script src="/assets/js/adminLicenseConfig.js"></script>
     <script>
@@ -597,6 +674,9 @@
         let deepLinkCustomerId = null;
         let deepLinkAppliedToList = false;
         let lastLicenses = [];
+        let lastLicensesTotal = 0;
+        let currentLicensesPage = 1;
+        const licensesLimit = 20;
 
         window.addEventListener('load', () => {
             if (!sessionId) {
@@ -624,8 +704,8 @@
             const status = document.getElementById('licenseStatusFilter');
             const tipo = document.getElementById('licenseTypeFilter');
             if (search) search.addEventListener('input', () => renderLicensesList());
-            if (status) status.addEventListener('change', () => renderLicensesList());
-            if (tipo) tipo.addEventListener('change', () => renderLicensesList());
+            if (status) status.addEventListener('change', () => loadLicenses(1));
+            if (tipo) tipo.addEventListener('change', () => loadLicenses(1));
 
             document.addEventListener('click', () => closeAllActionsMenus());
             document.addEventListener('keydown', (e) => {
@@ -662,8 +742,7 @@
         }
 
         function matchesFilters(license, { q, status, tipo }) {
-            if (status !== 'ALL' && String(license?.estado || '').toUpperCase() !== status) return false;
-            if (tipo !== 'ALL' && String(license?.tipo || '').toUpperCase() !== tipo) return false;
+            // Estado/Tipo se filtran en servidor para soportar paginación.
             if (!q) return true;
             const hay = [
                 license?.nombre_negocio,
@@ -675,6 +754,39 @@
                 license?.id
             ].map(v => String(v || '').toLowerCase());
             return hay.some(v => v.includes(q));
+        }
+
+        function scrollToCreateLicense() {
+            const el = document.getElementById('createLicenseSection');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => {
+                const focusEl = document.getElementById('customer_id') || document.getElementById('project_code') || document.getElementById('licenseType');
+                if (focusEl && typeof focusEl.focus === 'function') focusEl.focus();
+            }, 250);
+        }
+
+        function updateLicensesPager() {
+            const pageEl = document.getElementById('licensesPageInfo');
+            const prevBtn = document.getElementById('licensesPrevBtn');
+            const nextBtn = document.getElementById('licensesNextBtn');
+
+            const page = Number(currentLicensesPage || 1);
+            const total = Number(lastLicensesTotal || 0);
+            const limit = Number(licensesLimit || 20);
+            const pages = total ? Math.max(1, Math.ceil(total / limit)) : 1;
+
+            if (pageEl) pageEl.textContent = `Página ${page} de ${pages}`;
+            if (prevBtn) prevBtn.disabled = page <= 1;
+            if (nextBtn) nextBtn.disabled = total ? (page >= pages) : (lastLicenses.length < limit);
+        }
+
+        function prevLicensesPage() {
+            if (currentLicensesPage <= 1) return;
+            loadLicenses(currentLicensesPage - 1);
+        }
+
+        function nextLicensesPage() {
+            loadLicenses(currentLicensesPage + 1);
         }
 
         function renderLicensesList() {
@@ -899,12 +1011,17 @@
         /**
          * Cargar lista de licencias
          */
-        async function loadLicenses() {
+        async function loadLicenses(page = 1) {
             try {
                 const filter = document.getElementById('projectFilter')?.value || 'ALL';
+            const status = String(document.getElementById('licenseStatusFilter')?.value || 'ALL').toUpperCase();
+            const tipo = String(document.getElementById('licenseTypeFilter')?.value || 'ALL').toUpperCase();
                 const qs = new URLSearchParams();
-                qs.set('limit', '100');
+            qs.set('limit', String(licensesLimit));
+            qs.set('page', String(page || 1));
                 if (filter && filter !== 'ALL') qs.set('project_code', filter);
+            if (status && status !== 'ALL') qs.set('estado', status);
+            if (tipo && tipo !== 'ALL') qs.set('tipo', tipo);
 
                 // Si venimos con deep-link customer_id, aplicarlo 1 vez al listado.
                 if (deepLinkCustomerId && !deepLinkAppliedToList) {
@@ -940,7 +1057,10 @@
                 }
 
                 lastLicenses = Array.isArray(data.licenses) ? data.licenses : [];
+                lastLicensesTotal = Number(data.total || lastLicenses.length || 0);
+                currentLicensesPage = Number(data.page || page || 1);
                 renderLicensesList();
+                updateLicensesPager();
             } catch (error) {
                 console.error('Error loading licenses:', error);
                 const container = document.getElementById('licensesList');
@@ -950,6 +1070,7 @@
                         <p>⚠️ Error al cargar licencias: ${error.message}</p>
                     </div>
                 `;
+                updateLicensesPager();
             }
         }
 

@@ -51,6 +51,13 @@
       `;
     }).join('');
 
+    // Auto-close on navigation click
+    nav.addEventListener('click', (e) => {
+      const a = e.target && e.target.closest ? e.target.closest('a') : null;
+      if (!a) return;
+      close();
+    });
+
     const footer = document.createElement('div');
     footer.className = 'jr-adminDrawerFooter';
     footer.innerHTML = `<button type="button" class="jr-adminDrawerClose">Cerrar menú</button>`;
@@ -92,18 +99,30 @@
     });
   }
 
+  function bindLifecycleClose() {
+    // Ensure drawer never stays stuck open (BFCache/back/forward)
+    window.addEventListener('pageshow', close);
+    window.addEventListener('pagehide', close);
+    window.addEventListener('hashchange', close);
+  }
+
   window.JrAdminDrawer = { open, close, toggle };
 
   window.addEventListener('DOMContentLoaded', () => {
+    // Always start closed.
+    close();
+
     // Don't inject if the page already uses a sidebar/drawer layout.
     if (hasSidebarLayout()) {
       bindButtons();
       bindKeyboard();
+      bindLifecycleClose();
       return;
     }
 
     buildDrawer();
     bindButtons();
     bindKeyboard();
+    bindLifecycleClose();
   });
 })();

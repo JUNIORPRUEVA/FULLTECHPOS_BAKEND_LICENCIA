@@ -458,6 +458,9 @@
 
         // Verificar autenticación al cargar
         window.addEventListener('load', () => {
+            // Always start with the drawer closed.
+            closeDrawer();
+
             if (!sessionId) {
                 window.location.href = '/admin/login.html';
                 return;
@@ -471,7 +474,11 @@
             }
 
             verifySession();
+            bindDrawerAutoClose();
         });
+
+        // Ensure drawer doesn't stay open on back/forward cache restores.
+        window.addEventListener('pageshow', () => closeDrawer());
 
         function toggleDrawer() {
             document.body.classList.toggle('drawer-open');
@@ -479,6 +486,17 @@
 
         function closeDrawer() {
             document.body.classList.remove('drawer-open');
+        }
+
+        function bindDrawerAutoClose() {
+            const sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return;
+
+            sidebar.addEventListener('click', (e) => {
+                const a = e.target && e.target.closest ? e.target.closest('a') : null;
+                if (!a) return;
+                closeDrawer();
+            });
         }
 
         document.addEventListener('keydown', (event) => {
