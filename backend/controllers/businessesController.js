@@ -59,6 +59,8 @@ function buildBusinessLicensePayload({ businessId, license, project }) {
     license_key: String(license?.license_key || '').trim(),
     plan: String(license?.tipo || '').toUpperCase(),
     estado: String(license?.estado || '').toUpperCase(),
+    // Motivo/Notas (admin). Se muestra al usuario cuando está BLOQUEADA.
+    motivo: license?.notas ? String(license.notas) : null,
     starts_at: license?.fecha_inicio ? new Date(license.fecha_inicio).toISOString() : null,
     expires_at: license?.fecha_fin ? new Date(license.fecha_fin).toISOString() : null,
     features: [],
