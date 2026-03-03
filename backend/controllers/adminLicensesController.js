@@ -204,6 +204,18 @@ async function bloquearLicense(req, res) {
       estado: 'BLOQUEADA',
       notas: finalNotas
     });
+
+    // Notify connected clients (SSE) to refresh license status.
+    try {
+      const biz = String(current?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_block_license',
+          licenseId: String(licenseId),
+        });
+      }
+    } catch (_) {}
+
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('bloquearLicense error:', error);
@@ -238,8 +250,35 @@ async function activarManual(req, res) {
 }
 
 async function desbloquearLicense(req, res) {
-  // Alias explícito de activarManual para UX/semántica del panel
-  return activarManual(req, res);
+  try {
+    const licenseId = req.params.id;
+    const current = await licensesModel.getLicenseById(licenseId);
+    if (!current) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    // Desbloquear debe dejar la licencia utilizable.
+    // activateLicenseManually se encarga de (re)armar fechas si están ausentes o vencidas.
+    const updated = await licensesModel.activateLicenseManually(licenseId);
+    if (!updated) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    try {
+      const biz = String(current?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_unblock_license',
+          licenseId: String(licenseId),
+        });
+      }
+    } catch (_) {}
+
+    return res.json({ ok: true, license: updated });
+  } catch (error) {
+    console.error('desbloquearLicense error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
 }
 
 async function deleteLicense(req, res) {
@@ -369,6 +408,19 @@ async function bloquearLicenseByKey(req, res) {
       estado: 'BLOQUEADA',
       notas: finalNotas
     });
+
+    // Notify connected clients (SSE) to refresh license status.
+    try {
+      const detail = await licensesModel.getLicenseById(String(license.id));
+      const biz = String(detail?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_block_license_by_key',
+          licenseId: String(license.id),
+        });
+      }
+    } catch (_) {}
+
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('bloquearLicenseByKey error:', error);
@@ -409,6 +461,19 @@ async function activarManualByKey(req, res) {
     }
 
     const updated = await licensesModel.activateLicenseManually(license.id);
+
+    // Notify connected clients (SSE) to refresh license status.
+    try {
+      const detail = await licensesModel.getLicenseById(String(license.id));
+      const biz = String(detail?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_activate_manual_by_key',
+          licenseId: String(license.id),
+        });
+      }
+    } catch (_) {}
+
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('activarManualByKey error:', error);

@@ -918,7 +918,7 @@
                     (estado === 'BLOQUEADA')
                         ? {
                             label: 'Desbloquear',
-                            onClick: () => activarManual(id)
+                            onClick: () => desbloquearLicense(id)
                         }
                         : {
                             label: 'Bloquear',
@@ -1731,6 +1731,25 @@
                     await loadLicenses();
                 } else {
                     showMessage('❌ ' + (data.message || 'No se pudo activar'), 'error');
+                }
+            } catch (e) {
+                showMessage('❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function desbloquearLicense(licenseId) {
+            if (!confirm('¿Desbloquear esta licencia?')) return;
+            try {
+                const response = await fetch(`${API_URL}/api/admin/licenses/${licenseId}/desbloquear`, {
+                    method: 'PATCH',
+                    headers: { 'x-session-id': sessionId }
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    showMessage('✅ Licencia desbloqueada', 'success');
+                    await loadLicenses();
+                } else {
+                    showMessage('❌ ' + (data.message || 'No se pudo desbloquear'), 'error');
                 }
             } catch (e) {
                 showMessage('❌ Error: ' + e.message, 'error');
