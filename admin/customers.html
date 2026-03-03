@@ -35,6 +35,7 @@
             box-shadow: 4px 0 24px rgba(2, 6, 23, 0.24);
             overflow-y: auto;
             z-index: 30;
+            transition: transform .25s ease;
         }
 
         .sidebar-header {
@@ -731,6 +732,17 @@
                 margin-left: 0;
             }
 
+            /* Mobile drawer behavior: hide sidebar until opened */
+            .sidebar {
+                width: min(300px, 88vw);
+                transform: translateX(-102%);
+                z-index: 1101;
+            }
+
+            body.drawer-open .sidebar {
+                transform: translateX(0);
+            }
+
             .menu-btn {
                 display: inline-flex;
             }
@@ -835,7 +847,7 @@
 
         <main class="main">
             <header class="topbar">
-                <button class="menu-btn" type="button" onclick="toggleDrawer()">☰ Menú</button>
+                <button class="menu-btn" type="button" onclick="toggleDrawer()" aria-label="Abrir menú">☰</button>
                 <h1>Gestión de Clientes</h1>
                 <div class="topbar-user">Bienvenido, <strong id="userName">Admin</strong></div>
             </header>
