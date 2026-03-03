@@ -29,7 +29,6 @@
             color: white;
             padding: 20px 40px;
             display: flex;
-                if (!container) return;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -40,8 +39,16 @@
             font-weight: 800;
             letter-spacing: -0.5px;
         }
-                lastLicenses = Array.isArray(data.licenses) ? data.licenses : [];
-                renderLicensesList();
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .logout-btn {
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid white;
             color: white;
@@ -133,10 +140,20 @@
             line-height: 0;
             cursor: pointer;
             box-shadow: 0 18px 34px rgba(2, 6, 23, 0.28);
-            z-index: 1200;
+            /* Keep below dialogs/drawers so taps outside drawer work */
+            z-index: 1000;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+        }
+
+        /* Create form hidden by default; opened via FAB */
+        #createLicenseSection {
+            display: none;
+        }
+
+        #createLicenseSection.is-open {
+            display: block;
         }
 
         .jr-fab:hover { box-shadow: 0 22px 44px rgba(2, 6, 23, 0.34); }
@@ -499,7 +516,10 @@
     <div class="container">
         <!-- SECCIÓN: Crear Nueva Licencia -->
         <div class="section" id="createLicenseSection">
-            <h2 class="section-title">➕ Crear Nueva Licencia</h2>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                <h2 class="section-title" style="margin:0;">➕ Crear Nueva Licencia</h2>
+                <button class="icon-btn" type="button" onclick="closeCreateLicense()" aria-label="Cerrar formulario">✕</button>
+            </div>
             <p class="section-subtitle">
                 Completa el formulario para crear una nueva licencia. Los días se rellenarán automáticamente 
                 según la configuración del tipo de licencia que selecciones, pero puedes modificarlos si lo necesitas.
@@ -656,7 +676,7 @@
         </div>
     </div>
 
-    <button class="jr-fab" type="button" onclick="scrollToCreateLicense()" aria-label="Agregar licencia">+</button>
+    <button class="jr-fab" type="button" onclick="openCreateLicense()" aria-label="Agregar licencia">+</button>
 
     <script src="/assets/js/adminLicenseConfig.js"></script>
     <script>
@@ -693,6 +713,7 @@
             }
 
             verifySession();
+            closeCreateLicense();
             initializeForm();
             loadLicenses();
 
@@ -709,8 +730,28 @@
 
             document.addEventListener('click', () => closeAllActionsMenus());
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeAllActionsMenus();
+                if (e.key === 'Escape') {
+                    closeAllActionsMenus();
+                    closeCreateLicense();
+                }
             });
+        }
+
+        function openCreateLicense() {
+            const el = document.getElementById('createLicenseSection');
+            if (!el) return;
+            el.classList.add('is-open');
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => {
+                const focusEl = document.getElementById('customer_id') || document.getElementById('project_code') || document.getElementById('licenseType');
+                if (focusEl && typeof focusEl.focus === 'function') focusEl.focus();
+            }, 220);
+        }
+
+        function closeCreateLicense() {
+            const el = document.getElementById('createLicenseSection');
+            if (!el) return;
+            el.classList.remove('is-open');
         }
 
         function esc(value) {
@@ -757,12 +798,8 @@
         }
 
         function scrollToCreateLicense() {
-            const el = document.getElementById('createLicenseSection');
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            setTimeout(() => {
-                const focusEl = document.getElementById('customer_id') || document.getElementById('project_code') || document.getElementById('licenseType');
-                if (focusEl && typeof focusEl.focus === 'function') focusEl.focus();
-            }, 250);
+            // Backwards-compatible alias
+            openCreateLicense();
         }
 
         function updateLicensesPager() {

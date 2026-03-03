@@ -1,7 +1,8 @@
 /* JR Digital - Admin mobile drawer (UI only) */
 
 .jr-admin {
-  --jr-drawer-z: 60;
+  /* Keep above floating buttons but below action dialogs */
+  --jr-drawer-z: 1100;
   --jr-drawer-w: 288px;
 }
 

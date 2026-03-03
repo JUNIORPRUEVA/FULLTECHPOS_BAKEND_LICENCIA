@@ -500,7 +500,8 @@
             line-height: 0;
             cursor: pointer;
             box-shadow: 0 18px 34px rgba(2, 6, 23, 0.28);
-            z-index: 1200;
+            /* Keep below dialogs/drawers so taps outside drawer work */
+            z-index: 1000;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -713,11 +714,17 @@
                 opacity: 0;
                 pointer-events: none;
                 transition: opacity .2s ease;
+                z-index: 1100;
             }
 
             body.drawer-open .drawer-overlay {
                 opacity: 1;
                 pointer-events: auto;
+            }
+
+            /* Ensure drawer stays above its overlay */
+            .sidebar {
+                z-index: 1101;
             }
 
             .main {
