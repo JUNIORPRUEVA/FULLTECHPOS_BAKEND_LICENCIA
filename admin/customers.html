@@ -446,12 +446,36 @@
         }
 
         .pagination {
-            margin-top: 12px;
-            display: flex;
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
-            justify-content: space-between;
             gap: 10px;
+            padding: 10px;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            background: #F8FAFC;
         }
+
+        .pager-info {
+            display: flex;
+            justify-content: center;
+        }
+
+        .pager-btn {
+            border: 1px solid #CBD5E1;
+            background: #fff;
+            color: #062B63;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            font-weight: 900;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .pager-btn:hover { background: #FFFFFF; box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10); }
+        .pager-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
 
         .actions-dropdown {
             position: relative;
@@ -623,13 +647,9 @@
         }
 
         @media (max-width: 900px) {
-            .sidebar {
-                transform: translateX(-100%);
-                transition: transform .25s ease;
-            }
-
-            body.drawer-open .sidebar {
-                transform: translateX(0);
+            .pagination {
+                grid-template-columns: auto 1fr auto;
+                gap: 8px;
             }
 
             .drawer-overlay {
@@ -786,9 +806,9 @@
                     </div>
 
                     <div class="pagination">
-                        <button type="button" class="btn btn-muted" id="prevBtn" onclick="prevPage()">← Anterior</button>
-                        <div style="color:#6B7280; font-weight:700; text-align:center;" id="pageInfo">Página 1</div>
-                        <button type="button" class="btn btn-muted" id="nextBtn" onclick="nextPage()">Siguiente →</button>
+                        <button type="button" class="pager-btn" id="prevBtn" onclick="prevPage()">← Atrás</button>
+                        <div class="pager-info"><span class="pill" id="pageInfo">Página 1</span></div>
+                        <button type="button" class="pager-btn" id="nextBtn" onclick="nextPage()">Siguiente →</button>
                     </div>
                 </div>
             </section>
