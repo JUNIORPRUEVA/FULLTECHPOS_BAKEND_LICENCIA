@@ -110,6 +110,17 @@ async function createLicense(req, res) {
         }
 
         const activated = await licensesModel.updateLicense(license.id, { estado: 'ACTIVA' });
+
+        try {
+          const biz = String(customer?.business_id || '').trim();
+          if (biz) {
+            licenseChangeBus.emitBusinessLicenseChanged(biz, {
+              reason: 'admin_create_license_auto_activated',
+              licenseId: String(license.id),
+            });
+          }
+        } catch (_) {}
+
         return res.status(201).json({ ok: true, license: activated, auto_activated: true });
       } catch (e) {
         // 23505 = unique_violation
@@ -288,10 +299,21 @@ async function deleteLicense(req, res) {
       return res.status(400).json({ ok: false, message: 'id inválido' });
     }
 
+    const current = await licensesModel.getLicenseById(licenseId);
     const deleted = await licensesModel.deleteLicense(licenseId);
     if (!deleted) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
+
+    try {
+      const biz = String(current?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_delete_license',
+          licenseId: String(licenseId),
+        });
+      }
+    } catch (_) {}
 
     return res.json({ ok: true, deleted });
   } catch (error) {
@@ -304,6 +326,7 @@ async function updateLicense(req, res) {
   try {
     const licenseId = req.params.id;
     const body = req.body || {};
+    const current = await licensesModel.getLicenseById(licenseId);
 
     const patch = {};
 
@@ -354,6 +377,16 @@ async function updateLicense(req, res) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
 
+    try {
+      const biz = String(current?.business_id || updated?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_update_license',
+          licenseId: String(licenseId),
+        });
+      }
+    } catch (_) {}
+
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('updateLicense error:', error);
@@ -364,6 +397,7 @@ async function updateLicense(req, res) {
 async function extenderDias(req, res) {
   try {
     const licenseId = req.params.id;
+    const current = await licensesModel.getLicenseById(licenseId);
     const dias = Number((req.body || {}).dias);
     if (!Number.isFinite(dias) || dias <= 0) {
       return res.status(400).json({ ok: false, message: 'dias debe ser un número entero > 0' });
@@ -373,6 +407,16 @@ async function extenderDias(req, res) {
     if (!updated) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
+
+    try {
+      const biz = String(current?.business_id || updated?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_extend_license_days',
+          licenseId: String(licenseId),
+        });
+      }
+    } catch (_) {}
 
     return res.json({ ok: true, license: updated });
   } catch (error) {
@@ -441,6 +485,18 @@ async function vencerLicenseByKey(req, res) {
     }
 
     const updated = await licensesModel.updateLicense(license.id, { estado: 'VENCIDA' });
+
+    try {
+      const detail = await licensesModel.getLicenseById(String(license.id));
+      const biz = String(detail?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_expire_license_by_key',
+          licenseId: String(license.id),
+        });
+      }
+    } catch (_) {}
+
     return res.json({ ok: true, license: updated });
   } catch (error) {
     console.error('vencerLicenseByKey error:', error);
