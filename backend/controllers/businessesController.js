@@ -362,6 +362,9 @@ async function getLicense(req, res) {
       }
       const fin = new Date(l.fecha_fin);
       if (!Number.isNaN(fin.getTime()) && fin.getTime() < now.getTime()) {
+        try {
+          await pool.query(`UPDATE licenses SET estado = 'VENCIDA' WHERE id = $1 AND estado <> 'VENCIDA'`, [l.id]);
+        } catch (_) {}
         continue;
       }
       if (String(l.estado || '').toUpperCase() !== 'ACTIVA') {

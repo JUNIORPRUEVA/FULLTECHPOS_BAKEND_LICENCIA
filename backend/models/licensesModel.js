@@ -6,6 +6,37 @@ function isPgMissingColumnOrTable(e) {
   return code === '42703' || code === '42P01';
 }
 
+function isLicenseExpiredByDate(license, now = new Date()) {
+  if (!license || !license.fecha_fin) return false;
+  const endsAt = new Date(license.fecha_fin);
+  if (Number.isNaN(endsAt.getTime())) return false;
+  return endsAt.getTime() < now.getTime();
+}
+
+function getEffectiveLicenseStatus(license, now = new Date()) {
+  const current = String(license?.estado || '').trim().toUpperCase();
+  if (current === 'ACTIVA' && isLicenseExpiredByDate(license, now)) {
+    return 'VENCIDA';
+  }
+  return current;
+}
+
+async function normalizeLicenseRuntimeStatus(license) {
+  if (!license) return license;
+
+  const nextStatus = getEffectiveLicenseStatus(license);
+  if (nextStatus === 'VENCIDA' && String(license.estado || '').trim().toUpperCase() !== 'VENCIDA') {
+    try {
+      await markLicenseExpired(license.id);
+    } catch (_) {}
+  }
+
+  return {
+    ...license,
+    estado: nextStatus || license.estado,
+  };
+}
+
 async function createLicenseWithKey({
   project_id,
   customer_id,
@@ -51,6 +82,22 @@ async function listLicenses({ limit, offset, project_id, customer_id, tipo, esta
 
     for (const f of baseFilters) {
       if (f.key === 'project_id' && !includeProjectFilter) continue;
+
+      if (f.key === 'estado') {
+        const normalizedState = String(f.value || '').trim().toUpperCase();
+        if (normalizedState === 'VENCIDA') {
+          params.push(normalizedState);
+          where.push(`(l.estado = $${params.length} OR (l.estado = 'ACTIVA' AND l.fecha_fin IS NOT NULL AND l.fecha_fin < NOW()))`);
+          continue;
+        }
+
+        if (normalizedState === 'ACTIVA') {
+          params.push(normalizedState);
+          where.push(`(l.estado = $${params.length} AND (l.fecha_fin IS NULL OR l.fecha_fin >= NOW()))`);
+          continue;
+        }
+      }
+
       params.push(f.value);
       where.push(`${f.field} = $${params.length}`);
     }
@@ -143,7 +190,10 @@ async function listLicenses({ limit, offset, project_id, customer_id, tipo, esta
          LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
         params
       );
-      return { total, licenses: rowsRes.rows };
+      const normalizedRows = await Promise.all(
+        rowsRes.rows.map((row) => normalizeLicenseRuntimeStatus(row))
+      );
+      return { total, licenses: normalizedRows };
       } catch (e) {
         lastError = e;
         if (
@@ -207,6 +257,8 @@ async function getLicenseById(licenseId) {
 
   if (lastError && !license) throw lastError;
   if (!license) return null;
+
+  license = await normalizeLicenseRuntimeStatus(license);
 
   const actRes = await pool.query(
     `SELECT *

@@ -769,6 +769,17 @@
             return `${s.slice(0, 8)}…${s.slice(-4)}`;
         }
 
+        function getEffectiveLicenseStatus(license) {
+            const raw = String(license?.estado || '').trim().toUpperCase();
+            if (raw === 'ACTIVA' && license?.fecha_fin) {
+                const endsAt = new Date(license.fecha_fin);
+                if (!Number.isNaN(endsAt.getTime()) && endsAt.getTime() < Date.now()) {
+                    return 'VENCIDA';
+                }
+            }
+            return raw || '—';
+        }
+
         function statusPill(estado) {
             const s = String(estado || '').toUpperCase();
             const cls = (s === 'ACTIVA') ? 'ok' : (s === 'PENDIENTE' ? 'warn' : (s === 'VENCIDA' ? 'err' : (s === 'BLOQUEADA' ? 'neutral' : 'neutral')));
@@ -850,7 +861,7 @@
                 const biz = String(license?.business_id || '').trim();
                 const tipo = String(license?.tipo || '').toUpperCase();
                 const icon = (tipo === 'DEMO') ? '🧪' : '⭐';
-                const estado = String(license?.estado || '').toUpperCase();
+                const estado = getEffectiveLicenseStatus(license);
                 const fechaFin = license?.fecha_fin ? new Date(license.fecha_fin).toLocaleDateString('es-ES') : '—';
                 const keyShort = shortKey(license?.license_key);
 
@@ -882,7 +893,7 @@
             const cliente = String(license?.nombre_negocio || '').trim();
             const biz = String(license?.business_id || '').trim();
             const projectCode = license?.project_code ? String(license.project_code) : null;
-            const estado = String(license?.estado || '').toUpperCase();
+            const estado = getEffectiveLicenseStatus(license);
 
             if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') {
                 return;
@@ -900,6 +911,12 @@
                         label: 'Editar',
                         onClick: () => openEditModal(id)
                     },
+                    ((estado === 'VENCIDA' || estado === 'PENDIENTE')
+                        ? {
+                            label: 'Reactivar manualmente',
+                            onClick: () => activarManual(id)
+                        }
+                        : null),
                     {
                         label: '🚀 Activar licencia',
                         kind: 'token',
@@ -929,7 +946,7 @@
                         kind: 'danger',
                         onClick: () => deleteLicense(id)
                     }
-                ]
+                ].filter(Boolean)
             });
         }
 
@@ -1488,7 +1505,7 @@
                 }
 
                 const l = data.license;
-                document.getElementById('detailSub').textContent = `${l.nombre_negocio || '—'} • ${l.tipo} • ${l.estado}`;
+                document.getElementById('detailSub').textContent = `${l.nombre_negocio || '—'} • ${l.tipo} • ${getEffectiveLicenseStatus(l)}`;
 
                 const fechaInicio = l.fecha_inicio ? new Date(l.fecha_inicio).toLocaleString('es-ES') : 'N/A';
                 const fechaFin = l.fecha_fin ? new Date(l.fecha_fin).toLocaleString('es-ES') : 'N/A';
@@ -1604,7 +1621,7 @@
                 const l = data.license;
                 document.getElementById('editTipo').value = l.tipo;
                 document.getElementById('editDias').value = l.dias_validez;
-                document.getElementById('editEstado').value = l.estado;
+                document.getElementById('editEstado').value = getEffectiveLicenseStatus(l);
                 document.getElementById('editNotas').value = l.notas || '';
 
                 document.getElementById('licenseEditModal').style.display = 'flex';
