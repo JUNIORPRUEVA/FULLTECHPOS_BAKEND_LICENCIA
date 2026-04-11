@@ -595,6 +595,10 @@ body {
   --jr-grad-brand: linear-gradient(135deg, #020617 0%, #0F172A 30%, #0B1F4D 52%, #102A43 72%, #020617 100%);
   --jr-grad-brand-vert: linear-gradient(180deg, #020617 0%, #0F172A 26%, #0B1F4D 62%, #020617 100%);
   --jr-nav-h: 84px;
+  --color-text: #E2E8F0;
+  --color-subtle: #94A3B8;
+  --color-border: rgba(148, 163, 184, 0.14);
+  --shadow-soft: 0 6px 22px rgba(2, 6, 23, 0.32);
 }
 
 body {
@@ -933,26 +937,26 @@ body {
 
 .jr-proofItem,
 .jr-salesCard {
-  border-radius: 20px;
-  padding: 18px;
+  border-radius: 14px;
+  padding: 12px 14px;
 }
 
 .jr-proofItem strong,
 .jr-salesCard h3 {
   display: block;
   color: #FFFFFF;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .jr-proofItem span,
 .jr-salesCard p {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: rgba(226, 232, 240, 1);
-  line-height: 1.6;
-  font-size: 0.88rem;
+  line-height: 1.5;
+  font-size: 0.78rem;
 }
 
 .jr-salesGrid {

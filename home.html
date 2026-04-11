@@ -33,11 +33,11 @@
 
       <div class="navbar-actions">
         <a class="navbar-download" href="/products.html" aria-label="Ver productos">
-          <span class="nav-icon" aria-hidden="true">🧩</span>
+          <span class="nav-icon" aria-hidden="true">🛒</span>
           <span class="nav-text">Productos</span>
         </a>
         <a id="whatsappTop" href="#" class="navbar-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
-          <span class="nav-icon" aria-hidden="true">💬</span>
+          <span class="nav-icon" aria-hidden="true">�</span>
           <span class="nav-text">WhatsApp</span>
         </a>
 
@@ -130,8 +130,12 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:14px;">
-          <img src="/assets/img/hero/Cat%C3%A1logo%20de%20productos%20digitales%20de%20Appyra.png" alt="Catálogo de productos digitales de Appyra" style="width:100%; border-radius:20px; border:1px solid rgba(255,255,255,0.14); box-shadow:0 28px 60px rgba(2,6,23,0.36);" />
-          <img src="/assets/img/hero/Soluciones%20digitales%20personalizadas%20para%20ti.png" alt="Soluciones digitales personalizadas" style="width:100%; border-radius:20px; border:1px solid rgba(255,255,255,0.14); box-shadow:0 28px 60px rgba(2,6,23,0.36);" />
+          <a href="/products.html" style="display:block; text-decoration:none;">
+            <img src="/assets/img/hero/Cat%C3%A1logo%20de%20productos%20digitales%20de%20Appyra.png" alt="Catálogo de productos digitales de Appyra" style="width:100%; border-radius:20px; border:1px solid rgba(255,255,255,0.14); box-shadow:0 28px 60px rgba(2,6,23,0.36); transition:transform 0.2s ease;" />
+          </a>
+          <a id="whatsappHeroImg" href="#" target="_blank" rel="noopener" style="display:block; text-decoration:none;">
+            <img src="/assets/img/hero/Soluciones%20digitales%20personalizadas%20para%20ti.png" alt="Soluciones digitales personalizadas" style="width:100%; border-radius:20px; border:1px solid rgba(255,255,255,0.14); box-shadow:0 28px 60px rgba(2,6,23,0.36); transition:transform 0.2s ease;" />
+          </a>
         </div>
       </div>
     </div>
@@ -386,7 +390,7 @@
         `Me interesa: Web / Android / iOS / Windows, automatizaciones e IA (bot/agente WhatsApp). ` +
         `También quiero ver el catálogo de productos.`;
       const waLink = StorePublic.e164ToWaLink(phone, waText);
-      ['whatsappTop','whatsappMobile','whatsappHero','footerWhatsapp','whatsappSales'].forEach((id) => {
+      ['whatsappTop','whatsappMobile','whatsappHero','whatsappHeroImg','footerWhatsapp','whatsappSales'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.href = waLink;
       });
