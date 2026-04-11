@@ -603,7 +603,7 @@ body {
 
 body {
   font-family: 'Inter Tight', 'Inter', 'Segoe UI', sans-serif;
-  background: transparent;
+  background: var(--jr-bg);
   color: var(--color-text);
   padding-top: var(--jr-nav-h);
 }

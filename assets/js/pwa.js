@@ -8,41 +8,42 @@
   let installHint = null;
 
   function injectInstallUi() {
-    if (isAdmin || document.getElementById('pwaInstallButton')) return;
+    if (isAdmin) return;
 
-    const style = document.createElement('style');
-    style.id = 'pwaInstallStyles';
-    style.textContent = [
-      '.pwa-install-btn{position:fixed;right:16px;bottom:16px;z-index:1600;display:none;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(135deg,#3B82F6 0%,#06B6D4 48%,#9333EA 100%);color:#fff;font:800 13px/1 Inter,Segoe UI,sans-serif;box-shadow:0 18px 40px rgba(59,130,246,.28);cursor:pointer;transition:transform .22s ease,box-shadow .22s ease,opacity .22s ease;}',
-      '.pwa-install-btn:hover{transform:translateY(-2px);box-shadow:0 24px 54px rgba(59,130,246,.34);}',
-      '.pwa-install-btn.is-visible{display:inline-flex;}',
-      '.pwa-install-hint{position:fixed;right:16px;bottom:72px;z-index:1600;display:none;max-width:280px;padding:14px 16px;border-radius:18px;background:rgba(15,23,42,.92);border:1px solid rgba(148,163,184,.16);box-shadow:0 24px 60px rgba(2,6,23,.28);backdrop-filter:blur(18px);color:#E2E8F0;font:600 13px/1.65 Inter,Segoe UI,sans-serif;}',
-      '.pwa-install-hint.is-visible{display:block;}',
-      '.pwa-install-hint strong{display:block;margin-bottom:6px;color:#fff;font-size:13px;}',
-      '.pwa-install-close{position:absolute;top:8px;right:10px;border:none;background:transparent;color:#94A3B8;font:800 16px/1 Inter,Segoe UI,sans-serif;cursor:pointer;}',
-      '.pwa-install-close:hover{color:#fff;}',
-      '@media (max-width:768px){.pwa-install-btn{right:12px;left:12px;bottom:12px;justify-content:center;}.pwa-install-hint{right:12px;left:12px;bottom:68px;max-width:none;}}'
-    ].join('');
-    document.head.appendChild(style);
+    // Use the navbar install button instead of a fixed bottom one
+    installButton = document.getElementById('navbarInstallBtn');
 
-    installButton = document.createElement('button');
-    installButton.id = 'pwaInstallButton';
-    installButton.className = 'pwa-install-btn';
-    installButton.type = 'button';
-    installButton.innerHTML = '<span aria-hidden="true">⬇</span><span>Descargar app</span>';
-    installButton.addEventListener('click', onInstallClick);
+    // Inject iOS hint tooltip (still needed for iOS guidance)
+    if (!document.getElementById('pwaInstallHint')) {
+      const style = document.createElement('style');
+      style.id = 'pwaInstallStyles';
+      style.textContent = [
+        '.navbar-install-btn{cursor:pointer;border:none;}',
+        '.navbar-install-btn.is-visible{display:inline-flex !important;}',
+        '@keyframes pwa-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(59,130,246,.45);}50%{transform:scale(1.08);box-shadow:0 0 0 10px rgba(59,130,246,0);}}',
+        '.navbar-install-btn.is-visible{animation:pwa-pulse 2s ease-in-out 3;}',
+        '.pwa-install-hint{position:fixed;right:16px;top:90px;z-index:1600;display:none;max-width:280px;padding:14px 16px;border-radius:18px;background:rgba(15,23,42,.92);border:1px solid rgba(148,163,184,.16);box-shadow:0 24px 60px rgba(2,6,23,.28);backdrop-filter:blur(18px);color:#E2E8F0;font:600 13px/1.65 Inter,Segoe UI,sans-serif;}',
+        '.pwa-install-hint.is-visible{display:block;}',
+        '.pwa-install-hint strong{display:block;margin-bottom:6px;color:#fff;font-size:13px;}',
+        '.pwa-install-close{position:absolute;top:8px;right:10px;border:none;background:transparent;color:#94A3B8;font:800 16px/1 Inter,Segoe UI,sans-serif;cursor:pointer;}',
+        '.pwa-install-close:hover{color:#fff;}'
+      ].join('');
+      document.head.appendChild(style);
 
-    installHint = document.createElement('div');
-    installHint.id = 'pwaInstallHint';
-    installHint.className = 'pwa-install-hint';
-    installHint.innerHTML = '<button type="button" class="pwa-install-close" aria-label="Cerrar">×</button><strong>Instala Appyra</strong><span>En iPhone o iPad usa Compartir y luego Agregar a pantalla de inicio.</span>';
-    installHint.querySelector('.pwa-install-close').addEventListener('click', () => {
-      installHint.classList.remove('is-visible');
-      try { localStorage.setItem('appyra-pwa-ios-hint-dismissed', '1'); } catch (_) {}
-    });
+      installHint = document.createElement('div');
+      installHint.id = 'pwaInstallHint';
+      installHint.className = 'pwa-install-hint';
+      installHint.innerHTML = '<button type="button" class="pwa-install-close" aria-label="Cerrar">×</button><strong>Instala Appyra</strong><span>En iPhone o iPad usa Compartir y luego Agregar a pantalla de inicio.</span>';
+      installHint.querySelector('.pwa-install-close').addEventListener('click', () => {
+        installHint.classList.remove('is-visible');
+        try { localStorage.setItem('appyra-pwa-ios-hint-dismissed', '1'); } catch (_) {}
+      });
+      document.body.appendChild(installHint);
+    }
 
-    document.body.appendChild(installButton);
-    document.body.appendChild(installHint);
+    if (installButton) {
+      installButton.addEventListener('click', onInstallClick);
+    }
   }
 
   function showInstallButton() {

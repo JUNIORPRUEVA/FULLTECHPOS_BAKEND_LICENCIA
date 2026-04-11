@@ -36,10 +36,10 @@
           <span class="nav-icon" aria-hidden="true">🛒</span>
           <span class="nav-text">Productos</span>
         </a>
-        <a id="whatsappTop" href="#" class="navbar-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
-          <span class="nav-icon" aria-hidden="true">�</span>
-          <span class="nav-text">WhatsApp</span>
-        </a>
+        <button id="navbarInstallBtn" class="navbar-whatsapp navbar-install-btn" type="button" aria-label="Descargar app" style="display:none;">
+          <span class="nav-icon" aria-hidden="true">⬇</span>
+          <span class="nav-text">Instalar</span>
+        </button>
 
         <button id="navbarToggle" class="navbar-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
         <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
@@ -390,7 +390,7 @@
         `Me interesa: Web / Android / iOS / Windows, automatizaciones e IA (bot/agente WhatsApp). ` +
         `También quiero ver el catálogo de productos.`;
       const waLink = StorePublic.e164ToWaLink(phone, waText);
-      ['whatsappTop','whatsappMobile','whatsappHero','whatsappHeroImg','footerWhatsapp','whatsappSales'].forEach((id) => {
+      ['whatsappMobile','whatsappHero','whatsappHeroImg','footerWhatsapp','whatsappSales'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.href = waLink;
       });
