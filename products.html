@@ -9,13 +9,13 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Productos - Appyra" />
   <meta property="og:description" content="Explora el catálogo de productos publicados." />
-  <meta property="og:image" content="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <meta property="og:image" content="/assets/img/logo/logoprincipal.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/assets/img/pwa/icon-180.png" />
   <link rel="icon" href="/assets/img/pwa/icon-192.png" />
-  <link rel="icon" type="image/png" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
-  <link rel="shortcut icon" href="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
+  <link rel="icon" type="image/png" href="/assets/img/logo/logoprincipal.png" />
+  <link rel="shortcut icon" href="/assets/img/logo/logoprincipal.png" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="stylesheet" href="/assets/css/jr.css" />
   <script defer src="/assets/js/pwa.js"></script>
@@ -195,9 +195,24 @@
     async function init() {
       wireMobileNavbar();
 
-      const OFFICIAL_LOGO_URL = 'https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png';
+      const DEFAULT_BRAND_NAME = 'Appyra';
+      const OFFICIAL_LOGO_URL = '/assets/img/logo/logoprincipal.png';
       const DEFAULT_PHONE = '8295319442';
       const DEFAULT_EMAIL = 'jrdigitalrd@gmail.com';
+
+      function normalizeBrandName(value) {
+        const brand = String(value || '').trim();
+        if (!brand) return DEFAULT_BRAND_NAME;
+        if (/^(jr\s*digital|fulltech\s*pos)$/i.test(brand)) return DEFAULT_BRAND_NAME;
+        return brand;
+      }
+
+      function normalizeLogoUrl(value) {
+        const logo = String(value || '').trim();
+        if (!logo) return OFFICIAL_LOGO_URL;
+        if (/postimg|chat-gpt-image|jrdigital/i.test(logo)) return OFFICIAL_LOGO_URL;
+        return logo;
+      }
 
       // Admin login links
       [document.getElementById('adminLoginLink'), document.getElementById('adminLoginLinkMobile')]
@@ -213,8 +228,8 @@
         settings = s.settings || null;
       } catch (_) {}
 
-      const brandName = settings?.brand_name || 'Appyra';
-      const logoUrl = settings?.logo_url || OFFICIAL_LOGO_URL;
+      const brandName = normalizeBrandName(settings?.brand_name);
+      const logoUrl = normalizeLogoUrl(settings?.logo_url);
       StorePublic.setCssVars(settings?.theme);
       // Enforce corporate theme (visual only)
       StorePublic.setCssVars({ primary: '#020617', accent: '#3B82F6', light: '#020617', dark: '#FFFFFF' });

@@ -197,10 +197,10 @@
 
                 <div class="form-group">
                     <label for="logo_url">Logo URL (opcional)</label>
-                    <input type="text" id="logo_url" placeholder="https://.../logo.png" maxlength="2000" />
+                    <input type="text" id="logo_url" placeholder="/assets/img/logo/logoprincipal.png" maxlength="2000" />
                     <div class="logo-preview">
                         <img id="logoPreview" alt="Logo" src="" style="display:none;" />
-                        <div class="hint">Puedes usar una imagen publicada en algún hosting o un media de un producto publicado.</div>
+                        <div class="hint">Si lo dejas vacío, la web usará el logo local en /assets/img/logo/logoprincipal.png.</div>
                     </div>
                 </div>
 
@@ -226,15 +226,11 @@
 
     <script>
         const msgId = 'message';
+        const DEFAULT_LOCAL_LOGO = '/assets/img/logo/logoprincipal.png';
 
         function setLogoPreview(url) {
             const img = document.getElementById('logoPreview');
-            const u = String(url || '').trim();
-            if (!u) {
-                img.style.display = 'none';
-                img.src = '';
-                return;
-            }
+            const u = String(url || '').trim() || DEFAULT_LOCAL_LOGO;
             img.style.display = 'block';
             img.src = u;
         }
@@ -244,7 +240,7 @@
             const { data } = await AdminCommon.adminFetchJson('/api/admin/store-settings');
             const s = data.settings || {};
 
-            document.getElementById('brand_name').value = s.brand_name || '';
+            document.getElementById('brand_name').value = /^(jr\s*digital|fulltech\s*pos)$/i.test(String(s.brand_name || '').trim()) ? 'Appyra' : (s.brand_name || 'Appyra');
             document.getElementById('logo_url').value = s.logo_url || '';
             document.getElementById('whatsapp').value = s.whatsapp || '';
             document.getElementById('email').value = s.email || '';
@@ -252,7 +248,7 @@
 
             document.getElementById('socials').value = s.socials ? JSON.stringify(s.socials, null, 2) : '';
             document.getElementById('theme').value = s.theme ? JSON.stringify(s.theme, null, 2) : '';
-            setLogoPreview(s.logo_url);
+            setLogoPreview(s.logo_url || DEFAULT_LOCAL_LOGO);
         }
 
         window.addEventListener('load', async () => {
@@ -297,7 +293,7 @@
 
                     AdminCommon.showMessage(msgId, '✅ Guardado correctamente', 'success');
                     const updated = data.settings || {};
-                    setLogoPreview(updated.logo_url);
+                    setLogoPreview(updated.logo_url || DEFAULT_LOCAL_LOGO);
                 } catch (err) {
                     AdminCommon.showMessage(msgId, `❌ ${err.message}`, 'error');
                 } finally {
