@@ -19,7 +19,7 @@
             color: #1F2937;
         }
         .navbar {
-            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
             color: white;
             padding: 20px 40px;
             display: flex;
@@ -45,7 +45,7 @@
             font-size: 0.85rem;
             transition: all 0.3s ease;
         }
-        .logout-btn:hover { background: white; color: #05422C; }
+        .logout-btn:hover { background: white; color: #0F172A; }
         .back-link {
             color: white;
             text-decoration: none;
@@ -63,7 +63,7 @@
             animation: slideInUp 0.6s ease;
         }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
-        .section-title { font-size: 1.5rem; font-weight: 800; color: #05422C; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .section-title { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 10px; letter-spacing: -0.5px; }
         .section-subtitle { font-size: 0.95rem; color: #6B7280; margin-bottom: 25px; line-height: 1.5; }
         .message {
             padding: 14px 16px;
@@ -76,7 +76,7 @@
         .message.success { background-color: #DCFCE7; border: 1px solid #BBF7D0; color: #166534; }
         .message.error { background-color: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 18px; }
-        label { font-size: 0.95rem; font-weight: 700; color: #05422C; margin-bottom: 8px; }
+        label { font-size: 0.95rem; font-weight: 700; color: #0F172A; margin-bottom: 8px; }
         input[type="text"], input[type="email"], textarea {
             padding: 12px 14px;
             border: 2px solid #E5E7EB;
@@ -89,7 +89,7 @@
         }
         input:focus, textarea:focus {
             outline: none;
-            border-color: #10B981;
+            border-color: #3B82F6;
             background-color: white;
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
@@ -120,16 +120,16 @@
             transition: all 0.3s ease;
         }
         .btn-save {
-            background: linear-gradient(135deg, #05422C 0%, #0d5a3b 100%);
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
             color: white;
         }
         .btn-save:hover:not(:disabled) { box-shadow: 0 10px 30px rgba(5,66,44,0.3); transform: translateY(-2px); }
         .btn-secondary {
             background: #F3F4F6;
-            color: #05422C;
+            color: #0F172A;
             border: 2px solid #E5E7EB;
         }
-        .btn-secondary:hover:not(:disabled) { border-color: #10B981; background: #fff; }
+        .btn-secondary:hover:not(:disabled) { border-color: #3B82F6; background: #fff; }
         button:disabled { opacity: 0.7; cursor: not-allowed; }
         .hint { font-size: 0.85rem; color: #6B7280; margin-top: 6px; }
         @media (max-width: 768px) {
@@ -212,7 +212,7 @@
 
                 <div class="form-group">
                     <label for="theme">Theme (JSON)</label>
-                    <textarea id="theme" placeholder='{"primary":"#05422C","accent":"#10B981"}'></textarea>
+                    <textarea id="theme" placeholder='{"primary":"#0F172A","accent":"#3B82F6"}'></textarea>
                     <div class="hint">Colores y configuración visual (opcional). JSON válido.</div>
                 </div>
 

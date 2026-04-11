@@ -62,6 +62,26 @@ const { pool } = require('./db/pool');
 const app = express();
 const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
 
+function setNoCacheHeaders(res) {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surrogate-Control', 'no-store');
+}
+
+function setStaticFreshnessHeaders(res, filePath) {
+  const ext = path.extname(String(filePath || '')).toLowerCase();
+  const noStoreExts = new Set(['.html', '.css', '.js', '.webmanifest']);
+  if (noStoreExts.has(ext)) {
+    setNoCacheHeaders(res);
+    return;
+  }
+
+  if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.svg' || ext === '.webp' || ext === '.gif' || ext === '.ico') {
+    res.set('Cache-Control', 'public, max-age=300, must-revalidate');
+  }
+}
+
 // Behind reverse proxies (EasyPanel), this enables correct protocol detection.
 // Important for secure cookies and accurate request logging.
 app.set('trust proxy', 1);
@@ -142,15 +162,24 @@ app.use((req, res, next) => {
 });
 
 // Servir archivos estáticos de admin
-app.use('/admin', express.static(path.join(__dirname, '../admin')));
+app.use('/admin', express.static(path.join(__dirname, '../admin'), {
+  etag: true,
+  lastModified: true,
+  setHeaders: setStaticFreshnessHeaders
+}));
 
 // Servir archivos públicos (landing + assets) para que el sitio pueda funcionar como PWA
 // Nota: evitamos exponer toda la raíz del repo; sólo servimos lo necesario.
-app.use('/assets', express.static(path.join(__dirname, '../assets')));
+app.use('/assets', express.static(path.join(__dirname, '../assets'), {
+  etag: true,
+  lastModified: true,
+  setHeaders: setStaticFreshnessHeaders
+}));
 
 // Public pages
 // Canonical landing should be the root URL (avoid showing /home.html in the browser).
 app.get('/', (req, res) => {
+  setNoCacheHeaders(res);
   res.sendFile(path.join(__dirname, '../home.html'));
 });
 
@@ -160,28 +189,34 @@ app.get(['/index.html', '/home.html'], (req, res) => {
 });
 
 app.get('/products.html', (req, res) => {
+  setNoCacheHeaders(res);
   res.sendFile(path.join(__dirname, '../products.html'));
 });
 
 app.get('/product.html', (req, res) => {
+  setNoCacheHeaders(res);
   res.sendFile(path.join(__dirname, '../product.html'));
 });
 
 app.get('/fullpos.html', (req, res) => {
+  setNoCacheHeaders(res);
   res.sendFile(path.join(__dirname, '../fullpos.html'));
 });
 
 app.get('/manifest.webmanifest', (req, res) => {
   res.type('application/manifest+json');
+  setNoCacheHeaders(res);
   res.sendFile(path.join(__dirname, '../manifest.webmanifest'));
 });
 
 app.get('/sw.js', (req, res) => {
   res.type('application/javascript');
+  setNoCacheHeaders(res);
   res.sendFile(path.join(__dirname, '../sw.js'));
 });
 
 app.get('/offline.html', (req, res) => {
+  setNoCacheHeaders(res);
   res.sendFile(path.join(__dirname, '../offline.html'));
 });
 

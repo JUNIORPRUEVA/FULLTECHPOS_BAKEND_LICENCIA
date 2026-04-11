@@ -1,12 +1,15 @@
 {
-  "name": "JR Digital",
-  "short_name": "JR Digital",
-  "description": "JR Digital Web",
-  "start_url": "/index.html",
+  "id": "/home.html",
+  "name": "Appyra",
+  "short_name": "Appyra",
+  "description": "Appyra: software, IA y productos digitales para negocios.",
+  "start_url": "/home.html",
   "scope": "/",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#031026",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/assets/img/pwa/icon-192.png",

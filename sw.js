@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = 'v20';
+const CACHE_VERSION = 'v21';
 const STATIC_CACHE = `fulltech-pos-static-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -16,11 +16,54 @@ const PRECACHE_URLS = [
   '/assets/css/jr-admin.css',
   '/assets/js/pwa.js',
   '/assets/js/storePublic.js',
+  '/assets/img/logo/logoprincipal.png',
   '/assets/img/pwa/icon-192.png',
   '/assets/img/pwa/icon-512.png',
   '/assets/img/pwa/icon-maskable-192.png',
   '/assets/img/pwa/icon-maskable-512.png'
 ];
+
+function isSameOriginAsset(requestUrl) {
+  try {
+    const url = new URL(requestUrl);
+    return url.origin === self.location.origin;
+  } catch (_) {
+    return false;
+  }
+}
+
+function isFreshAsset(requestUrl) {
+  try {
+    const url = new URL(requestUrl);
+    if (url.origin !== self.location.origin) return false;
+    return /\.(?:css|js|html|webmanifest|png|svg|jpg|jpeg|webp)$/i.test(url.pathname) ||
+      url.pathname === '/' ||
+      url.pathname === '/home.html' ||
+      url.pathname === '/products.html' ||
+      url.pathname === '/product.html';
+  } catch (_) {
+    return false;
+  }
+}
+
+async function networkFirst(request, fallbackUrl) {
+  try {
+    const response = await fetch(request);
+    if (request.method === 'GET' && response && response.ok && isSameOriginAsset(request.url)) {
+      const cache = await caches.open(STATIC_CACHE);
+      cache.put(request, response.clone()).catch(() => undefined);
+    }
+    return response;
+  } catch (_) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    if (fallbackUrl) {
+      const fallback = await caches.match(fallbackUrl);
+      if (fallback) return fallback;
+    }
+    throw _;
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -57,19 +100,10 @@ self.addEventListener('fetch', (event) => {
   // Navigation: network-first, fallback to cache, then offline page.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(STATIC_CACHE).then((cache) => cache.put('/index.html', copy)).catch(() => undefined);
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          const indexCached = await caches.match('/index.html');
-          if (indexCached) return indexCached;
-          return caches.match('/offline.html');
-        })
+      networkFirst(request, '/offline.html').catch(async () => {
+        const indexCached = await caches.match('/index.html');
+        return indexCached || caches.match('/offline.html');
+      })
     );
     return;
   }
@@ -94,7 +128,18 @@ self.addEventListener('fetch', (event) => {
     // ignore
   }
 
-  // Static assets: cache-first.
+  // Critical branded assets: network-first to avoid stale UI after deploys.
+  if (request.method === 'GET' && isFreshAsset(request.url)) {
+    event.respondWith(
+      networkFirst(request).catch(async () => {
+        const cached = await caches.match(request);
+        return cached || fetch(request);
+      })
+    );
+    return;
+  }
+
+  // Other static assets: cache-first.
   event.respondWith(
     caches.match(request).then((cached) =>
       cached ||

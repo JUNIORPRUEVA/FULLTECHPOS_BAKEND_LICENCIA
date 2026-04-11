@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#020617">
     <title>Appyra | FULLTECH POS</title>
+    <meta name="description" content="FULLTECH POS: sistema de punto de venta moderno con inventario, facturación, reportes y más. Diseñado para negocios dominicanos.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Appyra | FULLTECH POS">
+    <meta property="og:description" content="Sistema POS moderno con identidad Appyra: ventas, inventario, facturación y operación comercial.">
+    <meta property="og:image" content="/assets/img/logo/logoprincipal.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/assets/img/pwa/icon-180.png">
     <link rel="icon" href="/assets/img/pwa/icon-192.png">
@@ -266,6 +274,7 @@
                                 id="fullname" 
                                 name="fullname" 
                                 required 
+                                autocomplete="name"
                                 placeholder="Tu nombre completo"
                             >
                         </div>
@@ -277,6 +286,7 @@
                                 id="business-name" 
                                 name="business-name" 
                                 required 
+                                autocomplete="organization"
                                 placeholder="Ej: Colmado Don Carlos"
                             >
                         </div>
@@ -288,6 +298,7 @@
                                 id="phone" 
                                 name="phone" 
                                 required 
+                                autocomplete="tel"
                                 placeholder="Ej: +1-809-123-4567"
                             >
                         </div>
@@ -299,6 +310,7 @@
                                 id="email" 
                                 name="email" 
                                 required 
+                                autocomplete="email"
                                 placeholder="tu@correo.com"
                             >
                         </div>
@@ -317,10 +329,10 @@
                             Enviar Solicitud y abrir WhatsApp
                         </button>
                     </form>
-                </section>
+                </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </section>
 
     <!-- FOOTER PROFESIONAL -->
     <footer class="footer">
@@ -368,13 +380,32 @@
             </div>
         </div>
 
-            <div class="footer-bottom">
-                <p>© 2025 FULLTECH, SRL. Todos los derechos reservados.</p>
-            </div>
+        <div class="footer-bottom">
+            <p>© 2026 Appyra. Todos los derechos reservados.</p>
         </div>
     </footer>
 
+    <div class="toast-container" id="toastContainer"></div>
     <script>
+        // Toast notification system
+        function showToast(message, type = 'info', duration = 4000) {
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                container.id = 'toastContainer';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast toast--${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('toast--exit');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, duration);
+        }
+
         // Datos de características detalladas
         const featuresDetails = [
             {
@@ -520,7 +551,8 @@
                     };
 
                     if (!payload.nombre || !payload.telefono || !payload.email) {
-                        throw new Error('Completa los campos requeridos (Nombre, Teléfono, Email).');
+                        showToast('Completa los campos requeridos (Nombre, Teléfono, Email).', 'error');
+                        return;
                     }
 
                     const confirmMessage =
@@ -555,14 +587,12 @@
                         `\nEmail: ${payload.email}` +
                         (payload.mensaje ? `\n\nMensaje: ${payload.mensaje}` : '');
 
-                    alert('✅ Solicitud enviada. Ahora te redirigimos a WhatsApp para completar la compra.');
+                    showToast('✅ Solicitud enviada. Redirigiendo a WhatsApp...', 'success');
                     this.reset();
 
-                    // Redirigir a WhatsApp (misma pestaña para compatibilidad con kiosco).
-                    window.location.href = buildWhatsAppUrl(waMessage);
+                    setTimeout(() => { window.location.href = buildWhatsAppUrl(waMessage); }, 1200);
                 } catch (error) {
-                    alert(`❌ Error enviando la solicitud: ${error.message}`);
-                    console.error('Error enviando solicitud de licencia:', error);
+                    showToast(`❌ Error: ${error.message}`, 'error');
                 } finally {
                     if (submitBtn) {
                         submitBtn.disabled = false;

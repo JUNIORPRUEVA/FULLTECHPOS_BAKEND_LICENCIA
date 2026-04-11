@@ -11,6 +11,8 @@
   <meta property="og:description" content="Explora el catálogo de productos publicados." />
   <meta property="og:image" content="/assets/img/logo/logoprincipal.png" />
   <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/assets/img/pwa/icon-180.png" />
   <link rel="icon" href="/assets/img/pwa/icon-192.png" />
@@ -43,11 +45,51 @@
       </div>
     </div>
 
-    <div id="navbarMobile" class="navbar-mobile" aria-label="Menú móvil">
-      <a class="navbar-mobile-btn" href="/home.html">Inicio</a>
-      <a class="navbar-mobile-btn" href="/products.html">Productos</a>
-      <a id="whatsappMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">WhatsApp</a>
-      <a id="adminLoginLinkMobile" class="navbar-mobile-btn" href="#" target="_blank" rel="noopener">Admin</a>
+    <button id="navbarMobileOverlay" class="navbar-mobile-overlay" type="button" aria-label="Cerrar menú"></button>
+    <div id="navbarMobile" class="navbar-mobile" aria-label="Menú móvil" aria-hidden="true">
+      <div class="navbar-mobile-shell">
+        <div class="navbar-mobile-topbar">
+          <div class="navbar-mobile-brandWrap">
+            <img id="brandLogoMobile" src="" alt="Logo" class="navbar-mobile-brandLogo" style="display:none;" />
+            <div class="navbar-mobile-brandText">
+              <strong id="brandNameMobile">Appyra</strong>
+              <span>Software, IA y automatización para negocios modernos</span>
+            </div>
+          </div>
+          <button id="navbarClose" class="navbar-mobile-close" type="button" aria-label="Cerrar menú">✕</button>
+        </div>
+
+        <div class="navbar-mobile-label">Explorar</div>
+
+        <a class="navbar-mobile-btn" href="/home.html">
+          <span class="navbar-mobile-icon" aria-hidden="true">⌂</span>
+          <span class="navbar-mobile-copy">
+            <strong>Inicio</strong>
+            <small>Presentación principal de la marca y propuesta comercial.</small>
+          </span>
+        </a>
+        <a class="navbar-mobile-btn" href="/products.html" aria-current="page">
+          <span class="navbar-mobile-icon" aria-hidden="true">◫</span>
+          <span class="navbar-mobile-copy">
+            <strong>Productos</strong>
+            <small>Explora el catálogo disponible y encuentra la solución correcta.</small>
+          </span>
+        </a>
+        <a id="whatsappMobile" class="navbar-mobile-btn navbar-mobile-btn--accent" href="#" target="_blank" rel="noopener">
+          <span class="navbar-mobile-icon" aria-hidden="true">✦</span>
+          <span class="navbar-mobile-copy">
+            <strong>WhatsApp</strong>
+            <small>Solicita una propuesta, demo o atención directa.</small>
+          </span>
+        </a>
+
+        <div class="navbar-mobile-footerCard">
+          <span class="navbar-mobile-eyebrow">Acceso interno</span>
+          <strong>Panel administrativo</strong>
+          <p>Inicia sesión para administrar el contenido, la operación comercial y la configuración de Appyra.</p>
+          <a id="adminLoginLinkMobile" class="navbar-mobile-adminBtn" href="#" target="_blank" rel="noopener">Ir a iniciar sesión</a>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -70,7 +112,11 @@
         <a id="whatsappCta" class="jr-btn primary" href="#" target="_blank" rel="noopener">Cotizar por WhatsApp</a>
       </div>
 
-      <div id="list" class="jr-grid"></div>
+      <div id="list" class="jr-grid">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+      </div>
       <div id="empty" class="jr-empty" style="display:none;">No hay productos publicados con ese filtro.</div>
     </div>
   </header>
@@ -110,15 +156,21 @@
       const navbar = document.querySelector('.navbar');
       const toggle = document.getElementById('navbarToggle');
       const mobileMenu = document.getElementById('navbarMobile');
-      if (!navbar || !toggle || !mobileMenu) return;
+      const overlay = document.getElementById('navbarMobileOverlay');
+      const closeButton = document.getElementById('navbarClose');
+      if (!navbar || !toggle || !mobileMenu || !overlay || !closeButton) return;
 
       function closeMenu() {
         navbar.classList.remove('is-open');
+        document.body.classList.remove('navbar-menu-open');
         toggle.setAttribute('aria-expanded', 'false');
+        mobileMenu.setAttribute('aria-hidden', 'true');
       }
       function openMenu() {
         navbar.classList.add('is-open');
+        document.body.classList.add('navbar-menu-open');
         toggle.setAttribute('aria-expanded', 'true');
+        mobileMenu.setAttribute('aria-hidden', 'false');
       }
 
       toggle.addEventListener('click', (e) => {
@@ -126,6 +178,9 @@
         if (navbar.classList.contains('is-open')) closeMenu();
         else openMenu();
       });
+
+      closeButton.addEventListener('click', closeMenu);
+      overlay.addEventListener('click', closeMenu);
 
       mobileMenu.querySelectorAll('a,button').forEach((el) => {
         el.addEventListener('click', () => closeMenu());
@@ -139,6 +194,10 @@
 
       window.addEventListener('resize', () => {
         if (window.innerWidth > 768) closeMenu();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMenu();
       });
     }
 
@@ -234,16 +293,22 @@
       // Enforce corporate theme (visual only)
       StorePublic.setCssVars({ primary: '#020617', accent: '#3B82F6', light: '#020617', dark: '#FFFFFF' });
 
-      document.getElementById('brandName').textContent = brandName;
+      [document.getElementById('brandName'), document.getElementById('brandNameMobile')]
+        .filter(Boolean)
+        .forEach((el) => {
+          el.textContent = brandName;
+        });
       document.getElementById('footerBrand').textContent = brandName;
       document.getElementById('footerBrand2').textContent = brandName;
       document.title = `Productos - ${brandName}`;
 
-      const logoImg = document.getElementById('brandLogo');
-      if (logoImg && logoUrl) {
-        logoImg.src = logoUrl;
-        logoImg.style.display = 'block';
-      }
+      [document.getElementById('brandLogo'), document.getElementById('brandLogoMobile')]
+        .filter(Boolean)
+        .forEach((logoImg) => {
+          if (!logoUrl) return;
+          logoImg.src = logoUrl;
+          logoImg.style.display = 'block';
+        });
 
       const footerLogo = document.getElementById('footerLogo');
       if (footerLogo && logoUrl) footerLogo.src = logoUrl;

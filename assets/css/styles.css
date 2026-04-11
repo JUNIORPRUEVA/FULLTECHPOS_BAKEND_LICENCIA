@@ -1284,13 +1284,12 @@ section {
 .footer-section:nth-child(4) { animation-delay: 0.4s; }
 
 .footer-section h4 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 800;
     margin-bottom: 24px;
     letter-spacing: -0.4px;
     color: var(--color-accent);
     text-transform: uppercase;
-    font-size: 1.1rem;
     border-bottom: 2px solid var(--color-accent);
     padding-bottom: 12px;
     display: inline-block;
@@ -2149,4 +2148,127 @@ section {
     .feature-modal-content {
         border-radius: 20px;
     }
+}
+
+/* ==========================================
+   ACCESSIBILITY: FOCUS INDICATORS
+   ========================================== */
+:focus-visible {
+    outline: 2px solid var(--color-accent, #3B82F6);
+    outline-offset: 2px;
+}
+
+.btn:focus-visible,
+.navbar-download:focus-visible,
+.navbar-whatsapp:focus-visible,
+.navbar-toggle:focus-visible,
+.navbar-admin:focus-visible,
+.feature-card-footer a:focus-visible {
+    outline: 2px solid var(--color-accent, #3B82F6);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+/* ==========================================
+   REDUCED MOTION
+   ========================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ==========================================
+   TOAST NOTIFICATION SYSTEM
+   ========================================== */
+.toast-container {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    min-width: 300px;
+    max-width: 460px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.5;
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 22px 50px rgba(2, 6, 23, 0.34);
+    animation: toastSlideIn 0.35s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toast--success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.92) 0%, rgba(6, 182, 212, 0.88) 100%);
+    color: #FFFFFF;
+}
+
+.toast--error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.92) 0%, rgba(220, 38, 127, 0.88) 100%);
+    color: #FFFFFF;
+}
+
+.toast--info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.92) 0%, rgba(6, 182, 212, 0.88) 100%);
+    color: #FFFFFF;
+}
+
+.toast--exit {
+    animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastSlideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(40px); }
+}
+
+/* ==========================================
+   LOADING SKELETON
+   ========================================== */
+.skeleton {
+    background: linear-gradient(90deg,
+        rgba(148, 163, 184, 0.08) 25%,
+        rgba(148, 163, 184, 0.16) 50%,
+        rgba(148, 163, 184, 0.08) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s ease-in-out infinite;
+    border-radius: 12px;
+}
+
+.skeleton-text {
+    height: 1em;
+    margin-bottom: 0.5em;
+    border-radius: 8px;
+}
+
+.skeleton-card {
+    height: 200px;
+    border-radius: 20px;
+}
+
+@keyframes skeletonShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
 }
