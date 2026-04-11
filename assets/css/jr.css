@@ -60,8 +60,8 @@ body {
 
 /* Home cover/portada: logo on the side + informative content */
 .jr-hero--split {
-  padding: 118px 0 86px;
-  min-height: 680px;
+  padding: 48px 0 40px;
+  min-height: 0;
 }
 
 .jr-hero--split .jr-hero-grid {
@@ -481,7 +481,7 @@ body {
     font-size: 2.3rem;
   }
   .jr-hero--split {
-    padding: 102px 0 72px;
+    padding: 40px 0 32px;
     min-height: 0;
   }
 
@@ -571,7 +571,7 @@ body {
   }
 
   .jr-hero--split {
-    padding: 96px 0 62px;
+    padding: 36px 0 28px;
   }
 
   .jr-hero-logoTop,
@@ -619,7 +619,7 @@ body {
 
 .jr-hero {
   position: relative;
-  padding: 122px 0 92px;
+  padding: 56px 0 48px;
   background:
     radial-gradient(860px 420px at 0% 0%, rgba(59, 130, 246, 0.18), transparent 58%),
     radial-gradient(920px 540px at 100% 0%, rgba(147, 51, 234, 0.18), transparent 56%),
@@ -642,7 +642,7 @@ body {
 }
 
 .jr-hero--split {
-  min-height: max(720px, calc(100vh - var(--jr-nav-h)));
+  min-height: 0;
 }
 
 .jr-hero-grid {
@@ -691,9 +691,9 @@ body {
 
 .jr-hero p,
 .jr-lead {
-  color: rgba(226, 232, 240, 0.82);
-  font-size: 1.05rem;
-  line-height: 1.85;
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 1.08rem;
+  line-height: 1.8;
 }
 
 .jr-hero-actionsArea {
@@ -763,7 +763,7 @@ body {
 
 .jr-section {
   position: relative;
-  padding: 86px 0;
+  padding: 44px 0;
   background: transparent;
 }
 
@@ -781,7 +781,7 @@ body {
 .jr-card-meta,
 .muted,
 .file-meta {
-  color: rgba(148, 163, 184, 0.9);
+  color: rgba(148, 163, 184, 1);
 }
 
 .jr-grid {
@@ -818,6 +818,7 @@ body {
 .jr-card-desc {
   min-height: 56px;
   line-height: 1.75;
+  font-size: 0.98rem;
 }
 
 .jr-badge,
@@ -893,8 +894,8 @@ body {
 
 .jr-footer {
   position: relative;
-  margin-top: 52px;
-  padding: 80px 0 30px;
+  margin-top: 28px;
+  padding: 44px 0 24px;
   border-top: 1px solid rgba(148, 163, 184, 0.14);
   background:
     radial-gradient(860px 420px at 0% 0%, rgba(59, 130, 246, 0.18), transparent 56%),
@@ -949,8 +950,9 @@ body {
 .jr-salesCard p {
   display: block;
   margin-top: 8px;
-  color: rgba(226, 232, 240, 0.78);
-  line-height: 1.75;
+  color: rgba(226, 232, 240, 0.88);
+  line-height: 1.7;
+  font-size: 0.95rem;
 }
 
 .jr-salesGrid {
@@ -1058,7 +1060,7 @@ body {
   }
 
   .jr-hero {
-    padding: 104px 0 72px;
+    padding: 44px 0 36px;
   }
 
   .jr-hero-grid {
@@ -1074,7 +1076,7 @@ body {
   }
 
   .jr-section {
-    padding: 72px 0;
+    padding: 36px 0;
   }
 
   .jr-proofBar,
