@@ -1,4 +1,4 @@
-/* JR Digital - Admin mobile drawer (UI only)
+/* Appyra - Admin mobile drawer (UI only)
    Injects a drawer menu on admin pages that DO NOT already have a sidebar.
 */
 
@@ -31,9 +31,9 @@
     const header = document.createElement('div');
     header.className = 'jr-adminDrawerHeader';
     header.innerHTML = `
-      <img src="../assets/img/logo/logoprincipal.png" alt="JR Digital" />
+      <img src="../assets/img/logo/logoprincipal.png" alt="Appyra" />
       <div class="jr-adminDrawerTitle">
-        <strong>JR Digital</strong>
+        <strong>Appyra</strong>
         <span>Administración</span>
       </div>
     `;

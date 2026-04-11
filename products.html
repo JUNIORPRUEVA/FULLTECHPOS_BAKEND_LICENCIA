@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0A6CFF" />
-  <title>Productos - JR Digital</title>
-  <meta name="description" content="Catálogo de productos JR Digital: instaladores, manuales y recursos." />
+  <meta name="theme-color" content="#020617" />
+  <title>Productos - Appyra</title>
+  <meta name="description" content="Catálogo Appyra: productos digitales, instaladores, recursos y software listo para vender o implementar." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Productos - JR Digital" />
+  <meta property="og:title" content="Productos - Appyra" />
   <meta property="og:description" content="Explora el catálogo de productos publicados." />
   <meta property="og:image" content="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -26,7 +26,7 @@
     <div class="navbar-container">
       <a class="navbar-logo" href="/home.html" style="text-decoration:none;">
         <img id="brandLogo" src="" alt="Logo" class="navbar-logo-img" style="display:none;" />
-        <span class="navbar-brand" id="brandName">JR Digital</span>
+        <span class="navbar-brand" id="brandName">Appyra</span>
       </a>
 
       <div class="navbar-actions">
@@ -80,8 +80,8 @@
       <div class="jr-footer-grid">
         <div>
           <div style="display:flex; gap:12px; align-items:center;">
-            <img id="footerLogo" src="" alt="JR Digital" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
-            <h4 id="footerBrand">JR Digital</h4>
+            <img id="footerLogo" src="" alt="Appyra" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
+            <h4 id="footerBrand">Appyra</h4>
           </div>
           <div style="opacity:0.9; margin-top:10px;">Productos, instaladores, manuales y recursos.</div>
         </div>
@@ -101,7 +101,7 @@
         </div>
       </div>
 
-      <div style="margin-top:18px; opacity:0.85;">© 2026 <span id="footerBrand2">JR Digital</span></div>
+      <div style="margin-top:18px; opacity:0.85;">© 2026 <span id="footerBrand2">Appyra</span></div>
     </div>
   </footer>
 
@@ -213,11 +213,11 @@
         settings = s.settings || null;
       } catch (_) {}
 
-      const brandName = settings?.brand_name || 'JR Digital';
+      const brandName = settings?.brand_name || 'Appyra';
       const logoUrl = settings?.logo_url || OFFICIAL_LOGO_URL;
       StorePublic.setCssVars(settings?.theme);
       // Enforce corporate theme (visual only)
-      StorePublic.setCssVars({ primary: '#0A6CFF', accent: '#1EC9FF', light: '#F8FAFC', dark: '#0B3C8C' });
+      StorePublic.setCssVars({ primary: '#020617', accent: '#3B82F6', light: '#020617', dark: '#FFFFFF' });
 
       document.getElementById('brandName').textContent = brandName;
       document.getElementById('footerBrand').textContent = brandName;

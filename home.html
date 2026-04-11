@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0A6CFF" />
-  <title>JR Digital - Soluciones y Productos</title>
-  <meta name="description" content="JR Digital: soluciones digitales, productos, instaladores y proyectos listos para tu negocio." />
+  <meta name="theme-color" content="#020617" />
+  <title>Appyra - Software, IA y Productos Digitales</title>
+  <meta name="description" content="Appyra: software premium, automatización e IA para negocios que quieren crecer con una experiencia SaaS moderna." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="JR Digital" />
-  <meta property="og:description" content="Soluciones digitales, productos y proyectos listos para tu negocio." />
+  <meta property="og:title" content="Appyra" />
+  <meta property="og:description" content="Software premium, automatización e IA para negocios con identidad tecnológica y elegante." />
   <meta property="og:image" content="https://i.postimg.cc/3RKKhzNK/Chat-GPT-Image-18-ene-2026-21-26-16.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -26,7 +26,7 @@
     <div class="navbar-container">
       <a class="navbar-logo" href="/home.html" style="text-decoration:none;">
         <img id="brandLogo" src="" alt="Logo" class="navbar-logo-img" style="display:none;" />
-        <span class="navbar-brand" id="brandName">JR Digital</span>
+        <span class="navbar-brand" id="brandName">Appyra</span>
       </a>
 
       <div class="navbar-actions">
@@ -56,11 +56,11 @@
     <div class="jr-container">
       <div class="jr-hero-grid">
         <div class="jr-hero-left">
-          <img id="heroLogo" class="jr-hero-logoTop" src="" alt="JR Digital" />
+          <img id="heroLogo" class="jr-hero-logoTop" src="" alt="Appyra" />
 
           <div class="jr-hero-copy">
-            <h1 id="heroTitle" style="margin:0;">JR Digital</h1>
-            <p id="heroSubtitle">Vendemos y construimos software a la medida: apps, web, escritorio, automatización e inteligencia artificial.</p>
+            <h1 id="heroTitle" style="margin:0;">Appyra</h1>
+            <p id="heroSubtitle">Software premium, automatización e IA para negocios que necesitan operar con una experiencia moderna, sólida y escalable.</p>
           </div>
 
           <div class="jr-hero-actionsArea">
@@ -72,16 +72,16 @@
         </div>
 
         <div class="jr-hero-card">
-          <div class="jr-hero-card-title">Lo que hacemos</div>
+          <div class="jr-hero-card-title">Qué construimos</div>
           <div style="opacity:0.92; line-height:1.75;">
-            • Venta de productos digitales listos<br />
-            • Desarrollo a la medida (Web, Android, iOS, Windows)<br />
-            • IA aplicada: bots, agentes y automatizaciones<br />
-            • Integraciones: pagos, facturación, WhatsApp y más<br />
-            • Soporte, mantenimiento y mejoras continuas<br />
+            • Productos digitales listos para vender e implementar<br />
+            • Desarrollo a medida para web, móvil y escritorio<br />
+            • IA aplicada con bots, agentes y automatizaciones reales<br />
+            • Integraciones con pagos, facturación, WhatsApp y APIs<br />
+            • Soporte continuo, evolución y mejoras de producto<br />
           </div>
           <div class="divider" style="margin: 14px 0;"></div>
-          <div class="muted" style="color: rgba(255,255,255,0.86);">Mira nuestros productos disponibles o escríbenos para cotizar tu sistema a la medida.</div>
+          <div class="muted" style="color: rgba(255,255,255,0.86);">Explora el catálogo o cotiza una solución Appyra diseñada para tu operación.</div>
         </div>
       </div>
     </div>
@@ -139,10 +139,10 @@
       <div class="jr-footer-grid">
         <div>
           <div style="display:flex; gap:12px; align-items:center;">
-            <img id="footerLogo" src="" alt="JR Digital" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
-            <h4 id="footerBrand">JR Digital</h4>
+            <img id="footerLogo" src="" alt="Appyra" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
+            <h4 id="footerBrand">Appyra</h4>
           </div>
-          <div id="footerDesc">Soluciones digitales para negocios.</div>
+          <div id="footerDesc">Software, automatización e IA para negocios modernos.</div>
         </div>
         <div>
           <h4>Contacto</h4>
@@ -157,7 +157,7 @@
         </div>
       </div>
 
-      <div style="margin-top: 18px; opacity:0.85; font-size:0.9rem;">© 2026 <span id="footerBrand2">JR Digital</span>. Todos los derechos reservados.</div>
+      <div style="margin-top: 18px; opacity:0.85; font-size:0.9rem;">© 2026 <span id="footerBrand2">Appyra</span>. Todos los derechos reservados.</div>
     </div>
   </footer>
 
@@ -219,11 +219,11 @@
         settings = s.settings || null;
       } catch (_) {}
 
-      const brandName = settings?.brand_name || 'JR Digital';
+      const brandName = settings?.brand_name || 'Appyra';
       const logoUrl = settings?.logo_url || OFFICIAL_LOGO_URL;
       StorePublic.setCssVars(settings?.theme);
       // Enforce corporate theme (visual only)
-      StorePublic.setCssVars({ primary: '#0A6CFF', accent: '#1EC9FF', light: '#F8FAFC', dark: '#0B3C8C' });
+      StorePublic.setCssVars({ primary: '#020617', accent: '#3B82F6', light: '#020617', dark: '#FFFFFF' });
 
       document.getElementById('brandName').textContent = brandName;
       document.getElementById('heroTitle').textContent = brandName;

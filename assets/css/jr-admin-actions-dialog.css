@@ -1,7 +1,8 @@
 .jr-actionsOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.48);
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(10px);
   display: none;
   z-index: 1200;
   padding: 16px;
@@ -21,10 +22,11 @@
 
 .jr-actionsDialog {
   width: min(520px, 100%);
-  background: #fff;
-  border: 1px solid #E5E7EB;
-  border-radius: 16px;
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.26);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.76) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 22px;
+  box-shadow: 0 30px 72px rgba(2, 6, 23, 0.34);
+  backdrop-filter: blur(18px);
   overflow: hidden;
   max-height: min(72vh, 620px);
   display: flex;
@@ -37,13 +39,13 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 14px 10px 14px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .jr-actionsTitle {
   font-size: 1.02rem;
   font-weight: 900;
-  color: #0F172A;
+  color: #FFFFFF;
   letter-spacing: -0.2px;
   line-height: 1.2;
 }
@@ -51,15 +53,15 @@
 .jr-actionsSubtitle {
   margin-top: 4px;
   font-size: 0.88rem;
-  color: #64748B;
+  color: #94A3B8;
   font-weight: 700;
 }
 
 .jr-actionsClose {
-  border: 1px solid #E5E7EB;
-  background: #fff;
-  color: #0F172A;
-  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
+  border-radius: 14px;
   width: 42px;
   height: 40px;
   font-weight: 900;
@@ -67,8 +69,8 @@
 }
 
 .jr-actionsClose:hover {
-  background: #F8FAFC;
-  border-color: #CBD5E1;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(148, 163, 184, 0.18);
 }
 
 .jr-actionsBody {
@@ -84,10 +86,10 @@
 .jr-actionsBtn {
   width: 100%;
   text-align: left;
-  border: 1px solid #E5E7EB;
-  background: #fff;
-  color: #0F172A;
-  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #FFFFFF;
+  border-radius: 16px;
   padding: 11px 12px;
   font-size: 0.92rem;
   font-weight: 850;
@@ -95,8 +97,8 @@
 }
 
 .jr-actionsBtn:hover {
-  background: #F8FAFC;
-  border-color: #CBD5E1;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(148, 163, 184, 0.18);
 }
 
 .jr-actionsBtn:disabled {
@@ -105,10 +107,11 @@
 }
 
 .jr-actionsBtn.is-token {
-  border-color: rgba(16, 185, 129, 0.35);
+  border-color: rgba(59, 130, 246, 0.28);
+  color: #DBEAFE;
 }
 
 .jr-actionsBtn.is-danger {
   border-color: rgba(239, 68, 68, 0.32);
-  color: #991B1B;
+  color: #FCA5A5;
 }
