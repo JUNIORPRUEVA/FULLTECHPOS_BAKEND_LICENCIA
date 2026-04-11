@@ -20,6 +20,57 @@
   <link rel="shortcut icon" href="/assets/img/logo/logoprincipal.png" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="stylesheet" href="/assets/css/jr.css" />
+  <style>
+    .hero-slider {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 32px 72px rgba(2,6,23,0.42);
+    }
+    .hero-slider-track {
+      display: flex;
+      transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform;
+    }
+    .hero-slide {
+      min-width: 100%;
+      flex-shrink: 0;
+    }
+    .hero-slide img {
+      width: 100%;
+      display: block;
+      border-radius: 0;
+    }
+    .hero-slider-dots {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 2;
+    }
+    .hero-slider-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      border: 1.5px solid rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .hero-slider-dot.is-active {
+      background: #fff;
+      transform: scale(1.25);
+    }
+    @media (max-width: 600px) {
+      .hero-slider { border-radius: 16px; }
+    }
+  </style>
   <script defer src="/assets/js/pwa.js"></script>
   <script defer src="/assets/js/storePublic.js"></script>
 </head>
@@ -93,46 +144,49 @@
 
   <header class="jr-hero jr-hero--split" aria-label="Portada">
     <div class="jr-container">
-      <div class="jr-hero-grid">
-        <div class="jr-hero-left">
-          <div class="jr-hero-copy">
-            <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
-              <img id="heroLogo" src="/assets/img/logo/logoprincipal.png" alt="Appyra" style="width:48px; height:48px; border-radius:14px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:5px;" />
-              <h1 id="heroTitle" style="margin:0;">Appyra</h1>
-            </div>
-            <p id="heroSubtitle">Creamos el software que tu negocio necesita para vender más, operar mejor y crecer sin límites.</p>
-          </div>
+      <!-- ── Hero Slider (images first) ── -->
+      <div class="hero-slider" id="heroSlider">
+        <div class="hero-slider-track" id="heroSliderTrack">
+          <a href="/products.html" class="hero-slide" style="text-decoration:none;">
+            <img src="/assets/img/hero/Cat%C3%A1logo%20de%20productos%20digitales%20de%20Appyra.png" alt="Catálogo de productos digitales de Appyra" />
+          </a>
+          <a id="whatsappHeroImg" href="#" target="_blank" rel="noopener" class="hero-slide" style="text-decoration:none;">
+            <img src="/assets/img/hero/Soluciones%20digitales%20personalizadas%20para%20ti.png" alt="Soluciones digitales personalizadas" />
+          </a>
+        </div>
+        <div class="hero-slider-dots" id="heroSliderDots"></div>
+      </div>
 
-          <div class="jr-hero-actionsArea">
-            <div class="jr-hero-actions">
-              <a class="jr-btn primary" href="/products.html">Ver productos</a>
-              <a id="whatsappHero" class="jr-btn ghost" href="#" target="_blank" rel="noopener">Solicitar cotización</a>
-            </div>
+      <!-- ── Hero Copy (below slider) ── -->
+      <div class="jr-hero-left" style="margin-top:32px; text-align:center;">
+        <div class="jr-hero-copy">
+          <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px; justify-content:center;">
+            <img id="heroLogo" src="/assets/img/logo/logoprincipal.png" alt="Appyra" style="width:52px; height:52px; border-radius:14px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:5px;" />
+            <h1 id="heroTitle" style="margin:0;">Appyra</h1>
           </div>
+          <p id="heroSubtitle" style="max-width:640px; margin:12px auto 0;">Creamos el software que tu negocio necesita para vender más, operar mejor y crecer sin límites.</p>
+        </div>
 
-          <div class="jr-proofBar" aria-label="Diferenciales Appyra">
-            <div class="jr-proofItem">
-              <strong>Listo para usar</strong>
-              <span>Software probado que funciona desde el día uno.</span>
-            </div>
-            <div class="jr-proofItem">
-              <strong>Ahorra tiempo</strong>
-              <span>Automatiza tareas repetitivas con IA.</span>
-            </div>
-            <div class="jr-proofItem">
-              <strong>Siempre contigo</strong>
-              <span>Soporte y actualizaciones incluidas.</span>
-            </div>
+        <div class="jr-hero-actionsArea" style="display:flex; justify-content:center;">
+          <div class="jr-hero-actions">
+            <a class="jr-btn primary" href="/products.html">Ver productos</a>
+            <a id="whatsappHero" class="jr-btn ghost" href="#" target="_blank" rel="noopener">Solicitar cotización</a>
           </div>
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:14px;">
-          <a href="/products.html" style="display:block; text-decoration:none;">
-            <img src="/assets/img/hero/Cat%C3%A1logo%20de%20productos%20digitales%20de%20Appyra.png" alt="Catálogo de productos digitales de Appyra" style="width:100%; border-radius:20px; border:1px solid rgba(255,255,255,0.14); box-shadow:0 28px 60px rgba(2,6,23,0.36); transition:transform 0.2s ease;" />
-          </a>
-          <a id="whatsappHeroImg" href="#" target="_blank" rel="noopener" style="display:block; text-decoration:none;">
-            <img src="/assets/img/hero/Soluciones%20digitales%20personalizadas%20para%20ti.png" alt="Soluciones digitales personalizadas" style="width:100%; border-radius:20px; border:1px solid rgba(255,255,255,0.14); box-shadow:0 28px 60px rgba(2,6,23,0.36); transition:transform 0.2s ease;" />
-          </a>
+        <div class="jr-proofBar" aria-label="Diferenciales Appyra">
+          <div class="jr-proofItem">
+            <strong>Listo para usar</strong>
+            <span>Software probado que funciona desde el día uno.</span>
+          </div>
+          <div class="jr-proofItem">
+            <strong>Ahorra tiempo</strong>
+            <span>Automatiza tareas repetitivas con IA.</span>
+          </div>
+          <div class="jr-proofItem">
+            <strong>Siempre contigo</strong>
+            <span>Soporte y actualizaciones incluidas.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -312,8 +366,60 @@
       });
     }
 
+    function initHeroSlider() {
+      const track = document.getElementById('heroSliderTrack');
+      const dotsContainer = document.getElementById('heroSliderDots');
+      if (!track || !dotsContainer) return;
+      const slides = track.querySelectorAll('.hero-slide');
+      if (slides.length < 2) return;
+
+      let current = 0;
+      let interval = null;
+
+      // Create dots
+      slides.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'hero-slider-dot' + (i === 0 ? ' is-active' : '');
+        dot.setAttribute('aria-label', 'Slide ' + (i + 1));
+        dot.addEventListener('click', () => goTo(i));
+        dotsContainer.appendChild(dot);
+      });
+
+      function goTo(index) {
+        current = index;
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        dotsContainer.querySelectorAll('.hero-slider-dot').forEach((d, i) => {
+          d.classList.toggle('is-active', i === current);
+        });
+      }
+
+      function next() {
+        goTo((current + 1) % slides.length);
+      }
+
+      function startAuto() {
+        stopAuto();
+        interval = setInterval(next, 3000);
+      }
+
+      function stopAuto() {
+        if (interval) { clearInterval(interval); interval = null; }
+      }
+
+      // Pause on hover
+      const slider = document.getElementById('heroSlider');
+      if (slider) {
+        slider.addEventListener('mouseenter', stopAuto);
+        slider.addEventListener('mouseleave', startAuto);
+      }
+
+      startAuto();
+    }
+
     async function init() {
       wireMobileNavbar();
+      initHeroSlider();
 
       const DEFAULT_BRAND_NAME = 'Appyra';
       const OFFICIAL_LOGO_URL = '/assets/img/logo/logoprincipal.png';
