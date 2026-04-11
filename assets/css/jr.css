@@ -688,14 +688,14 @@ body {
   font-size: clamp(2.2rem, 5.5vw, 3.6rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .jr-hero p,
 .jr-lead {
   color: rgba(226, 232, 240, 1);
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.92rem;
+  line-height: 1.6;
   font-weight: 400;
 }
 
@@ -712,7 +712,7 @@ body {
   padding: 11px 22px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
   backdrop-filter: blur(10px);
 }
@@ -776,7 +776,7 @@ body {
 .jr-section h2 {
   font-size: clamp(1.5rem, 3.5vw, 2.2rem);
   letter-spacing: -0.03em;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .jr-section p.sub,
@@ -785,6 +785,7 @@ body {
 .muted,
 .file-meta {
   color: rgba(203, 213, 225, 1);
+  font-size: 0.88rem;
 }
 
 .jr-grid {
@@ -819,9 +820,9 @@ body {
 }
 
 .jr-card-desc {
-  min-height: 44px;
-  line-height: 1.65;
-  font-size: 0.9rem;
+  min-height: 32px;
+  line-height: 1.55;
+  font-size: 0.84rem;
   color: rgba(203, 213, 225, 1);
 }
 
@@ -946,7 +947,7 @@ body {
   display: block;
   color: #FFFFFF;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
 }
 
@@ -955,8 +956,8 @@ body {
   display: block;
   margin-top: 4px;
   color: rgba(226, 232, 240, 1);
-  line-height: 1.5;
-  font-size: 0.78rem;
+  line-height: 1.45;
+  font-size: 0.74rem;
 }
 
 .jr-salesGrid {
@@ -973,14 +974,14 @@ body {
 .jr-salesEyebrow {
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   background: rgba(59, 130, 246, 0.12);
   border: 1px solid rgba(59, 130, 246, 0.2);
   color: #BFDBFE;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1396,6 +1397,32 @@ body.navbar-menu-open {
     background: linear-gradient(135deg, #2563EB 0%, #06B6D4 52%, #9333EA 100%);
     border: 1px solid rgba(255, 255, 255, 0.14);
     box-shadow: 0 18px 36px rgba(37, 99, 235, 0.28);
+  }
+
+  /* Minimal admin link at drawer bottom */
+  .navbar-mobile-footerCard--minimal {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 10px 0;
+    border-radius: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .navbar-mobile-adminLink {
+    display: block;
+    text-align: center;
+    color: rgba(148, 163, 184, 0.5);
+    font-size: 0.72rem;
+    font-weight: 400;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    padding: 6px;
+    transition: color 0.2s ease;
+  }
+
+  .navbar-mobile-adminLink:hover {
+    color: rgba(148, 163, 184, 0.8);
   }
 }
 

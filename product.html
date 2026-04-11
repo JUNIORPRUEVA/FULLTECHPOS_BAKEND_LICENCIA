@@ -205,29 +205,26 @@
           <span class="navbar-mobile-icon" aria-hidden="true">⌂</span>
           <span class="navbar-mobile-copy">
             <strong>Inicio</strong>
-            <small>Conoce la propuesta de valor y los servicios principales.</small>
+            <small>Página principal.</small>
           </span>
         </a>
         <a class="navbar-mobile-btn" href="/products.html" aria-current="page">
           <span class="navbar-mobile-icon" aria-hidden="true">◫</span>
           <span class="navbar-mobile-copy">
             <strong>Productos</strong>
-            <small>Regresa al catálogo y descubre más soluciones disponibles.</small>
+            <small>Ver catálogo.</small>
           </span>
         </a>
         <a id="whatsappMobile" class="navbar-mobile-btn navbar-mobile-btn--accent" href="#" target="_blank" rel="noopener">
           <span class="navbar-mobile-icon" aria-hidden="true">✦</span>
           <span class="navbar-mobile-copy">
             <strong>WhatsApp</strong>
-            <small>Solicita detalles, soporte comercial o una cotización inmediata.</small>
+            <small>Solicita detalles o cotización.</small>
           </span>
         </a>
 
-        <div class="navbar-mobile-footerCard">
-          <span class="navbar-mobile-eyebrow">Acceso interno</span>
-          <strong>Panel administrativo</strong>
-          <p>Accede al login para gestionar licencias, productos, archivos y ajustes desde la administración.</p>
-          <a id="adminLoginLinkMobile" class="navbar-mobile-adminBtn" href="#" target="_blank" rel="noopener">Ir a iniciar sesión</a>
+        <div class="navbar-mobile-footerCard navbar-mobile-footerCard--minimal">
+          <a id="adminLoginLinkMobile" class="navbar-mobile-adminLink" href="#" target="_blank" rel="noopener">Acceso admin</a>
         </div>
       </div>
     </div>
@@ -573,8 +570,7 @@
           }).join('');
         }
 
-        const waText = `Hola ${brandName}, quiero cotizar el producto: ${product.name || product.slug}. ` +
-          `También me interesa un desarrollo a la medida / IA / automatizaciones.`;
+        const waText = `Hola ${brandName}, me interesa el producto: ${product.name || product.slug}. ¿Me pueden dar más información?`;
         const waLink = StorePublic.e164ToWaLink(product.contact_whatsapp || settings?.whatsapp || phone || '', waText);
         document.getElementById('whatsappCta').href = waLink;
 

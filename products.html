@@ -65,29 +65,26 @@
           <span class="navbar-mobile-icon" aria-hidden="true">⌂</span>
           <span class="navbar-mobile-copy">
             <strong>Inicio</strong>
-            <small>Presentación principal de la marca y propuesta comercial.</small>
+            <small>Página principal.</small>
           </span>
         </a>
         <a class="navbar-mobile-btn" href="/products.html" aria-current="page">
           <span class="navbar-mobile-icon" aria-hidden="true">◫</span>
           <span class="navbar-mobile-copy">
             <strong>Productos</strong>
-            <small>Explora el catálogo disponible y encuentra la solución correcta.</small>
+            <small>Ver catálogo.</small>
           </span>
         </a>
         <a id="whatsappMobile" class="navbar-mobile-btn navbar-mobile-btn--accent" href="#" target="_blank" rel="noopener">
           <span class="navbar-mobile-icon" aria-hidden="true">✦</span>
           <span class="navbar-mobile-copy">
             <strong>WhatsApp</strong>
-            <small>Solicita una propuesta, demo o atención directa.</small>
+            <small>Solicita una cotización directa.</small>
           </span>
         </a>
 
-        <div class="navbar-mobile-footerCard">
-          <span class="navbar-mobile-eyebrow">Acceso interno</span>
-          <strong>Panel administrativo</strong>
-          <p>Inicia sesión para administrar el contenido, la operación comercial y la configuración de Appyra.</p>
-          <a id="adminLoginLinkMobile" class="navbar-mobile-adminBtn" href="#" target="_blank" rel="noopener">Ir a iniciar sesión</a>
+        <div class="navbar-mobile-footerCard navbar-mobile-footerCard--minimal">
+          <a id="adminLoginLinkMobile" class="navbar-mobile-adminLink" href="#" target="_blank" rel="noopener">Acceso admin</a>
         </div>
       </div>
     </div>
@@ -95,8 +92,8 @@
 
   <header class="jr-section" style="padding-top: 26px;">
     <div class="jr-container">
-      <h2 id="pageTitle">Productos</h2>
-      <p class="sub">Busca y filtra por plataforma.</p>
+      <h2 id="pageTitle">Nuestros productos</h2>
+      <p class="sub">Encuentra la solución perfecta para tu negocio.</p>
 
       <div class="jr-filterbar">
         <input id="q" class="jr-input" type="text" placeholder="Buscar por nombre o palabra clave" />
@@ -109,7 +106,7 @@
           <option value="manual">Manual</option>
           <option value="other">Other</option>
         </select>
-        <a id="whatsappCta" class="jr-btn primary" href="#" target="_blank" rel="noopener">Cotizar por WhatsApp</a>
+        <a id="whatsappCta" class="jr-btn primary" href="#" target="_blank" rel="noopener">¿No encuentras lo que buscas? Escríbenos</a>
       </div>
 
       <div id="list" class="jr-grid">
@@ -117,7 +114,7 @@
         <div class="skeleton skeleton-card"></div>
         <div class="skeleton skeleton-card"></div>
       </div>
-      <div id="empty" class="jr-empty" style="display:none;">No hay productos publicados con ese filtro.</div>
+      <div id="empty" class="jr-empty" style="display:none;">No encontramos productos con ese filtro. Prueba con otra búsqueda o escríbenos.</div>
     </div>
   </header>
 
@@ -129,7 +126,7 @@
             <img id="footerLogo" src="" alt="Appyra" style="width:44px; height:44px; border-radius:12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding:6px;" />
             <h4 id="footerBrand">Appyra</h4>
           </div>
-          <div style="opacity:0.9; margin-top:10px;">Productos, instaladores, manuales y recursos.</div>
+          <div style="opacity:0.9; margin-top:10px;">Herramientas listas para impulsar tu negocio.</div>
         </div>
 
         <div>
@@ -316,8 +313,7 @@
       const wa = settings?.whatsapp || '';
       const phone = (wa || DEFAULT_PHONE);
       const email = (settings?.email || DEFAULT_EMAIL);
-      const waText = `Hola ${brandName}, quiero cotizar un producto del catálogo. ` +
-        `También me interesa software a la medida (Web / Android / iOS / Windows) e IA/automatizaciones.`;
+      const waText = `Hola ${brandName}, me interesa conocer más sobre sus productos. ¿Me pueden enviar información?`;
       const waLink = StorePublic.e164ToWaLink(phone, waText);
       ['whatsappMobile','whatsappCta'].forEach((id) => {
         const el = document.getElementById(id);
