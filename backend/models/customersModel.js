@@ -1,5 +1,77 @@
 const { pool } = require('../db/pool');
 
+function isPgMissingColumnOrTable(error) {
+  const code = error && error.code;
+  return code === '42703' || code === '42P01';
+}
+
+function buildCustomersSelectSql(includeLicenseSummary) {
+  const licenseJoin = includeLicenseSummary
+    ? `
+     LEFT JOIN LATERAL (
+       SELECT
+         l.id AS license_id,
+         l.tipo AS license_tipo,
+         CASE
+           WHEN l.estado = 'ACTIVA' AND l.fecha_fin IS NOT NULL AND l.fecha_fin < NOW() THEN 'VENCIDA'
+           ELSE l.estado::text
+         END AS license_status,
+         (l.estado = 'ACTIVA' AND (l.fecha_fin IS NULL OR l.fecha_fin >= NOW())) AS has_active_license,
+         TRUE AS has_license
+       FROM licenses l
+       WHERE l.customer_id = c.id
+         AND l.estado::text <> 'ELIMINADA'
+       ORDER BY
+         CASE
+           WHEN l.estado = 'ACTIVA' AND (l.fecha_fin IS NULL OR l.fecha_fin >= NOW()) THEN 0
+           ELSE 1
+         END,
+         l.created_at DESC
+       LIMIT 1
+     ) license_summary ON TRUE`
+    : `
+     LEFT JOIN LATERAL (
+       SELECT
+         NULL::uuid AS license_id,
+         NULL::text AS license_tipo,
+         NULL::text AS license_status,
+         FALSE AS has_active_license,
+         FALSE AS has_license
+     ) license_summary ON TRUE`;
+
+  return `SELECT
+      c.*,
+      license_summary.license_id,
+      license_summary.license_tipo,
+      license_summary.license_status,
+      license_summary.has_active_license,
+      license_summary.has_license
+     FROM customers c
+     ${licenseJoin}`;
+}
+
+async function queryCustomers({ whereSql = '', params = [], orderLimitSql = '' } = {}) {
+  const attempts = [true, false];
+  let lastError = null;
+
+  for (const includeLicenseSummary of attempts) {
+    try {
+      const result = await pool.query(
+        `${buildCustomersSelectSql(includeLicenseSummary)}
+         ${whereSql}
+         ${orderLimitSql}`,
+        params
+      );
+      return result.rows;
+    } catch (error) {
+      lastError = error;
+      if (!isPgMissingColumnOrTable(error)) throw error;
+    }
+  }
+
+  throw lastError;
+}
+
 async function createCustomer({ nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio, business_id }) {
   try {
     if (business_id) {
@@ -45,20 +117,22 @@ async function listCustomers({ limit, offset }) {
   const totalRes = await pool.query('SELECT COUNT(*)::int AS total FROM customers');
   const total = totalRes.rows[0]?.total || 0;
 
-  const rowsRes = await pool.query(
-    `SELECT *
-     FROM customers
-     ORDER BY created_at DESC
-     LIMIT $1 OFFSET $2`,
-    [limit, offset]
-  );
+  const customers = await queryCustomers({
+    params: [limit, offset],
+    orderLimitSql: `ORDER BY c.created_at DESC
+                    LIMIT $1 OFFSET $2`
+  });
 
-  return { total, customers: rowsRes.rows };
+  return { total, customers };
 }
 
 async function getCustomerById(customerId) {
-  const result = await pool.query('SELECT * FROM customers WHERE id = $1', [customerId]);
-  return result.rows[0] || null;
+  const rows = await queryCustomers({
+    whereSql: 'WHERE c.id = $1',
+    params: [customerId],
+    orderLimitSql: 'LIMIT 1'
+  });
+  return rows[0] || null;
 }
 
 async function getCustomerByBusinessId(businessId) {

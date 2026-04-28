@@ -9,32 +9,28 @@
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
     <script defer src="../assets/js/adminDrawer.js"></script>
+    <script defer src="../assets/js/adminCompactBar.js"></script>
     <title>Dashboard Administrativo - Appyra</title>
     <style>
         * {
             margin: 0;
             padding: 0;
+        <link rel="stylesheet" href="../assets/css/admin-compact-bar.css">
             box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background-color: #F3F4F6;
-            color: #1F2937;
-        }
-
-        .navbar {
-            background: linear-gradient(135deg, #020617 0%, #0F172A 50%, #020617 100%);
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .navbar h1 {
-            font-size: 1.5rem;
+    <body class="jr-admin admin-compact-page">
+        <header class="admin-compactBar">
+            <div class="admin-compactBarInner">
+                <h1 class="admin-compactBarTitle">Dashboard</h1>
+                <div class="admin-compactBarActions">
+                    <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="dashboardCompactMenu" onclick="AdminCompactBar.toggle('dashboardCompactMenu', event)" aria-label="Opciones">⋮</button>
+                    <div id="dashboardCompactMenu" class="admin-compactBarMenu">
+                        <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
+                        <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
+                        <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); logout();">Cerrar sesion</button>
+                    </div>
+                </div>
+            </div>
+        </header>
             font-weight: 800;
             letter-spacing: -0.5px;
         }

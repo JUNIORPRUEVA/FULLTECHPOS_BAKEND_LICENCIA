@@ -171,10 +171,34 @@ async function getCustomerByBusinessId(req, res) {
   }
 }
 
+async function getCustomerById(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ ok: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ ok: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const customer = await customersModel.getCustomerById(customerId);
+    if (!customer) {
+      return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+    }
+
+    return res.json({ ok: true, customer });
+  } catch (error) {
+    console.error('admin.getCustomerById error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
   deleteCustomer,
   setBusinessId,
-  getCustomerByBusinessId
+  getCustomerByBusinessId,
+  getCustomerById
 };

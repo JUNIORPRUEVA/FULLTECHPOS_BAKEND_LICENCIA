@@ -19,6 +19,11 @@ router.get('/by-business/:businessId', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.getCustomerByBusinessId(req, res)).catch(next);
 });
 
+// GET /api/admin/customers/:id
+router.get('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.getCustomerById(req, res)).catch(next);
+});
+
 // DELETE /api/admin/customers/:id
 router.delete('/:id', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.deleteCustomer(req, res)).catch(next);

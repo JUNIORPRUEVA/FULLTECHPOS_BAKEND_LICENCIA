@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Cliente - Appyra</title>
+    <meta name="theme-color" content="#020617">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
+    <link rel="icon" href="../assets/img/pwa/icon-192.png">
+    <script defer src="../assets/js/pwa.js"></script>
+    <script defer src="../assets/js/adminActionsDialog.js"></script>
+    <link rel="stylesheet" href="../assets/css/jr-admin.css">
+    <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            color-scheme: light;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(10, 108, 255, 0.14), transparent 24%),
+                linear-gradient(180deg, #F8FAFC 0%, #EEF4FF 100%);
+            color: #0F172A;
+        }
+
+        .admin-layout {
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 270px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, #031026 0%, #062B63 30%, #0B7C61 74%, #043523 100%);
+            color: #fff;
+            padding: 24px 0;
+            box-shadow: 4px 0 24px rgba(2, 6, 23, 0.24);
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+
+        .sidebar h2 {
+            font-size: 1.06rem;
+            font-weight: 900;
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 8px;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 3px 0;
+            padding: 11px 14px;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            border-radius: 10px;
+            border-left: 3px solid transparent;
+            font-weight: 700;
+            transition: .2s ease;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(255, 255, 255, 0.10);
+            transform: translateX(2px);
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(30, 201, 255, 0.14);
+            border-left-color: rgba(30, 201, 255, 0.95);
+        }
+
+        .sidebar-footer {
+            padding: 14px 16px 0;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.14);
+        }
+
+        .logout-btn {
+            width: 100%;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .main {
+            margin-left: 270px;
+            min-height: 100vh;
+        }
+
+        .content {
+            width: min(100%, 1280px);
+            margin: 0 auto;
+            padding: 16px 24px 88px;
+        }
+
+        .topline {
+            position: sticky;
+            top: 0;
+            z-index: 15;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0 16px;
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(248, 250, 252, 0.88) 82%, rgba(248, 250, 252, 0));
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn,
+        .more-btn,
+        .license-menuBtn {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.26);
+            background: rgba(255, 255, 255, 0.92);
+            color: #0F172A;
+            font-size: 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .topline-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .topline-title h1 {
+            font-size: 1.18rem;
+            font-weight: 900;
+            letter-spacing: -0.3px;
+            color: #0F172A;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .status-chip.active {
+            background: rgba(11, 124, 97, 0.12);
+            color: #0B6B56;
+        }
+
+        .status-chip.inactive {
+            background: rgba(234, 88, 12, 0.12);
+            color: #C2410C;
+        }
+
+        .status-chip.none,
+        .status-chip.neutral {
+            background: rgba(148, 163, 184, 0.14);
+            color: #475569;
+        }
+
+        .status-chip.warn {
+            background: rgba(202, 138, 4, 0.14);
+            color: #A16207;
+        }
+
+        .hero {
+            border: 1px solid rgba(226, 232, 240, 0.84);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+            padding: 22px;
+        }
+
+        .hero-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .hero-titleWrap {
+            display: grid;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .hero-title {
+            font-size: clamp(1.55rem, 3vw, 2.1rem);
+            font-weight: 900;
+            letter-spacing: -0.6px;
+            color: #0F172A;
+        }
+
+        .hero-subtitle {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #475569;
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .hero-metaChip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            color: #334155;
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #031026 0%, #0A6CFF 45%, #0B7C61 100%);
+            color: #fff;
+            box-shadow: 0 16px 28px rgba(2, 6, 23, 0.18);
+        }
+
+        .btn-muted {
+            background: #fff;
+            color: #0A4FB8;
+            border: 1px solid #CBD5E1;
+        }
+
+        .msg {
+            margin: 14px 0 0;
+            padding: 12px 14px;
+            border-radius: 14px;
+            display: none;
+            font-weight: 800;
+        }
+
+        .msg.ok {
+            display: block;
+            background: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            color: #065F46;
+        }
+
+        .msg.err {
+            display: block;
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #991B1B;
+        }
+
+        .section {
+            margin-top: 18px;
+            border: 1px solid rgba(226, 232, 240, 0.84);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            flex-wrap: wrap;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 900;
+            color: #0F172A;
+        }
+
+        .section-subtitle {
+            font-size: 0.83rem;
+            font-weight: 700;
+            color: #64748B;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0;
+        }
+
+        .info-row {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.76);
+            min-width: 0;
+        }
+
+        .info-row:nth-child(odd) {
+            border-right: 1px solid rgba(226, 232, 240, 0.76);
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748B;
+            margin-bottom: 6px;
+        }
+
+        .info-value {
+            font-size: 0.96rem;
+            font-weight: 800;
+            color: #0F172A;
+            word-break: break-word;
+        }
+
+        .license-list {
+            display: grid;
+        }
+
+        .license-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.76);
+            align-items: center;
+        }
+
+        .license-item:last-child {
+            border-bottom: none;
+        }
+
+        .license-main {
+            min-width: 0;
+        }
+
+        .license-lineTop,
+        .license-lineBottom {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .license-lineBottom {
+            margin-top: 8px;
+        }
+
+        .license-title {
+            font-size: 0.96rem;
+            font-weight: 900;
+            color: #0F172A;
+        }
+
+        .license-meta,
+        .license-id,
+        .license-key {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #64748B;
+        }
+
+        .empty-state {
+            padding: 28px 20px;
+            color: #64748B;
+            display: grid;
+            gap: 10px;
+            font-weight: 800;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 980px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .content {
+                padding: 12px 16px 72px;
+            }
+
+            .topline {
+                padding-top: 4px;
+            }
+
+            .hero {
+                padding: 18px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-row:nth-child(odd) {
+                border-right: none;
+            }
+
+            .hero-actions,
+            .section-head {
+                align-items: stretch;
+            }
+
+            .hero-actions .btn,
+            .section-head .btn {
+                width: 100%;
+            }
+
+            .license-item {
+                grid-template-columns: 1fr auto;
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+<body class="jr-admin">
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <img src="../assets/img/logo/logoprincipal.png" alt="Appyra" />
+                </div>
+                <h2>Appyra</h2>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li><a href="admin-hub.html"><span>🏠</span> Panel Principal</a></li>
+                <li><a class="active" href="customers.html"><span>👥</span> Gestionar Clientes</a></li>
+                <li><a href="licenses.html"><span>📜</span> Gestionar Licencias</a></li>
+                <li><a href="license-config.html"><span>🔐</span> Tokens Reset</a></li>
+                <li><a href="products.html"><span>🧩</span> Productos</a></li>
+                <li><a href="store-settings.html"><span>🏷️</span> Store Settings</a></li>
+                <li><a href="dashboard.html"><span>📊</span> Dashboard</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="logout-btn" type="button" onclick="logout()">Cerrar sesión</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <section class="content">
+                <div class="topline">
+                    <button class="nav-btn" type="button" onclick="goBack()" aria-label="Volver">&#8592;</button>
+                    <div class="topline-title">
+                        <h1>Cliente</h1>
+                        <span class="status-chip none" id="customerLicenseSummary">Sin licencia</span>
+                    </div>
+                    <button class="more-btn" type="button" onclick="openCustomerMenu()" aria-label="Opciones">&#8942;</button>
+                </div>
+
+                <div id="msg" class="msg"></div>
+
+                <section class="hero" id="heroSection">
+                    <div class="hero-head">
+                        <div class="hero-titleWrap">
+                            <div class="hero-title" id="customerName">Cargando cliente...</div>
+                            <div class="hero-subtitle hidden" id="customerSubtitle"></div>
+                        </div>
+                        <div class="hero-actions">
+                            <button class="btn btn-muted" type="button" onclick="goToManageLicenses()">Gestionar licencias</button>
+                            <button class="btn btn-primary" type="button" onclick="goToCreateLicense()">Crear licencia</button>
+                        </div>
+                    </div>
+                    <div class="hero-meta" id="customerMeta"></div>
+                </section>
+
+                <section class="section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-title">Información del cliente</div>
+                            <div class="section-subtitle">Solo se muestran los datos disponibles</div>
+                        </div>
+                    </div>
+                    <div class="info-grid" id="customerInfoGrid">
+                        <div class="info-row">
+                            <div class="info-label">Cargando</div>
+                            <div class="info-value">Un momento...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-title">Licencias</div>
+                            <div class="section-subtitle" id="licensesSubtitle">Cargando licencias...</div>
+                        </div>
+                        <button class="btn btn-primary" type="button" onclick="goToCreateLicense()">Nueva licencia</button>
+                    </div>
+                    <div class="license-list" id="licensesList">
+                        <div class="empty-state">Cargando licencias...</div>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = (() => {
+            const host = (window.location && window.location.hostname) ? String(window.location.hostname) : '';
+            const origin = (window.location && typeof window.location.origin === 'string') ? window.location.origin : '';
+            if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:3000';
+            if (origin && origin !== 'null') return origin;
+            return '';
+        })();
+
+        let sessionId = localStorage.getItem('sessionId');
+        let customerId = '';
+        let lastCustomer = null;
+        let lastLicenses = [];
+
+        window.addEventListener('load', async () => {
+            if (!sessionId) {
+                window.location.href = '/admin/login.html';
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlSessionId = urlParams.get('sessionId');
+            if (urlSessionId) {
+                sessionId = urlSessionId;
+                localStorage.setItem('sessionId', sessionId);
+            }
+
+            customerId = String(urlParams.get('id') || '').trim();
+            if (!customerId) {
+                window.location.href = '/admin/customers.html';
+                return;
+            }
+
+            await verifySession();
+            await loadCustomerView();
+        });
+
+        async function apiFetch(path, options = {}) {
+            const headers = Object.assign({}, options.headers || {}, {
+                'x-session-id': sessionId
+            });
+            return fetch(`${API_URL}${path}`, Object.assign({}, options, { headers }));
+        }
+
+        async function verifySession() {
+            try {
+                const response = await fetch(`${API_URL}/api/verify-session`, {
+                    cache: 'no-store',
+                    headers: { 'x-session-id': sessionId }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!data.success) logout();
+            } catch (error) {
+                console.warn('verifySession failed:', error && error.message ? error.message : error);
+            }
+        }
+
+        async function loadCustomerView() {
+            clearMessage();
+
+            try {
+                const [customerRes, licensesRes] = await Promise.all([
+                    apiFetch(`/api/admin/customers/${encodeURIComponent(customerId)}`),
+                    apiFetch(`/api/admin/licenses?customer_id=${encodeURIComponent(customerId)}&limit=50`)
+                ]);
+
+                const customerData = await customerRes.json().catch(() => ({}));
+                const licensesData = await licensesRes.json().catch(() => ({}));
+
+                if (!customerRes.ok || !customerData.ok || !customerData.customer) {
+                    showMessage('err', customerData?.message || 'No se pudo cargar el cliente.');
+                    return;
+                }
+
+                lastCustomer = customerData.customer;
+                lastLicenses = (licensesRes.ok && licensesData.ok && Array.isArray(licensesData.licenses))
+                    ? licensesData.licenses
+                    : [];
+
+                renderCustomer();
+                renderLicenses();
+            } catch (error) {
+                showMessage('err', 'No se pudo conectar con el servidor.');
+            }
+        }
+
+        function renderCustomer() {
+            const customer = lastCustomer || {};
+            const displayName = getDisplayName(customer);
+            const businessName = String(customer?.nombre_negocio || '').trim();
+            const titleEl = document.getElementById('customerName');
+            const subtitleEl = document.getElementById('customerSubtitle');
+            const metaEl = document.getElementById('customerMeta');
+            const gridEl = document.getElementById('customerInfoGrid');
+            const summaryEl = document.getElementById('customerLicenseSummary');
+            const licenseSummary = getCustomerLicenseSummary();
+
+            titleEl.textContent = displayName;
+
+            if (businessName && businessName !== displayName) {
+                subtitleEl.textContent = businessName;
+                subtitleEl.classList.remove('hidden');
+            } else {
+                subtitleEl.textContent = '';
+                subtitleEl.classList.add('hidden');
+            }
+
+            summaryEl.textContent = licenseSummary.label;
+            summaryEl.className = `status-chip ${licenseSummary.className}`;
+
+            const meta = [
+                customer?.contacto_telefono ? `Tel: ${customer.contacto_telefono}` : '',
+                customer?.contacto_email ? `Email: ${customer.contacto_email}` : '',
+                customer?.business_id ? `Business ID: ${customer.business_id}` : ''
+            ].filter(Boolean);
+
+            metaEl.innerHTML = meta.map((item) => `<span class="hero-metaChip">${escapeHtml(item)}</span>`).join('');
+
+            const infoRows = [
+                { label: 'Nombre del cliente', value: displayName },
+                { label: 'Negocio', value: businessName },
+                { label: 'Teléfono', value: customer?.contacto_telefono },
+                { label: 'Email', value: customer?.contacto_email },
+                { label: 'Rol del negocio', value: customer?.rol_negocio },
+                { label: 'Business ID', value: customer?.business_id },
+                { label: 'ID del cliente', value: customer?.id },
+                { label: 'Registrado', value: formatDate(customer?.created_at) }
+            ].filter((row) => row.value);
+
+            gridEl.innerHTML = infoRows.map((row) => `
+                <div class="info-row">
+                    <div class="info-label">${escapeHtml(row.label)}</div>
+                    <div class="info-value">${escapeHtml(row.value)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderLicenses() {
+            const listEl = document.getElementById('licensesList');
+            const subtitleEl = document.getElementById('licensesSubtitle');
+
+            subtitleEl.textContent = lastLicenses.length
+                ? `${lastLicenses.length} licencia${lastLicenses.length === 1 ? '' : 's'} registradas`
+                : 'No hay licencias registradas para este cliente';
+
+            if (!lastLicenses.length) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <div>No hay licencias para este cliente.</div>
+                        <div>Puedes crear una nueva licencia desde esta misma vista.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = lastLicenses.map((license) => {
+                const state = getLicenseState(license);
+                const topMeta = [
+                    license?.project_code ? `Proyecto: ${license.project_code}` : '',
+                    license?.tipo ? `Tipo: ${String(license.tipo).toUpperCase()}` : ''
+                ].filter(Boolean).join(' • ');
+
+                const bottomMeta = [
+                    license?.license_key ? `Key: ${shortKey(license.license_key)}` : '',
+                    license?.fecha_fin ? `Vence: ${formatShortDate(license.fecha_fin)}` : '',
+                    license?.id ? `ID: ${license.id}` : ''
+                ].filter(Boolean);
+
+                return `
+                    <div class="license-item">
+                        <div class="license-main">
+                            <div class="license-lineTop">
+                                <span class="license-title">${escapeHtml(topMeta || 'Licencia')}</span>
+                                <span class="status-chip ${state.className}">${escapeHtml(state.label)}</span>
+                            </div>
+                            <div class="license-lineBottom">
+                                ${bottomMeta.map((item) => `<span class="license-meta">${escapeHtml(item)}</span>`).join('')}
+                            </div>
+                        </div>
+                        <button class="license-menuBtn" type="button" onclick="openLicenseActionsDialog('${escapeAttr(license.id || '')}')" aria-label="Opciones de licencia">&#8942;</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getDisplayName(customer) {
+            return String(customer?.contacto_nombre || customer?.nombre_negocio || 'Cliente').trim();
+        }
+
+        function getCustomerLicenseSummary() {
+            const active = lastLicenses.some((license) => getLicenseState(license).className === 'active');
+            if (active) return { label: 'Licencia activa', className: 'active' };
+            if (lastLicenses.length) return { label: 'Licencia inactiva', className: 'inactive' };
+            return { label: 'Sin licencia', className: 'none' };
+        }
+
+        function getLicenseState(license) {
+            const raw = String(license?.estado || '').trim().toUpperCase();
+            const expired = raw === 'ACTIVA' && license?.fecha_fin && new Date(license.fecha_fin).getTime() < Date.now();
+
+            if (raw === 'ACTIVA' && !expired) return { label: 'Activa', className: 'active' };
+            if (raw === 'PENDIENTE') return { label: 'Pendiente', className: 'warn' };
+            if (raw === 'BLOQUEADA') return { label: 'Bloqueada', className: 'neutral' };
+            if (raw === 'VENCIDA' || expired) return { label: 'Vencida', className: 'inactive' };
+            if (raw) return { label: raw, className: 'neutral' };
+            return { label: 'Sin estado', className: 'none' };
+        }
+
+        function shortKey(value) {
+            const text = String(value || '').trim();
+            if (!text) return '';
+            if (text.length <= 18) return text;
+            return `${text.slice(0, 10)}...${text.slice(-4)}`;
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            try {
+                return new Date(value).toLocaleString('es-DO');
+            } catch {
+                return String(value);
+            }
+        }
+
+        function formatShortDate(value) {
+            if (!value) return '';
+            try {
+                return new Date(value).toLocaleDateString('es-DO');
+            } catch {
+                return String(value);
+            }
+        }
+
+        function openCustomerMenu() {
+            const businessId = String(lastCustomer?.business_id || '').trim();
+            const title = getDisplayName(lastCustomer);
+            if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') return;
+
+            window.JrAdminActionsDialog.open({
+                title: title || 'Opciones del cliente',
+                subtitle: businessId ? `Business ID: ${businessId}` : 'Sin Business ID',
+                actions: [
+                    {
+                        label: 'Crear licencia',
+                        onClick: () => goToCreateLicense()
+                    },
+                    {
+                        label: 'Gestionar licencias',
+                        onClick: () => goToManageLicenses()
+                    },
+                    {
+                        label: 'Generar token reset',
+                        kind: 'token',
+                        disabled: !businessId,
+                        onClick: () => goToSupportToken(businessId)
+                    },
+                    {
+                        label: 'Asignar Business ID',
+                        onClick: () => setBusinessIdPrompt()
+                    },
+                    {
+                        label: 'Eliminar cliente',
+                        kind: 'danger',
+                        onClick: () => deleteCustomer()
+                    }
+                ]
+            });
+        }
+
+        function openLicenseActionsDialog(licenseId) {
+            const id = String(licenseId || '').trim();
+            if (!id) return;
+
+            const license = lastLicenses.find((item) => String(item?.id || '').trim() === id);
+            if (!license) return;
+
+            const state = getLicenseState(license);
+            if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') return;
+
+            window.JrAdminActionsDialog.open({
+                title: license?.project_code ? `Licencia ${license.project_code}` : 'Licencia',
+                subtitle: license?.license_key ? shortKey(license.license_key) : 'Sin key',
+                actions: [
+                    {
+                        label: 'Editar licencia',
+                        onClick: () => goToEditLicense(id)
+                    },
+                    {
+                        label: 'Ver en licencias',
+                        onClick: () => goToManageLicenses()
+                    },
+                    ((state.className === 'inactive' || state.className === 'warn')
+                        ? {
+                            label: 'Activar manualmente',
+                            onClick: () => activarManualLicense(id)
+                        }
+                        : null),
+                    (state.label === 'Bloqueada'
+                        ? {
+                            label: 'Desbloquear',
+                            onClick: () => desbloquearLicense(id)
+                        }
+                        : {
+                            label: 'Bloquear',
+                            onClick: () => bloquearLicense(id)
+                        }),
+                    {
+                        label: 'Eliminar licencia',
+                        kind: 'danger',
+                        onClick: () => deleteLicense(id)
+                    }
+                ].filter(Boolean)
+            });
+        }
+
+        function goToCreateLicense() {
+            if (!customerId) return;
+            window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(customerId)}&action=create`;
+        }
+
+        function goToManageLicenses() {
+            if (!customerId) return;
+            window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(customerId)}`;
+        }
+
+        function goToEditLicense(licenseId) {
+            const id = String(licenseId || '').trim();
+            if (!id) return;
+            window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(customerId)}&edit_license_id=${encodeURIComponent(id)}`;
+        }
+
+        async function activarManualLicense(licenseId) {
+            await runLicenseAction(`/api/admin/licenses/${encodeURIComponent(licenseId)}/activar-manual`, 'PATCH', null, 'Licencia activada manualmente.');
+        }
+
+        async function bloquearLicense(licenseId) {
+            const motivo = prompt('Indica el motivo del bloqueo:', '') || '';
+            const value = String(motivo || '').trim();
+            if (!value) return;
+            await runLicenseAction(
+                `/api/admin/licenses/${encodeURIComponent(licenseId)}/bloquear`,
+                'PATCH',
+                { motivo: value },
+                'Licencia bloqueada correctamente.'
+            );
+        }
+
+        async function desbloquearLicense(licenseId) {
+            await runLicenseAction(`/api/admin/licenses/${encodeURIComponent(licenseId)}/desbloquear`, 'PATCH', null, 'Licencia desbloqueada correctamente.');
+        }
+
+        async function deleteLicense(licenseId) {
+            const ok = window.confirm('¿Eliminar esta licencia?');
+            if (!ok) return;
+            await runLicenseAction(`/api/admin/licenses/${encodeURIComponent(licenseId)}`, 'DELETE', null, 'Licencia eliminada correctamente.');
+        }
+
+        async function runLicenseAction(path, method, body, successMessage) {
+            clearMessage();
+
+            try {
+                const response = await apiFetch(path, {
+                    method,
+                    headers: body ? { 'content-type': 'application/json' } : undefined,
+                    body: body ? JSON.stringify(body) : undefined
+                });
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.ok) {
+                    showMessage('err', data?.message || 'No se pudo completar la acción.');
+                    return;
+                }
+
+                showMessage('ok', successMessage);
+                await loadCustomerView();
+            } catch (error) {
+                showMessage('err', 'No se pudo conectar con el servidor.');
+            }
+        }
+
+        async function setBusinessIdPrompt() {
+            const current = String(lastCustomer?.business_id || '').trim();
+            const next = prompt('Pega aquí el Business ID del cliente:', current || '');
+            if (next === null) return;
+
+            const business_id = String(next || '').trim();
+            if (!business_id) {
+                showMessage('err', 'business_id es requerido');
+                return;
+            }
+
+            const force = Boolean(current && current !== business_id);
+            if (force) {
+                const ok = confirm('Este cliente ya tenía Business ID distinto. ¿Reemplazarlo?');
+                if (!ok) return;
+            }
+
+            try {
+                const response = await apiFetch(`/api/admin/customers/${encodeURIComponent(customerId)}/business_id`, {
+                    method: 'PUT',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ business_id, force })
+                });
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.ok) {
+                    showMessage('err', data?.message || 'No se pudo actualizar el Business ID.');
+                    return;
+                }
+
+                showMessage('ok', 'Business ID actualizado correctamente.');
+                await loadCustomerView();
+            } catch (error) {
+                showMessage('err', 'No se pudo conectar con el servidor.');
+            }
+        }
+
+        async function deleteCustomer() {
+            const name = getDisplayName(lastCustomer);
+            const ok = window.confirm(`¿Eliminar el cliente${name ? ` "${name}"` : ''}?`);
+            if (!ok) return;
+
+            try {
+                const response = await apiFetch(`/api/admin/customers/${encodeURIComponent(customerId)}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.ok) {
+                    showMessage('err', data?.message || 'No se pudo eliminar el cliente.');
+                    return;
+                }
+
+                window.location.href = '/admin/customers.html';
+            } catch (error) {
+                showMessage('err', 'No se pudo conectar con el servidor.');
+            }
+        }
+
+        function goToSupportToken(businessId) {
+            const id = String(businessId || '').trim();
+            if (!id) {
+                showMessage('err', 'Este cliente no tiene Business ID.');
+                return;
+            }
+
+            window.location.href = `/admin/license-config.html?support_business_id=${encodeURIComponent(id)}&support_username=admin&autogen=1`;
+        }
+
+        function showMessage(type, text) {
+            const el = document.getElementById('msg');
+            el.className = 'msg ' + (type === 'ok' ? 'ok' : 'err');
+            el.textContent = text;
+        }
+
+        function clearMessage() {
+            const el = document.getElementById('msg');
+            el.className = 'msg';
+            el.textContent = '';
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+                return;
+            }
+            window.location.href = '/admin/customers.html';
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(value) {
+            return String(value || '').replace(/'/g, "\\'");
+        }
+
+        async function logout() {
+            try {
+                await fetch(`${API_URL}/api/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'x-session-id': sessionId,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (error) {}
+
+            localStorage.removeItem('sessionId');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

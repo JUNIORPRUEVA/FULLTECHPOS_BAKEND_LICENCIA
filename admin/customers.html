@@ -814,6 +814,289 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .customers-shell {
+            background:
+                radial-gradient(circle at top left, rgba(10, 108, 255, 0.14), transparent 28%),
+                linear-gradient(180deg, #F8FAFC 0%, #EEF4FF 100%);
+        }
+
+        .customers-content {
+            width: min(100%, 1320px);
+            padding-top: 12px;
+        }
+
+        .customers-header {
+            position: sticky;
+            top: 0;
+            z-index: 18;
+            padding: 4px 0 14px;
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(248, 250, 252, 0.88) 82%, rgba(248, 250, 252, 0));
+            backdrop-filter: blur(10px);
+        }
+
+        .customers-topline {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+        }
+
+        .customers-titleWrap {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .customers-titleWrap h1 {
+            font-size: 1.18rem;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: -0.4px;
+        }
+
+        .customers-filterPill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: rgba(10, 108, 255, 0.09);
+            color: #0A4FB8;
+            font-size: 0.78rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .nav-icon-btn,
+        .toolbar-icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            background: rgba(255, 255, 255, 0.9);
+            color: #0F172A;
+            font-size: 1.02rem;
+            font-weight: 900;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .nav-icon-btn:hover,
+        .toolbar-icon-btn:hover {
+            background: #FFFFFF;
+            border-color: rgba(10, 108, 255, 0.22);
+        }
+
+        .toolbar-icon-btn.is-active {
+            background: rgba(10, 108, 255, 0.12);
+            color: #0A4FB8;
+            border-color: rgba(10, 108, 255, 0.22);
+        }
+
+        .customers-searchRow {
+            display: none;
+            padding-top: 8px;
+        }
+
+        .customers-searchRow.is-visible {
+            display: block;
+        }
+
+        .customers-searchRow input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            font-size: 0.95rem;
+            outline: none;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+        }
+
+        .customers-searchRow input:focus {
+            border-color: rgba(10, 108, 255, 0.36);
+            box-shadow: 0 0 0 4px rgba(10, 108, 255, 0.12);
+        }
+
+        .customers-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .customers-listSurface {
+            border: 1px solid rgba(226, 232, 240, 0.88);
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+        }
+
+        .customer-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+            align-items: center;
+        }
+
+        .customer-item:last-child {
+            border-bottom: none;
+        }
+
+        .customer-mainBtn {
+            border: none;
+            background: transparent;
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: 16px;
+            cursor: pointer;
+            min-width: 0;
+        }
+
+        .customer-mainBtn:hover {
+            background: #F8FAFC;
+        }
+
+        .customer-linePrimary,
+        .customer-lineSecondary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+
+        .customer-lineSecondary {
+            margin-top: 6px;
+        }
+
+        .customer-name {
+            max-width: 100%;
+            font-size: 0.98rem;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .customer-phone {
+            font-size: 0.87rem;
+            font-weight: 800;
+            color: #475569;
+        }
+
+        .license-statePill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .license-statePill.active {
+            background: rgba(11, 124, 97, 0.12);
+            color: #0B6B56;
+        }
+
+        .license-statePill.inactive {
+            background: rgba(234, 88, 12, 0.12);
+            color: #C2410C;
+        }
+
+        .license-statePill.none {
+            background: rgba(148, 163, 184, 0.14);
+            color: #475569;
+        }
+
+        .customer-idMeta {
+            font-size: 0.79rem;
+            font-weight: 800;
+            color: #64748B;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .customer-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .customers-content {
+                padding-top: 8px;
+            }
+
+            .customers-topline {
+                grid-template-columns: auto 1fr auto auto;
+            }
+
+            .customers-titleWrap {
+                gap: 8px;
+            }
+
+            .customers-titleWrap h1 {
+                font-size: 1.05rem;
+            }
+
+            .customers-filterPill {
+                display: none;
+            }
+
+            .customers-toolbar {
+                align-items: stretch;
+            }
+
+            .customers-toolbar .btn {
+                width: 100%;
+            }
+
+            .customer-item {
+                grid-template-columns: minmax(0, 1fr) auto;
+                padding: 8px;
+            }
+
+            .customer-mainBtn {
+                padding: 8px;
+            }
+
+            .customer-linePrimary,
+            .customer-lineSecondary {
+                gap: 6px;
+            }
+
+            .customer-name,
+            .customer-phone,
+            .customer-idMeta {
+                white-space: normal;
+            }
+        }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
@@ -845,43 +1128,44 @@
 
         <div class="drawer-overlay" onclick="closeDrawer()"></div>
 
-        <main class="main">
-            <header class="topbar">
-                <button class="menu-btn" type="button" onclick="toggleDrawer()" aria-label="Abrir menú">☰</button>
-                <h1>Gestión de Clientes</h1>
-                <div class="topbar-user">Bienvenido, <strong id="userName">Admin</strong></div>
-            </header>
+        <main class="main customers-shell">
+            <section class="content customers-content">
+                <div class="customers-header">
+                    <div class="customers-topline">
+                        <button class="nav-icon-btn" type="button" onclick="goBack()" aria-label="Volver">&#8592;</button>
+                        <div class="customers-titleWrap">
+                            <h1>Clientes</h1>
+                            <span class="customers-filterPill" id="currentFilterPill">Todos</span>
+                        </div>
+                        <button class="toolbar-icon-btn" id="searchToggleBtn" type="button" onclick="toggleSearch()" aria-label="Buscar">&#128269;</button>
+                        <button class="toolbar-icon-btn" type="button" onclick="openScreenOptions()" aria-label="Opciones">&#8942;</button>
+                    </div>
 
-            <section class="content">
-                <div class="panel">
-                    <div class="panel-head">
-                        <h2 class="section-title">Clientes Registrados</h2>
+                    <div class="customers-searchRow" id="searchRow">
+                        <input id="searchInput" type="search" placeholder="Buscar por nombre, teléfono, email, business ID o cliente..." autocomplete="off" />
+                    </div>
+
+                    <div class="customers-toolbar">
                         <div class="toolbar">
                             <span class="pill" id="totalPill">Total: 0</span>
-                            <button class="btn btn-muted" type="button" onclick="loadCustomers(1)">Refrescar</button>
+                            <span class="pill" id="pageInfo">Página 1</span>
                         </div>
+                        <button class="btn btn-primary" type="button" onclick="openCreateModal()">Nuevo cliente</button>
                     </div>
-                    <div id="msg" class="msg"></div>
+                </div>
 
-                    <div class="list-controls">
-                        <input id="searchInput" type="search" placeholder="Buscar: negocio, contacto, teléfono, email, business id..." autocomplete="off" />
-                        <select id="filterSelect" aria-label="Filtro">
-                            <option value="all">Todos</option>
-                            <option value="has_business_id">Con Business ID</option>
-                            <option value="no_business_id">Sin Business ID</option>
-                            <option value="has_email">Con Email</option>
-                        </select>
-                    </div>
+                <div id="msg" class="msg"></div>
 
+                <div class="customers-listSurface">
                     <div class="customers-list" id="customersList">
-                        <div style="padding: 14px; color:#6B7280; font-weight:700;">Cargando...</div>
+                        <div style="padding: 18px 16px; color:#6B7280; font-weight:700;">Cargando...</div>
                     </div>
+                </div>
 
-                    <div class="pagination">
-                        <button type="button" class="pager-btn" id="prevBtn" onclick="prevPage()">← Atrás</button>
-                        <div class="pager-info"><span class="pill" id="pageInfo">Página 1</span></div>
-                        <button type="button" class="pager-btn" id="nextBtn" onclick="nextPage()">Siguiente →</button>
-                    </div>
+                <div class="pagination">
+                    <button type="button" class="pager-btn" id="prevBtn" onclick="prevPage()">&#8592; Atrás</button>
+                    <div class="pager-info"><span class="pill" id="pagerStatus">Página 1</span></div>
+                    <button type="button" class="pager-btn" id="nextBtn" onclick="nextPage()">Siguiente &#8594;</button>
                 </div>
             </section>
         </main>
@@ -950,7 +1234,8 @@
         let currentPage = 1;
         const limit = 20;
         let lastCustomers = [];
-        const customerLicensesCache = new Map();
+        let currentQuickFilter = 'all';
+        let isSearchVisible = false;
 
         window.addEventListener('load', () => {
             // Always start with the drawer closed.
@@ -989,14 +1274,8 @@
             });
 
             const searchInput = document.getElementById('searchInput');
-            const filterSelect = document.getElementById('filterSelect');
             if (searchInput) {
                 searchInput.addEventListener('input', () => {
-                    renderCustomersList();
-                });
-            }
-            if (filterSelect) {
-                filterSelect.addEventListener('change', () => {
                     renderCustomersList();
                 });
             }
@@ -1158,6 +1437,7 @@
                 const total = Number(data.total || 0);
                 document.getElementById('totalPill').textContent = `Total: ${total}`;
                 document.getElementById('pageInfo').textContent = `Página ${data.page || currentPage}`;
+                document.getElementById('pagerStatus').textContent = `Página ${data.page || currentPage}`;
 
                 const hasPrev = currentPage > 1;
                 const hasNext = (currentPage * limit) < total;
@@ -1173,7 +1453,7 @@
 
         function getFilterState() {
             const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
-            const filter = String(document.getElementById('filterSelect')?.value || 'all');
+            const filter = String(currentQuickFilter || 'all');
             return { q, filter };
         }
 
@@ -1220,38 +1500,44 @@
                 const negocio = c.nombre_negocio || '';
                 const contacto = c.contacto_nombre || '';
                 const tel = c.contacto_telefono || '';
-                const email = c.contacto_email || '';
-                const created = formatDate(c.created_at);
-                const role = c.rol_negocio || '';
                 const customerId = c.id || '';
-                const businessId = c.business_id || '';
-
-                const meta = [contacto, tel, email].filter(Boolean).join(' • ');
+                const displayName = contacto || negocio || 'Cliente';
+                const licenseState = getCustomerLicenseState(c);
+                const phoneHtml = tel ? `<span class="customer-phone">${escapeHtml(tel)}</span>` : '';
 
                 return `
                     <div class="customer-item" data-customer-id="${escapeAttr(customerId)}">
-                        <div class="customer-line" onclick="toggleCustomerDetails(event, '${escapeAttr(customerId)}')" title="Toca para ver detalle">
-                            <div class="customer-text">
-                                <div class="customer-name">${escapeHtml(negocio || '—')}</div>
-                                <div class="customer-metaInline">${escapeHtml(meta || role || '—')}</div>
+                        <button class="customer-mainBtn" type="button" onclick="openCustomerDetail('${escapeAttr(customerId)}')" aria-label="Ver detalle del cliente">
+                            <div class="customer-linePrimary">
+                                <span class="customer-name">${escapeHtml(displayName)}</span>
+                                ${phoneHtml}
                             </div>
-                            <div class="customer-actions">
-                                <button class="icon-btn" type="button" onclick="openCustomerActionsDialog(event, '${escapeAttr(customerId)}')" aria-label="Acciones">⋮</button>
+                            <div class="customer-lineSecondary">
+                                <span class="license-statePill ${licenseState.className}">${escapeHtml(licenseState.label)}</span>
+                                <span class="customer-idMeta">ID: ${escapeHtml(customerId)}</span>
                             </div>
-                        </div>
-                        <div class="customer-details">
-                            <div class="detail-grid">
-                                <div class="detail-box"><div class="detail-k">Contacto</div><div class="detail-v">${escapeHtml(contacto || '—')}</div></div>
-                                <div class="detail-box"><div class="detail-k">Teléfono</div><div class="detail-v">${escapeHtml(tel || '—')}</div></div>
-                                <div class="detail-box"><div class="detail-k">Email</div><div class="detail-v">${escapeHtml(email || '—')}</div></div>
-                                <div class="detail-box"><div class="detail-k">Business ID</div><div class="detail-v">${escapeHtml(businessId || '—')}</div></div>
-                                <div class="detail-box"><div class="detail-k">Rol</div><div class="detail-v">${escapeHtml(role || '—')}</div></div>
-                                <div class="detail-box"><div class="detail-k">Creado</div><div class="detail-v">${escapeHtml(created || '—')}</div></div>
-                            </div>
+                        </button>
+                        <div class="customer-actions">
+                            <button class="icon-btn" type="button" onclick="openCustomerActionsDialog(event, '${escapeAttr(customerId)}')" aria-label="Acciones">&#8942;</button>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function getCustomerLicenseState(customer) {
+            const hasLicense = Boolean(customer?.has_license);
+            const hasActiveLicense = Boolean(customer?.has_active_license);
+
+            if (hasActiveLicense) {
+                return { label: 'Licencia activa', className: 'active' };
+            }
+
+            if (hasLicense) {
+                return { label: 'Licencia inactiva', className: 'inactive' };
+            }
+
+            return { label: 'Sin licencia', className: 'none' };
         }
 
         function openCustomerActionsDialog(event, customerId) {
@@ -1260,7 +1546,7 @@
             if (!id) return;
 
             const customer = (lastCustomers || []).find(c => String(c?.id || '').trim() === id);
-            const negocio = String(customer?.nombre_negocio || '').trim();
+            const negocio = String(customer?.contacto_nombre || customer?.nombre_negocio || '').trim();
             const businessId = String(customer?.business_id || '').trim();
 
             if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') {
@@ -1272,6 +1558,10 @@
                 title: negocio || 'Acciones del cliente',
                 subtitle: businessId ? `Business ID: ${businessId}` : 'Sin Business ID',
                 actions: [
+                    {
+                        label: 'Ver detalle',
+                        onClick: () => openCustomerDetail(id)
+                    },
                     {
                         label: '🔐 Generar token reset',
                         kind: 'token',
@@ -1287,6 +1577,10 @@
                         onClick: () => goToLicenses(id)
                     },
                     {
+                        label: '📄 Gestionar licencias',
+                        onClick: () => goToLicenses(id)
+                    },
+                    {
                         label: '🗑️ Eliminar cliente',
                         kind: 'danger',
                         onClick: () => deleteCustomer(id, negocio)
@@ -1295,91 +1589,75 @@
             });
         }
 
-        function toggleCustomerDetails(event, customerId) {
-            if (event) event.stopPropagation();
-            const id = String(customerId || '').trim();
-            if (!id) return;
-
+        function openCustomerDetail(customerId) {
             closeAllActionsMenus();
             if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
                 window.JrAdminActionsDialog.close();
             }
-
-            const item = Array.from(document.querySelectorAll('.customer-item'))
-                .find((el) => String(el.getAttribute('data-customer-id') || '') === id);
-            if (!item) return;
-
-            const isOpen = item.classList.contains('open');
-            document.querySelectorAll('.customer-item.open').forEach((el) => el.classList.remove('open'));
-            if (!isOpen) {
-                item.classList.add('open');
-                loadCustomerLicensesIntoDetails(id);
-            }
-        }
-
-        function licenseChipLabel(lic) {
-            const tipo = String(lic?.tipo || '').toUpperCase() || '—';
-            const estado = String(lic?.estado || '').toUpperCase() || '—';
-            const project = String(lic?.project_code || 'FULLPOS');
-            const icon = (tipo === 'DEMO') ? '🧪' : '⭐';
-            return `${project} • ${icon} ${tipo} • ${estado}`;
-        }
-
-        async function loadCustomerLicensesIntoDetails(customerId) {
             const id = String(customerId || '').trim();
             if (!id) return;
+            window.location.href = `/admin/customer-detail.html?id=${encodeURIComponent(id)}`;
+        }
 
-            const item = Array.from(document.querySelectorAll('.customer-item'))
-                .find((el) => String(el.getAttribute('data-customer-id') || '') === id);
-            if (!item) return;
-
-            let box = item.querySelector('.detail-box[data-detail="licenses"]');
-            if (!box) {
-                const details = item.querySelector('.customer-details .detail-grid');
-                if (!details) return;
-                box = document.createElement('div');
-                box.className = 'detail-box';
-                box.setAttribute('data-detail', 'licenses');
-                box.style.gridColumn = '1 / -1';
-                box.innerHTML = `<div class="detail-k">Licencias</div><div class="detail-v" data-licenses-value>⏳ Cargando...</div>`;
-                details.appendChild(box);
-            }
-
-            const valueEl = box.querySelector('[data-licenses-value]');
-            if (!valueEl) return;
-
-            if (customerLicensesCache.has(id)) {
-                renderLicensesInValue(valueEl, customerLicensesCache.get(id));
-                return;
-            }
-
-            try {
-                const res = await apiFetch(`/api/admin/licenses?customer_id=${encodeURIComponent(id)}&limit=20`, {
-                    method: 'GET'
-                });
-                const data = await res.json().catch(() => ({}));
-                const list = (res.ok && data.ok && Array.isArray(data.licenses)) ? data.licenses : [];
-                customerLicensesCache.set(id, list);
-                renderLicensesInValue(valueEl, list);
-            } catch (e) {
-                valueEl.textContent = '—';
+        function toggleSearch() {
+            isSearchVisible = !isSearchVisible;
+            const row = document.getElementById('searchRow');
+            const btn = document.getElementById('searchToggleBtn');
+            if (row) row.classList.toggle('is-visible', isSearchVisible);
+            if (btn) btn.classList.toggle('is-active', isSearchVisible);
+            if (isSearchVisible) {
+                document.getElementById('searchInput')?.focus();
             }
         }
 
-        function renderLicensesInValue(valueEl, licenses) {
-            const list = Array.isArray(licenses) ? licenses : [];
-            if (!list.length) {
-                valueEl.textContent = 'Sin licencias';
+        function applyQuickFilter(nextFilter, label) {
+            currentQuickFilter = String(nextFilter || 'all');
+            const pill = document.getElementById('currentFilterPill');
+            if (pill) pill.textContent = label || 'Todos';
+            renderCustomersList();
+        }
+
+        function openScreenOptions() {
+            if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') return;
+
+            window.JrAdminActionsDialog.open({
+                title: 'Opciones de clientes',
+                subtitle: 'Vista compacta y filtros rápidos',
+                actions: [
+                    {
+                        label: 'Nuevo cliente',
+                        onClick: () => openCreateModal()
+                    },
+                    {
+                        label: 'Refrescar listado',
+                        onClick: () => loadCustomers(currentPage)
+                    },
+                    {
+                        label: 'Mostrar todos',
+                        onClick: () => applyQuickFilter('all', 'Todos')
+                    },
+                    {
+                        label: 'Solo con Business ID',
+                        onClick: () => applyQuickFilter('has_business_id', 'Con Business ID')
+                    },
+                    {
+                        label: 'Solo sin Business ID',
+                        onClick: () => applyQuickFilter('no_business_id', 'Sin Business ID')
+                    },
+                    {
+                        label: 'Solo con email',
+                        onClick: () => applyQuickFilter('has_email', 'Con email')
+                    }
+                ]
+            });
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
                 return;
             }
-
-            const chips = list.slice(0, 6).map((lic) => {
-                const label = escapeHtml(licenseChipLabel(lic));
-                return `<span class="license-chip">${label}</span>`;
-            }).join('');
-
-            const extra = list.length > 6 ? `<span class="license-chip"><span class="muted">+${list.length - 6} más</span></span>` : '';
-            valueEl.innerHTML = `<div class="license-chips">${chips}${extra}</div>`;
+            window.location.href = '/admin/admin-hub.html';
         }
 
         async function setBusinessIdPrompt(customerId, negocio, currentBusinessId) {

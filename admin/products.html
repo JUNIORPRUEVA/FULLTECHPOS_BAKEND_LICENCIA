@@ -10,6 +10,7 @@
     <script defer src="../assets/js/pwa.js"></script>
     <script defer src="../assets/js/adminCommon.js"></script>
     <script defer src="../assets/js/adminDrawer.js"></script>
+    <script defer src="../assets/js/adminCompactBar.js"></script>
     <title>Productos - Panel Admin</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -137,27 +138,23 @@
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css" />
     <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css" />
+    <link rel="stylesheet" href="../assets/css/admin-compact-bar.css" />
 </head>
-<body class="jr-admin">
-    <div class="navbar">
-        <div style="display:flex; align-items:center; gap: 16px;">
-            <button class="jr-adminDrawerBtn" type="button" data-jr-admin-drawer-open aria-label="Abrir menú">☰</button>
-            <a href="admin-hub.html" class="back-link">← Volver</a>
-            <h1>
-                <span class="jr-admin-brand">
-                    <img src="../assets/img/logo/logoprincipal.png" alt="Appyra" class="jr-admin-brandLogo" />
-                    <span class="jr-admin-brandText">
-                        <span class="jr-admin-brandName">Appyra</span>
-                        <span class="jr-admin-brandPage">Productos</span>
-                    </span>
-                </span>
-            </h1>
+<body class="jr-admin admin-compact-page">
+    <header class="admin-compactBar">
+        <div class="admin-compactBarInner">
+            <h1 class="admin-compactBarTitle">Productos</h1>
+            <div class="admin-compactBarActions">
+                <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="productsCompactMenu" onclick="AdminCompactBar.toggle('productsCompactMenu', event)" aria-label="Opciones">⋮</button>
+                <div id="productsCompactMenu" class="admin-compactBarMenu">
+                    <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
+                    <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
+                    <button class="admin-compactBarMenuItem" type="button" onclick="document.getElementById('newBtn').click(); AdminCompactBar.closeAll();">Nuevo producto</button>
+                    <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
+                </div>
+            </div>
         </div>
-        <div class="navbar-user">
-            <p>Bienvenido, <strong id="userName">Admin</strong></p>
-            <button class="logout-btn" type="button" onclick="AdminCommon.logout()">Cerrar Sesión</button>
-        </div>
-    </div>
+    </header>
 
     <div class="container">
         <div class="section">

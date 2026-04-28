@@ -10,8 +10,10 @@
   <link rel="icon" href="../assets/img/pwa/icon-192.png">
   <script defer src="../assets/js/pwa.js"></script>
   <script defer src="../assets/js/adminDrawer.js"></script>
+  <script defer src="../assets/js/adminCompactBar.js"></script>
   <link rel="stylesheet" href="../assets/css/jr-admin.css">
   <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
+  <link rel="stylesheet" href="../assets/css/admin-compact-bar.css">
   <style>
     :root {
       --bg: #f3f4f6;
@@ -328,16 +330,20 @@
     }
   </style>
 </head>
-<body class="jr-admin">
-  <header class="navbar">
-    <div class="navbar-left">
-      <button class="jr-adminDrawerBtn" type="button" data-jr-admin-drawer-open aria-label="Abrir menú">☰</button>
-      <a href="admin-hub.html" class="back-link">← Volver</a>
-      <h1>Configuración Administrativa</h1>
-    </div>
-    <div class="navbar-right">
-      <span>Bienvenido, <strong id="userName">Admin</strong></span>
-      <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+<body class="jr-admin admin-compact-page">
+  <header class="admin-compactBar">
+    <div class="admin-compactBarInner">
+      <h1 class="admin-compactBarTitle">Configuracion</h1>
+      <div class="admin-compactBarActions">
+        <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="licenseConfigCompactMenu" onclick="AdminCompactBar.toggle('licenseConfigCompactMenu', event)" aria-label="Opciones">⋮</button>
+        <div id="licenseConfigCompactMenu" class="admin-compactBarMenu">
+          <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
+          <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
+          <button class="admin-compactBarMenuItem" type="button" onclick="openModal('licenseModal'); AdminCompactBar.closeAll();">Licencias por defecto</button>
+          <button class="admin-compactBarMenuItem" type="button" onclick="openModal('supportMessageModal'); AdminCompactBar.closeAll();">Mensaje soporte</button>
+          <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); logout();">Cerrar sesion</button>
+        </div>
+      </div>
     </div>
   </header>
 

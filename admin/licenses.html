@@ -486,32 +486,759 @@
                 gap: 8px;
             }
         }
+
+        .licenses-screen {
+            background:
+                radial-gradient(860px 340px at 50% -80px, rgba(255, 255, 255, 0.96), transparent 72%),
+                linear-gradient(180deg, #f8fbff 0%, #f2f5fa 100%);
+            color: #0f172a;
+        }
+
+        .licenses-screen .navbar {
+            display: none;
+        }
+
+        .license-appbar {
+            position: sticky;
+            top: 0;
+            z-index: 70;
+            padding: 14px 14px 10px;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+        }
+
+        .license-appbarInner {
+            width: min(100%, 1180px);
+            margin: 0 auto;
+            display: grid;
+            gap: 10px;
+        }
+
+        .license-appbarTop {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .license-appbarTitle {
+            font-size: 1.35rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            color: #0f172a;
+        }
+
+        .license-appbarActions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .toolbar-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 16px;
+            border: 1px solid #dbe4f0;
+            background: #ffffff;
+            color: #0f172a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            font-weight: 900;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+            cursor: pointer;
+            transition: transform .18s ease, border-color .18s ease, background-color .18s ease;
+        }
+
+        .toolbar-icon:hover {
+            transform: translateY(-1px);
+            border-color: #bfd5ff;
+            background: #f8fbff;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+        }
+
+        .toolbar-icon.is-active {
+            color: #1d4ed8;
+            border-color: #bfd5ff;
+            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+        }
+
+        .license-searchDock {
+            display: none;
+        }
+
+        .license-searchDock.is-open {
+            display: block;
+        }
+
+        .license-searchDock input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #dbe4f0;
+            border-radius: 18px;
+            background: #fff;
+            color: #0f172a;
+            font-size: 0.96rem;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+        }
+
+        .license-filterMenu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: min(320px, calc(100vw - 28px));
+            display: none;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid #dbe4f0;
+            border-radius: 22px;
+            padding: 16px;
+            box-shadow: 0 24px 54px rgba(15, 23, 42, 0.16);
+        }
+
+        .license-filterMenu.is-open {
+            display: grid;
+            gap: 12px;
+        }
+
+        .license-filterTitle {
+            font-size: 0.96rem;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.03em;
+        }
+
+        .license-filterField {
+            display: grid;
+            gap: 6px;
+        }
+
+        .license-filterField label {
+            margin: 0;
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .license-filterField select {
+            width: 100%;
+            min-width: 0;
+            padding: 12px 14px;
+            border: 1px solid #dbe4f0;
+            border-radius: 16px;
+            background: #fff;
+            color: #0f172a;
+        }
+
+        .license-filterActions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 12px 14px;
+            border-radius: 16px;
+            font-weight: 800;
+            border: 1px solid #dbe4f0;
+            background: #fff;
+            color: #0f172a;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .filter-btn:hover {
+            box-shadow: none;
+            transform: none;
+        }
+
+        .filter-btn.primary {
+            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+            border-color: #bfd5ff;
+            color: #1d4ed8;
+        }
+
+        .licenses-section {
+            padding-top: 22px;
+        }
+
+        .license-listSummary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            color: #475569;
+            font-size: 0.9rem;
+            font-weight: 700;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+        }
+
+        .license-listSummary strong {
+            color: #0f172a;
+        }
+
+        .licenses-list {
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            display: grid;
+            gap: 12px;
+            overflow: visible;
+        }
+
+        .license-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+        }
+
+        .license-item:last-child {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .license-line {
+            align-items: stretch;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .license-line:hover {
+            background: transparent;
+        }
+
+        .license-text {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: grid;
+            gap: 12px;
+            white-space: normal;
+            overflow: visible;
+        }
+
+        .license-mainRow {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .license-heading {
+            min-width: 0;
+            display: grid;
+            gap: 6px;
+        }
+
+        .license-title {
+            max-width: none;
+            font-size: 1.02rem;
+            line-height: 1.2;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+        }
+
+        .license-subtitle {
+            font-size: 0.86rem;
+            color: #64748b;
+            font-weight: 800;
+        }
+
+        .license-meta {
+            flex: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #475569;
+            overflow: visible;
+            text-overflow: unset;
+        }
+
+        .license-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 32px;
+            padding: 8px 11px;
+            border-radius: 999px;
+            border: 1px solid #dbe4f0;
+            background: #f8fafc;
+            font-weight: 800;
+        }
+
+        .license-chip.key {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .license-actions {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            border: 1px solid #dbe4f0;
+            background: #fff;
+            color: #0f172a;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
+        }
+
+        .status-pill {
+            min-height: 34px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .status-pill.ok {
+            color: #065f46;
+            border-color: #a7f3d0;
+            background: #ecfdf5;
+        }
+
+        .status-pill.warn {
+            color: #92400e;
+            border-color: #fde68a;
+            background: #fffbeb;
+        }
+
+        .status-pill.err {
+            color: #991b1b;
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .status-pill.neutral {
+            color: #334155;
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .license-modalOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.58);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            backdrop-filter: blur(8px);
+        }
+
+        .license-modalCard {
+            width: min(920px, 100%);
+            max-height: min(92vh, 980px);
+            overflow: auto;
+            background: #fff;
+            border-radius: 28px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 26px 90px rgba(15, 23, 42, 0.24);
+        }
+
+        .license-modalHeader {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .license-modalTitle {
+            display: grid;
+            gap: 6px;
+        }
+
+        .license-modalTitle strong {
+            font-size: 1.18rem;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.03em;
+        }
+
+        .license-modalTitle span {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .license-modalClose {
+            border: 1px solid #dbe4f0;
+            background: #fff;
+            color: #0f172a;
+            border-radius: 16px;
+            padding: 10px 14px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .license-modalClose:hover {
+            box-shadow: none;
+            transform: none;
+            background: #f8fafc;
+        }
+
+        .license-modalBody {
+            padding: 20px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .license-detailHero {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #f8fbff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+        }
+
+        .license-detailHeroTop {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .license-detailHeroTitle {
+            display: grid;
+            gap: 6px;
+        }
+
+        .license-detailHeroTitle strong {
+            font-size: 1.08rem;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.03em;
+        }
+
+        .license-detailHeroTitle span {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .license-detailTags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .license-detailGrid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .license-detailField {
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            display: grid;
+            gap: 8px;
+        }
+
+        .license-detailField.label-wide {
+            grid-column: 1 / -1;
+        }
+
+        .license-detailField span {
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .license-detailField strong {
+            color: #0f172a;
+            font-size: 0.98rem;
+            font-weight: 800;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .license-detailField strong.mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.92rem;
+        }
+
+        .license-detailActions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .license-detailAction {
+            padding: 12px 14px;
+            border-radius: 16px;
+            font-weight: 800;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .license-detailAction:hover {
+            box-shadow: none;
+            transform: none;
+        }
+
+        .license-detailAction.dark {
+            background: #0f172a;
+            color: #fff;
+        }
+
+        .license-detailAction.warn {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .license-activationsWrap {
+            display: grid;
+            gap: 12px;
+        }
+
+        .license-activationsHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .license-activationsHeader strong {
+            font-size: 1rem;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .license-activationsHeader span {
+            color: #64748b;
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+
+        .license-activationsList {
+            display: grid;
+            gap: 10px;
+        }
+
+        .activation-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #fff;
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .activation-cardTop {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .activation-cardTop strong {
+            font-size: 0.92rem;
+            color: #0f172a;
+            font-weight: 900;
+            word-break: break-all;
+        }
+
+        .activation-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .activation-metaItem {
+            display: grid;
+            gap: 5px;
+        }
+
+        .activation-metaItem span {
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            font-weight: 800;
+        }
+
+        .activation-metaItem strong {
+            font-size: 0.88rem;
+            color: #0f172a;
+            font-weight: 800;
+            line-height: 1.35;
+        }
+
+        .activation-action {
+            width: fit-content;
+            padding: 9px 12px;
+            border-radius: 14px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 800;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .activation-action:hover {
+            box-shadow: none;
+            transform: none;
+            background: #dc2626;
+        }
+
+        .activation-empty {
+            padding: 18px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 20px;
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .licenses-screen .container {
+                padding: 16px 14px 96px;
+            }
+
+            .licenses-screen .section {
+                padding: 20px 16px;
+                border-radius: 22px;
+            }
+
+            .license-appbar {
+                padding: 12px 12px 10px;
+            }
+
+            .license-appbarTitle {
+                font-size: 1.22rem;
+            }
+
+            .toolbar-icon {
+                width: 44px;
+                height: 44px;
+            }
+
+            .license-listSummary {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .license-line {
+                flex-direction: column;
+            }
+
+            .license-mainRow {
+                flex-direction: column;
+            }
+
+            .license-actions {
+                width: 100%;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .icon-btn {
+                width: 42px;
+                height: 42px;
+            }
+
+            .license-detailHeroTop,
+            .license-modalHeader,
+            .license-activationsHeader,
+            .activation-cardTop {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .license-detailGrid,
+            .activation-meta,
+            .license-filterActions {
+                grid-template-columns: 1fr;
+            }
+
+            .license-modalOverlay {
+                padding: 10px;
+                align-items: flex-end;
+            }
+
+            .license-modalCard {
+                max-height: 94vh;
+                border-radius: 26px 26px 0 0;
+            }
+        }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
 </head>
-<body class="jr-admin">
-    <!-- NAVBAR -->
-    <div class="navbar">
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <button class="jr-adminDrawerBtn" type="button" data-jr-admin-drawer-open aria-label="Abrir menú">☰</button>
-            <a href="admin-hub.html" class="back-link">← Volver</a>
-            <h1>
-                <span class="jr-admin-brand">
-                    <img src="../assets/img/logo/logoprincipal.png" alt="Appyra" class="jr-admin-brandLogo" />
-                    <span class="jr-admin-brandText">
-                        <span class="jr-admin-brandName">Appyra</span>
-                        <span class="jr-admin-brandPage">Gestionar Licencias</span>
-                    </span>
-                </span>
-            </h1>
+<body class="jr-admin licenses-screen">
+    <header class="license-appbar">
+        <div class="license-appbarInner">
+            <div class="license-appbarTop">
+                <h1 class="license-appbarTitle">Licencias</h1>
+                <div class="license-appbarActions">
+                    <button id="licenseSearchToggle" class="toolbar-icon" type="button" onclick="toggleLicenseSearch()" aria-label="Buscar licencias">⌕</button>
+                    <button id="licenseFilterToggle" class="toolbar-icon" type="button" onclick="toggleLicenseFilters(event)" aria-label="Filtros y opciones">⋮</button>
+
+                    <div id="licenseFilterMenu" class="license-filterMenu">
+                        <div class="license-filterTitle">Filtros</div>
+                        <div class="license-filterField">
+                            <label for="projectFilter">Proyecto</label>
+                            <select id="projectFilter">
+                                <option value="ALL">Todos</option>
+                            </select>
+                        </div>
+                        <div class="license-filterField">
+                            <label for="licenseStatusFilter">Estado</label>
+                            <select id="licenseStatusFilter" aria-label="Estado">
+                                <option value="ALL">Todos</option>
+                                <option value="ACTIVA">Activa</option>
+                                <option value="PENDIENTE">Pendiente</option>
+                                <option value="VENCIDA">Vencida</option>
+                                <option value="BLOQUEADA">Bloqueada</option>
+                            </select>
+                        </div>
+                        <div class="license-filterField">
+                            <label for="licenseTypeFilter">Tipo</label>
+                            <select id="licenseTypeFilter" aria-label="Tipo">
+                                <option value="ALL">Todos</option>
+                                <option value="DEMO">DEMO</option>
+                                <option value="FULL">FULL</option>
+                            </select>
+                        </div>
+                        <div class="license-filterActions">
+                            <button class="filter-btn" type="button" onclick="clearLicenseFilters()">Limpiar</button>
+                            <button class="filter-btn primary" type="button" onclick="applyLicenseFilters()">Aplicar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="licenseSearchDock" class="license-searchDock">
+                <input id="licenseSearch" type="search" placeholder="Buscar licencia, cliente, business id o clave" autocomplete="off" />
+            </div>
         </div>
-        <div class="navbar-user">
-            <p>Bienvenido, <strong id="userName">Admin</strong></p>
-            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
-        </div>
-    </div>
+    </header>
 
     <div class="container">
         <!-- SECCIÓN: Crear Nueva Licencia -->
@@ -625,41 +1352,10 @@
         </div>
 
         <!-- SECCIÓN: Lista de Licencias -->
-        <div class="section">
-            <h2 class="section-title">📋 Listado de Licencias</h2>
-            <p class="section-subtitle">
-                Aquí aparecerán todas las licencias creadas. Podrás filtrar por cliente, tipo o estado.
-            </p>
-
-            <div class="form-row" style="margin-bottom: 16px;">
-                <div class="form-group">
-                    <label for="projectFilter">Filtrar por proyecto</label>
-                    <select id="projectFilter">
-                        <option value="ALL">Todos</option>
-                    </select>
-                    <div class="auto-fill-hint">Tip: si seleccionas un proyecto, la lista mostrará solo sus licencias.</div>
-                </div>
-
-                <div class="form-group">
-                    <label style="opacity:0;">.</label>
-                    <button type="button" onclick="loadLicenses()" style="width: fit-content;">🔎 Aplicar filtro</button>
-                </div>
-            </div>
-
-            <div class="list-controls">
-                <input id="licenseSearch" type="search" placeholder="Buscar: cliente, business id, clave, proyecto..." autocomplete="off" />
-                <select id="licenseStatusFilter" aria-label="Estado">
-                    <option value="ALL">Estado: Todos</option>
-                    <option value="ACTIVA">Estado: Activa</option>
-                    <option value="PENDIENTE">Estado: Pendiente</option>
-                    <option value="VENCIDA">Estado: Vencida</option>
-                    <option value="BLOQUEADA">Estado: Bloqueada</option>
-                </select>
-                <select id="licenseTypeFilter" aria-label="Tipo">
-                    <option value="ALL">Tipo: Todos</option>
-                    <option value="DEMO">Tipo: DEMO</option>
-                    <option value="FULL">Tipo: FULL</option>
-                </select>
+        <div class="section licenses-section">
+            <div id="licenseListSummary" class="license-listSummary">
+                <span><strong>Licencias</strong> organizadas para movil</span>
+                <span id="licenseListSummaryMeta">Cargando...</span>
             </div>
 
             <div id="licensesList" class="licenses-list">
@@ -692,13 +1388,16 @@
 
         // Deep-link support: /admin/licenses.html?customer_id=...
         let deepLinkCustomerId = null;
+        let deepLinkAction = null;
+        let deepLinkEditLicenseId = null;
+        let deepLinkEditApplied = false;
         let deepLinkAppliedToList = false;
         let lastLicenses = [];
         let lastLicensesTotal = 0;
         let currentLicensesPage = 1;
         const licensesLimit = 20;
 
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
             if (!sessionId) {
                 window.location.href = '/admin/login.html';
                 return;
@@ -706,6 +1405,8 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             deepLinkCustomerId = urlParams.get('customer_id');
+            deepLinkAction = urlParams.get('action');
+            deepLinkEditLicenseId = urlParams.get('edit_license_id');
             const urlSessionId = urlParams.get('sessionId');
             if (urlSessionId) {
                 sessionId = urlSessionId;
@@ -714,27 +1415,121 @@
 
             verifySession();
             closeCreateLicense();
-            initializeForm();
-            loadLicenses();
+            await initializeForm();
+            await loadLicenses();
 
             setupLicensesListUi();
+
+            if (String(deepLinkAction || '').toLowerCase() === 'create') {
+                openCreateLicense();
+            }
+
+            if (deepLinkEditLicenseId && !deepLinkEditApplied) {
+                const exists = (lastLicenses || []).some((license) => String(license?.id || '') === String(deepLinkEditLicenseId));
+                if (exists) {
+                    deepLinkEditApplied = true;
+                    openEditModal(String(deepLinkEditLicenseId));
+                }
+            }
         });
 
         function setupLicensesListUi() {
             const search = document.getElementById('licenseSearch');
             const status = document.getElementById('licenseStatusFilter');
             const tipo = document.getElementById('licenseTypeFilter');
+            const project = document.getElementById('projectFilter');
             if (search) search.addEventListener('input', () => renderLicensesList());
-            if (status) status.addEventListener('change', () => loadLicenses(1));
-            if (tipo) tipo.addEventListener('change', () => loadLicenses(1));
+            if (search) search.addEventListener('search', () => renderLicensesList());
+            if (status) status.addEventListener('change', updateLicenseFilterButtonState);
+            if (tipo) tipo.addEventListener('change', updateLicenseFilterButtonState);
+            if (project) project.addEventListener('change', updateLicenseFilterButtonState);
 
-            document.addEventListener('click', () => closeAllActionsMenus());
+            document.addEventListener('click', (event) => {
+                closeAllActionsMenus();
+                if (!event.target.closest('#licenseFilterMenu') && !event.target.closest('#licenseFilterToggle')) {
+                    closeLicenseFilters();
+                }
+            });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     closeAllActionsMenus();
+                    closeLicenseFilters();
+                    closeLicenseSearch();
                     closeCreateLicense();
                 }
             });
+
+            updateLicenseFilterButtonState();
+        }
+
+        function toggleLicenseSearch() {
+            const dock = document.getElementById('licenseSearchDock');
+            const button = document.getElementById('licenseSearchToggle');
+            if (!dock || !button) return;
+
+            const willOpen = !dock.classList.contains('is-open');
+            dock.classList.toggle('is-open', willOpen);
+            button.classList.toggle('is-active', willOpen);
+            if (willOpen) {
+                closeLicenseFilters();
+                const input = document.getElementById('licenseSearch');
+                if (input) {
+                    setTimeout(() => input.focus(), 30);
+                }
+            }
+        }
+
+        function closeLicenseSearch() {
+            const dock = document.getElementById('licenseSearchDock');
+            const button = document.getElementById('licenseSearchToggle');
+            if (dock) dock.classList.remove('is-open');
+            if (button) button.classList.remove('is-active');
+        }
+
+        function toggleLicenseFilters(event) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById('licenseFilterMenu');
+            const button = document.getElementById('licenseFilterToggle');
+            if (!menu || !button) return;
+
+            const willOpen = !menu.classList.contains('is-open');
+            menu.classList.toggle('is-open', willOpen);
+            button.classList.toggle('is-active', willOpen);
+        }
+
+        function closeLicenseFilters() {
+            const menu = document.getElementById('licenseFilterMenu');
+            const button = document.getElementById('licenseFilterToggle');
+            if (menu) menu.classList.remove('is-open');
+            if (button) button.classList.remove('is-active');
+        }
+
+        function applyLicenseFilters() {
+            closeLicenseFilters();
+            loadLicenses(1);
+        }
+
+        function clearLicenseFilters() {
+            const project = document.getElementById('projectFilter');
+            const status = document.getElementById('licenseStatusFilter');
+            const tipo = document.getElementById('licenseTypeFilter');
+
+            if (project) project.value = 'ALL';
+            if (status) status.value = 'ALL';
+            if (tipo) tipo.value = 'ALL';
+
+            updateLicenseFilterButtonState();
+            closeLicenseFilters();
+            loadLicenses(1);
+        }
+
+        function updateLicenseFilterButtonState() {
+            const project = String(document.getElementById('projectFilter')?.value || 'ALL').toUpperCase();
+            const status = String(document.getElementById('licenseStatusFilter')?.value || 'ALL').toUpperCase();
+            const tipo = String(document.getElementById('licenseTypeFilter')?.value || 'ALL').toUpperCase();
+            const button = document.getElementById('licenseFilterToggle');
+            const hasActive = project !== 'ALL' || status !== 'ALL' || tipo !== 'ALL';
+            if (button) button.classList.toggle('is-active', hasActive || document.getElementById('licenseFilterMenu')?.classList.contains('is-open'));
         }
 
         function openCreateLicense() {
@@ -839,10 +1634,15 @@
 
         function renderLicensesList() {
             const container = document.getElementById('licensesList');
+            const summaryMeta = document.getElementById('licenseListSummaryMeta');
             if (!container) return;
 
             const filters = getListFilters();
             const rows = (lastLicenses || []).filter(l => matchesFilters(l, filters));
+
+            if (summaryMeta) {
+                summaryMeta.textContent = `${rows.length} visibles de ${lastLicensesTotal || 0}`;
+            }
 
             if (!rows.length) {
                 container.innerHTML = `
@@ -864,18 +1664,28 @@
                 const estado = getEffectiveLicenseStatus(license);
                 const fechaFin = license?.fecha_fin ? new Date(license.fecha_fin).toLocaleDateString('es-ES') : '—';
                 const keyShort = shortKey(license?.license_key);
-
-                const meta = `${project} • ${icon} ${tipo || '—'} • ${fechaFin !== '—' ? ('Vence: ' + fechaFin) : 'Sin fecha'}`;
+                const projectText = `${project} · ${icon} ${tipo || '—'}`;
+                const bidText = biz ? `BID ${biz}` : 'Sin BID';
+                const dateText = fechaFin !== '—' ? `Vence ${fechaFin}` : 'Sin fecha';
 
                 return `
                     <div class="license-item" data-license-id="${esc(id)}">
                         <div class="license-line" onclick="openDetailModal('${escapeAttr(id)}')" title="Toca para ver detalle">
                             <div class="license-text">
-                                <div class="license-title">${esc(cliente)}</div>
-                                <div class="license-meta">${esc(meta)} • ${biz ? ('BID: ' + biz) : 'Sin BID'} • Key: ${esc(keyShort)}</div>
+                                <div class="license-mainRow">
+                                    <div class="license-heading">
+                                        <div class="license-title">${esc(cliente)}</div>
+                                        <div class="license-subtitle">${esc(projectText)}</div>
+                                    </div>
+                                    ${statusPill(estado)}
+                                </div>
+                                <div class="license-meta">
+                                    <span class="license-chip">${esc(bidText)}</span>
+                                    <span class="license-chip">${esc(dateText)}</span>
+                                    <span class="license-chip key">Key ${esc(keyShort)}</span>
+                                </div>
                             </div>
                             <div class="license-actions" onclick="event.stopPropagation();">
-                                ${statusPill(estado)}
                                 <button class="icon-btn" type="button" onclick="openLicenseActionsDialog(event, '${escapeAttr(id)}')" aria-label="Acciones">⋮</button>
                             </div>
                         </div>
@@ -1115,6 +1925,14 @@
                 currentLicensesPage = Number(data.page || page || 1);
                 renderLicensesList();
                 updateLicensesPager();
+
+                if (deepLinkEditLicenseId && !deepLinkEditApplied) {
+                    const exists = lastLicenses.some((license) => String(license?.id || '') === String(deepLinkEditLicenseId));
+                    if (exists) {
+                        deepLinkEditApplied = true;
+                        openEditModal(String(deepLinkEditLicenseId));
+                    }
+                }
             } catch (error) {
                 console.error('Error loading licenses:', error);
                 const container = document.getElementById('licensesList');
@@ -1132,6 +1950,7 @@
          * Manejar envío del formulario
          */
         document.getElementById('createLicenseForm').addEventListener('submit', async (e) => {
+                        updateLicenseFilterButtonState();
             e.preventDefault();
 
             const submitBtn = document.getElementById('submitBtn');
@@ -1417,21 +2236,23 @@
             if (document.getElementById('licenseDetailModal')) return;
 
             const modalsHtml = `
-                <div id="licenseDetailModal" style="display:none; position:fixed; inset:0; background: rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-                    <div style="background:#fff; width:min(900px, 100%); border-radius:12px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); overflow:hidden;">
-                        <div style="padding:18px 20px; background:#F9FAFB; border-bottom:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                            <div>
-                                <div style="font-weight:900; color:#0F172A; font-size:1.1rem;">Detalles de Licencia</div>
-                                <div id="detailSub" style="color:#6B7280; font-size:0.85rem;"></div>
+                <div id="licenseDetailModal" class="license-modalOverlay" onclick="if (event.target === this) closeDetailModal()">
+                    <div class="license-modalCard">
+                        <div class="license-modalHeader">
+                            <div class="license-modalTitle">
+                                <strong>Detalle de licencia</strong>
+                                <span id="detailSub"></span>
                             </div>
-                            <button onclick="closeDetailModal()" style="padding:8px 12px; border-radius:8px; border:1px solid #D1D5DB; background:#fff; cursor:pointer; font-weight:700;">Cerrar</button>
+                            <button class="license-modalClose" onclick="closeDetailModal()">Cerrar</button>
                         </div>
-                        <div style="padding:20px;">
-                            <div id="detailBody" style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;"></div>
-
-                            <div style="margin-top:18px;">
-                                <div style="font-weight:900; color:#0F172A; margin-bottom:10px;">Activaciones</div>
-                                <div id="activationsBox" style="border:1px solid #E5E7EB; border-radius:10px; overflow:hidden;"></div>
+                        <div class="license-modalBody">
+                            <div id="detailBody"></div>
+                            <div class="license-activationsWrap">
+                                <div class="license-activationsHeader">
+                                    <strong>Activaciones</strong>
+                                    <span id="activationsCountLabel"></span>
+                                </div>
+                                <div id="activationsBox" class="license-activationsList"></div>
                             </div>
                         </div>
                     </div>
@@ -1509,41 +2330,80 @@
 
                 const fechaInicio = l.fecha_inicio ? new Date(l.fecha_inicio).toLocaleString('es-ES') : 'N/A';
                 const fechaFin = l.fecha_fin ? new Date(l.fecha_fin).toLocaleString('es-ES') : 'N/A';
+                const projectCode = String(l.project_code || 'FULLPOS');
+                const businessId = String(l.business_id || '').trim() || 'Sin BID';
+                const estado = getEffectiveLicenseStatus(l);
+                const keyShort = shortKey(l.license_key);
 
                 const detailBody = document.getElementById('detailBody');
                 detailBody.innerHTML = `
-                    <div><div style="color:#6B7280; font-size:0.85rem;">License Key</div><div style="font-family:monospace; font-weight:900; word-break:break-all;">${l.license_key}</div></div>
-                    <div><div style="color:#6B7280; font-size:0.85rem;">Cliente</div><div style="font-weight:800;">${l.nombre_negocio || '—'}</div></div>
-                    <div><div style="color:#6B7280; font-size:0.85rem;">Días validez</div><div style="font-weight:800;">${l.dias_validez}</div></div>
-                    <div><div style="color:#6B7280; font-size:0.85rem;">Fecha inicio</div><div style="font-weight:800;">${fechaInicio}</div></div>
-                    <div><div style="color:#6B7280; font-size:0.85rem;">Fecha fin</div><div style="font-weight:800;">${fechaFin}</div></div>
-                    <div style="grid-column:1 / -1;"><div style="color:#6B7280; font-size:0.85rem;">Notas</div><div style="font-weight:700;">${l.notas ? l.notas : '—'}</div></div>
-
-                    <div style="grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
-                        <button onclick="promptOfflineDownload('${licenseId}')" style="padding:10px 14px; border-radius:8px; border:none; background:#111827; color:#fff; cursor:pointer; font-weight:900;">📄 Descargar archivo de licencia</button>
-                        <button onclick="activarManual('${licenseId}')" style="padding:10px 14px; border-radius:8px; border:none; background:#F59E0B; color:#fff; cursor:pointer; font-weight:900;">Iniciar/Activar</button>
+                    <div class="license-detailHero">
+                        <div class="license-detailHeroTop">
+                            <div class="license-detailHeroTitle">
+                                <strong>${l.nombre_negocio || 'Cliente sin nombre'}</strong>
+                                <span>Licencia ${esc(keyShort)} · ${esc(projectCode)}</span>
+                            </div>
+                            ${statusPill(estado)}
+                        </div>
+                        <div class="license-detailTags">
+                            <span class="license-chip">${esc(projectCode)}</span>
+                            <span class="license-chip">${esc(String(l.tipo || '—'))}</span>
+                            <span class="license-chip">${esc(businessId)}</span>
+                        </div>
                     </div>
-                    <div style="grid-column:1 / -1; color:#6B7280; font-size:0.85rem; margin-top:-4px;">
-                        El archivo de licencia se genera firmado. Si sale “no configurada”, configura <b>LICENSE_SIGN_PRIVATE_KEY</b> y <b>LICENSE_SIGN_PUBLIC_KEY</b> en el backend.
+
+                    <div class="license-detailGrid">
+                        <div class="license-detailField">
+                            <span>License key</span>
+                            <strong class="mono">${l.license_key}</strong>
+                        </div>
+                        <div class="license-detailField">
+                            <span>Cliente</span>
+                            <strong>${l.nombre_negocio || '—'}</strong>
+                        </div>
+                        <div class="license-detailField">
+                            <span>Dias validez</span>
+                            <strong>${l.dias_validez}</strong>
+                        </div>
+                        <div class="license-detailField">
+                            <span>Business ID</span>
+                            <strong>${businessId}</strong>
+                        </div>
+                        <div class="license-detailField">
+                            <span>Inicio</span>
+                            <strong>${fechaInicio}</strong>
+                        </div>
+                        <div class="license-detailField">
+                            <span>Vencimiento</span>
+                            <strong>${fechaFin}</strong>
+                        </div>
+                        <div class="license-detailField label-wide">
+                            <span>Notas</span>
+                            <strong>${l.notas ? l.notas : '—'}</strong>
+                        </div>
+                    </div>
+
+                    <div class="license-detailActions">
+                        <button class="license-detailAction dark" onclick="promptOfflineDownload('${licenseId}')">Descargar archivo</button>
+                        <button class="license-detailAction warn" onclick="activarManual('${licenseId}')">Iniciar o activar</button>
+                    </div>
+
+                    <div class="license-detailField label-wide">
+                        <span>Importante</span>
+                        <strong>El archivo de licencia se genera firmado. Si aparece como no configurada, revisa LICENSE_SIGN_PRIVATE_KEY y LICENSE_SIGN_PUBLIC_KEY en el backend.</strong>
                     </div>
                 `;
 
                 const activations = Array.isArray(l.activations) ? l.activations : [];
                 const box = document.getElementById('activationsBox');
+                const activationsCountLabel = document.getElementById('activationsCountLabel');
+                if (activationsCountLabel) {
+                    activationsCountLabel.textContent = activations.length ? `${activations.length} registradas` : 'Sin registros';
+                }
                 if (!activations.length) {
-                    box.innerHTML = `<div style="padding:16px; color:#6B7280;">No hay activaciones registradas.</div>`;
+                    box.innerHTML = `<div class="activation-empty">No hay activaciones registradas.</div>`;
                 } else {
-                    let ahtml = `<table style="width:100%; border-collapse:collapse;">
-                        <thead>
-                            <tr style="background:#F3F4F6; border-bottom:1px solid #E5E7EB;">
-                                <th style="padding:10px; text-align:left;">Activación</th>
-                                <th style="padding:10px; text-align:left;">Estado</th>
-                                <th style="padding:10px; text-align:left;">Activada</th>
-                                <th style="padding:10px; text-align:left;">Último check</th>
-                                <th style="padding:10px; text-align:left;">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
+                    let ahtml = '';
 
                     activations.forEach(a => {
                         const estado = a.estado || '—';
@@ -1551,22 +2411,30 @@
                         const lastCheck = a.last_check_at ? new Date(a.last_check_at).toLocaleString('es-ES') : '—';
                         const canRevoke = estado === 'ACTIVA';
                         ahtml += `
-                            <tr style="border-bottom:1px solid #E5E7EB;">
-                                <td style="padding:10px; font-family:monospace;">${a.id}</td>
-                                <td style="padding:10px; font-weight:800;">${estado}</td>
-                                <td style="padding:10px;">${activatedAt}</td>
-                                <td style="padding:10px;">${lastCheck}</td>
-                                <td style="padding:10px;">
+                            <div class="activation-card">
+                                <div class="activation-cardTop">
+                                    <strong>${a.id}</strong>
+                                    ${statusPill(estado)}
+                                </div>
+                                <div class="activation-meta">
+                                    <div class="activation-metaItem">
+                                        <span>Activada</span>
+                                        <strong>${activatedAt}</strong>
+                                    </div>
+                                    <div class="activation-metaItem">
+                                        <span>Ultimo check</span>
+                                        <strong>${lastCheck}</strong>
+                                    </div>
+                                </div>
+                                <div>
                                     ${canRevoke
-                                        ? `<button onclick="revokeActivation('${a.id}', '${licenseId}')" style="padding:6px 10px; border:none; border-radius:6px; background:#EF4444; color:#fff; cursor:pointer; font-weight:900; font-size:12px;">Revocar</button>`
-                                        : `<span style="color:#6B7280; font-size:0.85rem;">—</span>`
+                                        ? `<button class="activation-action" onclick="revokeActivation('${a.id}', '${licenseId}')">Revocar</button>`
+                                        : `<span style="color:#6B7280; font-size:0.85rem; font-weight:700;">Sin accion disponible</span>`
                                     }
-                                </td>
-                            </tr>
+                                </div>
+                            </div>
                         `;
                     });
-
-                    ahtml += `</tbody></table>`;
                     box.innerHTML = ahtml;
                 }
 
