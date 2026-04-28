@@ -213,7 +213,7 @@
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
@@ -234,32 +234,6 @@
             font-size: 0.86rem;
             font-weight: 800;
             color: #475569;
-        }
-
-        .hero-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .hero-metaChip {
-            display: inline-flex;
-            align-items: center;
-            min-height: 28px;
-            padding: 0 10px;
-            border-radius: 999px;
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            color: #334155;
-            font-size: 0.76rem;
-            font-weight: 800;
-        }
-
-        .hero-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
         }
 
         .btn {
@@ -336,6 +310,13 @@
             color: #64748B;
         }
 
+        .hero .info-grid {
+            margin-top: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.84);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -389,6 +370,20 @@
             min-width: 0;
         }
 
+        .license-mainBtn {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: left;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .license-mainBtn:hover .license-title,
+        .license-mainBtn:hover .license-meta {
+            color: #1D4ED8;
+        }
+
         .license-lineTop,
         .license-lineBottom {
             display: flex;
@@ -414,6 +409,114 @@
             font-size: 0.75rem;
             font-weight: 800;
             color: #64748B;
+        }
+
+        .license-detailPanel {
+            grid-column: 1 / -1;
+            margin-top: 2px;
+            margin-left: 2px;
+            margin-right: 2px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(226, 232, 240, 0.84);
+            border-radius: 12px;
+            background: #F8FAFC;
+            overflow: hidden;
+        }
+
+        .license-detailHead {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.84);
+            font-size: 0.76rem;
+            font-weight: 900;
+            color: #0F172A;
+            background: #FFFFFF;
+        }
+
+        .license-detailGrid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .license-detailRow {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.76);
+            min-width: 0;
+        }
+
+        .license-detailRow:nth-child(odd) {
+            border-right: 1px solid rgba(226, 232, 240, 0.76);
+        }
+
+        .license-detailRow:last-child,
+        .license-detailRow:nth-last-child(2):nth-child(odd) {
+            border-bottom: none;
+        }
+
+        .license-detailLabel {
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748B;
+            margin-bottom: 4px;
+        }
+
+        .license-detailValue {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #0F172A;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .license-detailActions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 10px 12px;
+            border-top: 1px solid rgba(226, 232, 240, 0.84);
+            background: #FFFFFF;
+        }
+
+        .license-detailBtn {
+            border: 1px solid rgba(203, 213, 225, 0.96);
+            background: #FFFFFF;
+            color: #0F172A;
+            border-radius: 10px;
+            padding: 7px 10px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .license-detailBtn:hover {
+            background: #F8FAFC;
+        }
+
+        .jr-fab {
+            position: fixed;
+            right: 14px;
+            bottom: 14px;
+            width: 54px;
+            height: 54px;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            background: #0F172A;
+            color: #fff;
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 0;
+            cursor: pointer;
+            box-shadow: 0 14px 24px rgba(15, 23, 42, 0.18);
+            z-index: 1000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .jr-fab:hover {
+            background: #111827;
+            box-shadow: 0 18px 30px rgba(15, 23, 42, 0.22);
         }
 
         .empty-state {
@@ -457,12 +560,10 @@
                 border-right: none;
             }
 
-            .hero-actions,
             .section-head {
                 align-items: stretch;
             }
 
-            .hero-actions .btn,
             .section-head .btn {
                 width: 100%;
             }
@@ -470,6 +571,14 @@
             .license-item {
                 grid-template-columns: 1fr auto;
                 padding: 10px 12px;
+            }
+
+            .license-detailGrid {
+                grid-template-columns: 1fr;
+            }
+
+            .license-detailRow:nth-child(odd) {
+                border-right: none;
             }
         }
     </style>
@@ -518,20 +627,6 @@
                             <div class="hero-title" id="customerName">Cargando cliente...</div>
                             <div class="hero-subtitle hidden" id="customerSubtitle"></div>
                         </div>
-                        <div class="hero-actions">
-                            <button class="btn btn-muted" type="button" onclick="goToManageLicenses()">Gestionar licencias</button>
-                            <button class="btn btn-primary" type="button" onclick="goToCreateLicense()">Crear licencia</button>
-                        </div>
-                    </div>
-                    <div class="hero-meta" id="customerMeta"></div>
-                </section>
-
-                <section class="section">
-                    <div class="section-head">
-                        <div>
-                            <div class="section-title">Información del cliente</div>
-                            <div class="section-subtitle">Solo se muestran los datos disponibles</div>
-                        </div>
                     </div>
                     <div class="info-grid" id="customerInfoGrid">
                         <div class="info-row">
@@ -547,7 +642,6 @@
                             <div class="section-title">Licencias</div>
                             <div class="section-subtitle" id="licensesSubtitle">Cargando licencias...</div>
                         </div>
-                        <button class="btn btn-primary" type="button" onclick="goToCreateLicense()">Nueva licencia</button>
                     </div>
                     <div class="license-list" id="licensesList">
                         <div class="empty-state">Cargando licencias...</div>
@@ -556,6 +650,8 @@
             </section>
         </main>
     </div>
+
+    <button class="jr-fab" type="button" onclick="goToCreateLicense()" aria-label="Agregar licencia">+</button>
 
     <script>
         const API_URL = (() => {
@@ -570,6 +666,8 @@
         let customerId = '';
         let lastCustomer = null;
         let lastLicenses = [];
+        let expandedLicenseId = '';
+        const licenseDetailCache = new Map();
 
         window.addEventListener('load', async () => {
             if (!sessionId) {
@@ -635,6 +733,9 @@
                 lastLicenses = (licensesRes.ok && licensesData.ok && Array.isArray(licensesData.licenses))
                     ? licensesData.licenses
                     : [];
+                if (expandedLicenseId && !lastLicenses.some((license) => String(license?.id || '') === expandedLicenseId)) {
+                    expandedLicenseId = '';
+                }
 
                 renderCustomer();
                 renderLicenses();
@@ -649,7 +750,6 @@
             const businessName = String(customer?.nombre_negocio || '').trim();
             const titleEl = document.getElementById('customerName');
             const subtitleEl = document.getElementById('customerSubtitle');
-            const metaEl = document.getElementById('customerMeta');
             const gridEl = document.getElementById('customerInfoGrid');
             const summaryEl = document.getElementById('customerLicenseSummary');
             const licenseSummary = getCustomerLicenseSummary();
@@ -666,14 +766,6 @@
 
             summaryEl.textContent = licenseSummary.label;
             summaryEl.className = `status-chip ${licenseSummary.className}`;
-
-            const meta = [
-                customer?.contacto_telefono ? `Tel: ${customer.contacto_telefono}` : '',
-                customer?.contacto_email ? `Email: ${customer.contacto_email}` : '',
-                customer?.business_id ? `Business ID: ${customer.business_id}` : ''
-            ].filter(Boolean);
-
-            metaEl.innerHTML = meta.map((item) => `<span class="hero-metaChip">${escapeHtml(item)}</span>`).join('');
 
             const infoRows = [
                 { label: 'Nombre del cliente', value: displayName },
@@ -728,18 +820,94 @@
                 return `
                     <div class="license-item">
                         <div class="license-main">
-                            <div class="license-lineTop">
-                                <span class="license-title">${escapeHtml(topMeta || 'Licencia')}</span>
-                                <span class="status-chip ${state.className}">${escapeHtml(state.label)}</span>
-                            </div>
-                            <div class="license-lineBottom">
-                                ${bottomMeta.map((item) => `<span class="license-meta">${escapeHtml(item)}</span>`).join('')}
-                            </div>
+                            <button class="license-mainBtn" type="button" onclick="toggleLicenseDetail('${escapeAttr(id)}')" aria-label="Ver detalle de licencia">
+                                <div class="license-lineTop">
+                                    <span class="license-title">${escapeHtml(topMeta || 'Licencia')}</span>
+                                    <span class="status-chip ${state.className}">${escapeHtml(state.label)}</span>
+                                </div>
+                                <div class="license-lineBottom">
+                                    ${bottomMeta.map((item) => `<span class="license-meta">${escapeHtml(item)}</span>`).join('')}
+                                </div>
+                            </button>
                         </div>
-                        <button class="license-menuBtn" type="button" onclick="openLicenseActionsDialog('${escapeAttr(license.id || '')}')" aria-label="Opciones de licencia">&#8942;</button>
+                        <button class="license-menuBtn" type="button" onclick="openLicenseActionsDialog('${escapeAttr(id)}')" aria-label="Opciones de licencia">&#8942;</button>
+                        ${expandedLicenseId === id ? renderLicenseDetailPanel(id) : ''}
                     </div>
                 `;
             }).join('');
+        }
+
+        function renderLicenseDetailPanel(licenseId) {
+            const id = String(licenseId || '').trim();
+            const detail = licenseDetailCache.get(id);
+            if (!detail) {
+                return `
+                    <div class="license-detailPanel">
+                        <div class="license-detailHead">Cargando detalle de licencia...</div>
+                    </div>
+                `;
+            }
+
+            const rows = [
+                { label: 'ID de licencia', value: detail?.id },
+                { label: 'Estado', value: getLicenseState(detail).label },
+                { label: 'Proyecto', value: detail?.project_name || detail?.project_code },
+                { label: 'Tipo', value: detail?.tipo ? String(detail.tipo).toUpperCase() : '' },
+                { label: 'Clave', value: detail?.license_key },
+                { label: 'Días de validez', value: detail?.dias_validez },
+                { label: 'Máx. dispositivos', value: detail?.max_dispositivos },
+                { label: 'Inicio', value: formatDate(detail?.fecha_inicio) },
+                { label: 'Fin', value: formatDate(detail?.fecha_fin) },
+                { label: 'Notas', value: detail?.notas },
+                { label: 'Creada', value: formatDate(detail?.created_at) }
+            ].filter((row) => row.value || row.value === 0);
+
+            return `
+                <div class="license-detailPanel">
+                    <div class="license-detailHead">Detalle de licencia</div>
+                    <div class="license-detailGrid">
+                        ${rows.map((row) => `
+                            <div class="license-detailRow">
+                                <div class="license-detailLabel">${escapeHtml(row.label)}</div>
+                                <div class="license-detailValue">${escapeHtml(row.value)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="license-detailActions">
+                        <button class="license-detailBtn" type="button" onclick="goToEditLicense('${escapeAttr(id)}')">Editar</button>
+                        <button class="license-detailBtn" type="button" onclick="goToManageLicenses()">Ver en licencias</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function toggleLicenseDetail(licenseId) {
+            const id = String(licenseId || '').trim();
+            if (!id) return;
+
+            if (expandedLicenseId === id) {
+                expandedLicenseId = '';
+                renderLicenses();
+                return;
+            }
+
+            expandedLicenseId = id;
+            renderLicenses();
+
+            if (licenseDetailCache.has(id)) return;
+
+            try {
+                const response = await apiFetch(`/api/admin/licenses/${encodeURIComponent(id)}`);
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.ok || !data.license) {
+                    showMessage('err', data?.message || 'No se pudo cargar el detalle de la licencia.');
+                    return;
+                }
+                licenseDetailCache.set(id, data.license);
+                if (expandedLicenseId === id) renderLicenses();
+            } catch (error) {
+                showMessage('err', 'No se pudo cargar el detalle de la licencia.');
+            }
         }
 
         function getDisplayName(customer) {
@@ -799,10 +967,6 @@
                 title: title || 'Opciones del cliente',
                 subtitle: businessId ? `Business ID: ${businessId}` : 'Sin Business ID',
                 actions: [
-                    {
-                        label: 'Crear licencia',
-                        onClick: () => goToCreateLicense()
-                    },
                     {
                         label: 'Gestionar licencias',
                         onClick: () => goToManageLicenses()
