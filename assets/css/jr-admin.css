@@ -112,13 +112,13 @@
 
 /* Buttons */
 .jr-admin .btn-primary,
-.jr-admin button:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.logout-btn) {
+.jr-admin button[type='submit']:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.logout-btn) {
   background: var(--jr-grad-brand) !important;
   color: #fff !important;
 }
 
 .jr-admin .btn-primary:hover:not(:disabled),
-.jr-admin button:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.logout-btn):hover:not(:disabled) {
+.jr-admin button[type='submit']:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.logout-btn):hover:not(:disabled) {
   box-shadow: 0 14px 40px rgba(2, 6, 23, 0.28) !important;
 }
 

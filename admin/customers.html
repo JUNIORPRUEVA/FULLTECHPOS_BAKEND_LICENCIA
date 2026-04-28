@@ -936,12 +936,13 @@
 
         .customer-mainBtn {
             border: none;
-            background: transparent;
+            background: #ffffff;
             text-align: left;
             padding: 7px 6px;
             border-radius: 10px;
             cursor: pointer;
             min-width: 0;
+            border: 1px solid rgba(226, 232, 240, 0.96);
         }
 
         .customer-mainBtn:hover {
@@ -1670,10 +1671,6 @@
         }
 
         function goBack() {
-            if (window.history.length > 1) {
-                window.history.back();
-                return;
-            }
             window.location.href = '/admin/admin-hub.html';
         }
 
