@@ -360,6 +360,7 @@
             padding: 10px 14px;
             border-bottom: 1px solid rgba(226, 232, 240, 0.76);
             align-items: center;
+            position: relative;
         }
 
         .license-item:last-child {
@@ -382,6 +383,77 @@
         .license-mainBtn:hover .license-title,
         .license-mainBtn:hover .license-meta {
             color: #1D4ED8;
+        }
+
+        .license-actions {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slim-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            width: 180px;
+            display: none;
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.96);
+            background: #ffffff;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+            z-index: 30;
+        }
+
+        .slim-menu.is-open {
+            display: block;
+        }
+
+        .slim-menuMeta {
+            padding: 7px 9px 8px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.96);
+            margin-bottom: 4px;
+            color: #64748B;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+
+        .slim-menuMeta strong {
+            display: block;
+            color: #0F172A;
+            font-size: 0.74rem;
+            margin-bottom: 2px;
+        }
+
+        .slim-menuItem,
+        .slim-menuItemDanger {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: #0F172A;
+            text-align: left;
+            padding: 8px 9px;
+            border-radius: 9px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            line-height: 1.25;
+            cursor: pointer;
+        }
+
+        .slim-menuItem:hover,
+        .slim-menuItemDanger:hover {
+            background: #F8FAFC;
+        }
+
+        .slim-menuItemDanger {
+            color: #B91C1C;
+        }
+
+        .slim-menuItem:disabled {
+            opacity: 0.46;
+            cursor: not-allowed;
         }
 
         .license-lineTop,
@@ -409,88 +481,6 @@
             font-size: 0.75rem;
             font-weight: 800;
             color: #64748B;
-        }
-
-        .license-detailPanel {
-            grid-column: 1 / -1;
-            margin-top: 2px;
-            margin-left: 2px;
-            margin-right: 2px;
-            margin-bottom: 8px;
-            border: 1px solid rgba(226, 232, 240, 0.84);
-            border-radius: 12px;
-            background: #F8FAFC;
-            overflow: hidden;
-        }
-
-        .license-detailHead {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.84);
-            font-size: 0.76rem;
-            font-weight: 900;
-            color: #0F172A;
-            background: #FFFFFF;
-        }
-
-        .license-detailGrid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .license-detailRow {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.76);
-            min-width: 0;
-        }
-
-        .license-detailRow:nth-child(odd) {
-            border-right: 1px solid rgba(226, 232, 240, 0.76);
-        }
-
-        .license-detailRow:last-child,
-        .license-detailRow:nth-last-child(2):nth-child(odd) {
-            border-bottom: none;
-        }
-
-        .license-detailLabel {
-            font-size: 0.68rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #64748B;
-            margin-bottom: 4px;
-        }
-
-        .license-detailValue {
-            font-size: 0.82rem;
-            font-weight: 800;
-            color: #0F172A;
-            word-break: break-word;
-            line-height: 1.4;
-        }
-
-        .license-detailActions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            padding: 10px 12px;
-            border-top: 1px solid rgba(226, 232, 240, 0.84);
-            background: #FFFFFF;
-        }
-
-        .license-detailBtn {
-            border: 1px solid rgba(203, 213, 225, 0.96);
-            background: #FFFFFF;
-            color: #0F172A;
-            border-radius: 10px;
-            padding: 7px 10px;
-            font-size: 0.76rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .license-detailBtn:hover {
-            background: #F8FAFC;
         }
 
         .jr-fab {
@@ -573,12 +563,8 @@
                 padding: 10px 12px;
             }
 
-            .license-detailGrid {
-                grid-template-columns: 1fr;
-            }
-
-            .license-detailRow:nth-child(odd) {
-                border-right: none;
+            .slim-menu {
+                width: 168px;
             }
         }
     </style>
@@ -666,9 +652,6 @@
         let customerId = '';
         let lastCustomer = null;
         let lastLicenses = [];
-        let expandedLicenseId = '';
-        const licenseDetailCache = new Map();
-
         window.addEventListener('load', async () => {
             if (!sessionId) {
                 window.location.href = '/admin/login.html';
@@ -687,6 +670,11 @@
                 window.location.href = '/admin/customers.html';
                 return;
             }
+
+            document.addEventListener('click', () => closeInlineMenus());
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeInlineMenus();
+            });
 
             await verifySession();
             await loadCustomerView();
@@ -733,9 +721,6 @@
                 lastLicenses = (licensesRes.ok && licensesData.ok && Array.isArray(licensesData.licenses))
                     ? licensesData.licenses
                     : [];
-                if (expandedLicenseId && !lastLicenses.some((license) => String(license?.id || '') === expandedLicenseId)) {
-                    expandedLicenseId = '';
-                }
 
                 renderCustomer();
                 renderLicenses();
@@ -806,6 +791,7 @@
 
             listEl.innerHTML = lastLicenses.map((license) => {
                 const id = String(license?.id || '').trim();
+                const menuId = `license-inline-menu-${id}`;
                 const state = getLicenseState(license);
                 const topMeta = [
                     license?.project_code ? `Proyecto: ${license.project_code}` : '',
@@ -821,7 +807,7 @@
                 return `
                     <div class="license-item">
                         <div class="license-main">
-                            <button class="license-mainBtn" type="button" onclick="toggleLicenseDetail('${escapeAttr(id)}')" aria-label="Ver detalle de licencia">
+                            <button class="license-mainBtn" type="button" onclick="goToLicenseDetail('${escapeAttr(id)}')" aria-label="Ver detalle de licencia">
                                 <div class="license-lineTop">
                                     <span class="license-title">${escapeHtml(topMeta || 'Licencia')}</span>
                                     <span class="status-chip ${state.className}">${escapeHtml(state.label)}</span>
@@ -831,84 +817,45 @@
                                 </div>
                             </button>
                         </div>
-                        <button class="license-menuBtn" type="button" onclick="openLicenseActionsDialog('${escapeAttr(id)}')" aria-label="Opciones de licencia">&#8942;</button>
-                        ${expandedLicenseId === id ? renderLicenseDetailPanel(id) : ''}
+                        <div class="license-actions">
+                            <button class="license-menuBtn" type="button" onclick="toggleInlineMenu(event, '${escapeAttr(menuId)}')" aria-label="Opciones de licencia">&#8942;</button>
+                            <div id="${escapeHtml(menuId)}" class="slim-menu" onclick="event.stopPropagation()">
+                                <div class="slim-menuMeta">
+                                    <strong>${escapeHtml(topMeta || 'Licencia')}</strong>
+                                    ${escapeHtml(state.label)}
+                                </div>
+                                <button class="slim-menuItem" type="button" onclick="goToLicenseDetail('${escapeAttr(id)}')">Ver licencia</button>
+                                <button class="slim-menuItem" type="button" onclick="goToEditLicense('${escapeAttr(id)}')">Editar licencia</button>
+                                <button class="slim-menuItem" type="button" onclick="goToManageLicenses()">Ver en licencias</button>
+                                ${(state.className === 'inactive' || state.className === 'warn')
+                                    ? `<button class="slim-menuItem" type="button" onclick="activarManualLicense('${escapeAttr(id)}')">Activar manualmente</button>`
+                                    : ''}
+                                ${state.label === 'Bloqueada'
+                                    ? `<button class="slim-menuItem" type="button" onclick="desbloquearLicense('${escapeAttr(id)}')">Desbloquear</button>`
+                                    : `<button class="slim-menuItem" type="button" onclick="bloquearLicense('${escapeAttr(id)}')">Bloquear</button>`}
+                                <button class="slim-menuItemDanger" type="button" onclick="deleteLicense('${escapeAttr(id)}')">Eliminar licencia</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function renderLicenseDetailPanel(licenseId) {
-            const id = String(licenseId || '').trim();
-            const detail = licenseDetailCache.get(id);
-            if (!detail) {
-                return `
-                    <div class="license-detailPanel">
-                        <div class="license-detailHead">Cargando detalle de licencia...</div>
-                    </div>
-                `;
-            }
-
-            const rows = [
-                { label: 'ID de licencia', value: detail?.id },
-                { label: 'Estado', value: getLicenseState(detail).label },
-                { label: 'Proyecto', value: detail?.project_name || detail?.project_code },
-                { label: 'Tipo', value: detail?.tipo ? String(detail.tipo).toUpperCase() : '' },
-                { label: 'Clave', value: detail?.license_key },
-                { label: 'Días de validez', value: detail?.dias_validez },
-                { label: 'Máx. dispositivos', value: detail?.max_dispositivos },
-                { label: 'Inicio', value: formatDate(detail?.fecha_inicio) },
-                { label: 'Fin', value: formatDate(detail?.fecha_fin) },
-                { label: 'Notas', value: detail?.notas },
-                { label: 'Creada', value: formatDate(detail?.created_at) }
-            ].filter((row) => row.value || row.value === 0);
-
-            return `
-                <div class="license-detailPanel">
-                    <div class="license-detailHead">Detalle de licencia</div>
-                    <div class="license-detailGrid">
-                        ${rows.map((row) => `
-                            <div class="license-detailRow">
-                                <div class="license-detailLabel">${escapeHtml(row.label)}</div>
-                                <div class="license-detailValue">${escapeHtml(row.value)}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="license-detailActions">
-                        <button class="license-detailBtn" type="button" onclick="goToEditLicense('${escapeAttr(id)}')">Editar</button>
-                        <button class="license-detailBtn" type="button" onclick="goToManageLicenses()">Ver en licencias</button>
-                    </div>
-                </div>
-            `;
+        function closeInlineMenus(exceptId) {
+            document.querySelectorAll('.slim-menu.is-open').forEach((menu) => {
+                if (!exceptId || menu.id !== exceptId) menu.classList.remove('is-open');
+            });
         }
 
-        async function toggleLicenseDetail(licenseId) {
-            const id = String(licenseId || '').trim();
+        function toggleInlineMenu(event, menuId) {
+            if (event) event.stopPropagation();
+            const id = String(menuId || '').trim();
             if (!id) return;
-
-            if (expandedLicenseId === id) {
-                expandedLicenseId = '';
-                renderLicenses();
-                return;
-            }
-
-            expandedLicenseId = id;
-            renderLicenses();
-
-            if (licenseDetailCache.has(id)) return;
-
-            try {
-                const response = await apiFetch(`/api/admin/licenses/${encodeURIComponent(id)}`);
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok || !data.ok || !data.license) {
-                    showMessage('err', data?.message || 'No se pudo cargar el detalle de la licencia.');
-                    return;
-                }
-                licenseDetailCache.set(id, data.license);
-                if (expandedLicenseId === id) renderLicenses();
-            } catch (error) {
-                showMessage('err', 'No se pudo cargar el detalle de la licencia.');
-            }
+            const menu = document.getElementById(id);
+            if (!menu) return;
+            const willOpen = !menu.classList.contains('is-open');
+            closeInlineMenus();
+            if (willOpen) menu.classList.add('is-open');
         }
 
         function getDisplayName(customer) {
@@ -991,50 +938,10 @@
             });
         }
 
-        function openLicenseActionsDialog(licenseId) {
+        function goToLicenseDetail(licenseId) {
             const id = String(licenseId || '').trim();
             if (!id) return;
-
-            const license = lastLicenses.find((item) => String(item?.id || '').trim() === id);
-            if (!license) return;
-
-            const state = getLicenseState(license);
-            if (!window.JrAdminActionsDialog || typeof window.JrAdminActionsDialog.open !== 'function') return;
-
-            window.JrAdminActionsDialog.open({
-                title: license?.project_code ? `Licencia ${license.project_code}` : 'Licencia',
-                subtitle: license?.license_key ? shortKey(license.license_key) : 'Sin key',
-                actions: [
-                    {
-                        label: 'Editar licencia',
-                        onClick: () => goToEditLicense(id)
-                    },
-                    {
-                        label: 'Ver en licencias',
-                        onClick: () => goToManageLicenses()
-                    },
-                    ((state.className === 'inactive' || state.className === 'warn')
-                        ? {
-                            label: 'Activar manualmente',
-                            onClick: () => activarManualLicense(id)
-                        }
-                        : null),
-                    (state.label === 'Bloqueada'
-                        ? {
-                            label: 'Desbloquear',
-                            onClick: () => desbloquearLicense(id)
-                        }
-                        : {
-                            label: 'Bloquear',
-                            onClick: () => bloquearLicense(id)
-                        }),
-                    {
-                        label: 'Eliminar licencia',
-                        kind: 'danger',
-                        onClick: () => deleteLicense(id)
-                    }
-                ].filter(Boolean)
-            });
+            window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(customerId)}&detail_license_id=${encodeURIComponent(id)}`;
         }
 
         function goToCreateLicense() {

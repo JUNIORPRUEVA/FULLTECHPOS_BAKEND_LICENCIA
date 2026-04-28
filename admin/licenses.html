@@ -1390,7 +1390,9 @@
         let deepLinkCustomerId = null;
         let deepLinkAction = null;
         let deepLinkEditLicenseId = null;
+        let deepLinkDetailLicenseId = null;
         let deepLinkEditApplied = false;
+        let deepLinkDetailApplied = false;
         let deepLinkAppliedToList = false;
         let lastLicenses = [];
         let lastLicensesTotal = 0;
@@ -1407,6 +1409,7 @@
             deepLinkCustomerId = urlParams.get('customer_id');
             deepLinkAction = urlParams.get('action');
             deepLinkEditLicenseId = urlParams.get('edit_license_id');
+            deepLinkDetailLicenseId = urlParams.get('detail_license_id');
             const urlSessionId = urlParams.get('sessionId');
             if (urlSessionId) {
                 sessionId = urlSessionId;
@@ -1429,6 +1432,14 @@
                 if (exists) {
                     deepLinkEditApplied = true;
                     openEditModal(String(deepLinkEditLicenseId));
+                }
+            }
+
+            if (deepLinkDetailLicenseId && !deepLinkDetailApplied) {
+                const exists = (lastLicenses || []).some((license) => String(license?.id || '') === String(deepLinkDetailLicenseId));
+                if (exists) {
+                    deepLinkDetailApplied = true;
+                    openDetailModal(String(deepLinkDetailLicenseId));
                 }
             }
         });
@@ -1931,6 +1942,14 @@
                     if (exists) {
                         deepLinkEditApplied = true;
                         openEditModal(String(deepLinkEditLicenseId));
+                    }
+                }
+
+                if (deepLinkDetailLicenseId && !deepLinkDetailApplied) {
+                    const exists = lastLicenses.some((license) => String(license?.id || '') === String(deepLinkDetailLicenseId));
+                    if (exists) {
+                        deepLinkDetailApplied = true;
+                        openDetailModal(String(deepLinkDetailLicenseId));
                     }
                 }
             } catch (error) {
