@@ -805,6 +805,7 @@
             }
 
             listEl.innerHTML = lastLicenses.map((license) => {
+                const id = String(license?.id || '').trim();
                 const state = getLicenseState(license);
                 const topMeta = [
                     license?.project_code ? `Proyecto: ${license.project_code}` : '',
