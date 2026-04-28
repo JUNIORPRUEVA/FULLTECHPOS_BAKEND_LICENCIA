@@ -1,22 +1,26 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = 'v21';
+const CACHE_VERSION = 'v22';
 const STATIC_CACHE = `fulltech-pos-static-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/home.html',
+  '/fullpos.html',
   '/products.html',
   '/product.html',
   '/offline.html',
   '/manifest.webmanifest',
   '/assets/css/styles.css',
   '/assets/css/jr.css',
+  '/assets/css/admin-compact-bar.css',
   '/assets/css/jr-admin.css',
+  '/assets/js/adminCompactBar.js',
   '/assets/js/pwa.js',
   '/assets/js/storePublic.js',
   '/assets/img/logo/logoprincipal.png',
+  '/assets/img/pwa/icon-180.png',
   '/assets/img/pwa/icon-192.png',
   '/assets/img/pwa/icon-512.png',
   '/assets/img/pwa/icon-maskable-192.png',
@@ -39,6 +43,7 @@ function isFreshAsset(requestUrl) {
     return /\.(?:css|js|html|webmanifest|png|svg|jpg|jpeg|webp)$/i.test(url.pathname) ||
       url.pathname === '/' ||
       url.pathname === '/home.html' ||
+      url.pathname === '/fullpos.html' ||
       url.pathname === '/products.html' ||
       url.pathname === '/product.html';
   } catch (_) {

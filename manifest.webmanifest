@@ -1,16 +1,25 @@
 {
-  "id": "/home.html",
+  "id": "/",
   "name": "Appyra",
   "short_name": "Appyra",
   "description": "Appyra: software, IA y productos digitales para negocios.",
-  "start_url": "/home.html",
+  "start_url": "/",
   "scope": "/",
+  "lang": "es",
+  "dir": "ltr",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "display": "standalone",
-  "background_color": "#020617",
+  "background_color": "#ffffff",
   "theme_color": "#020617",
   "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "shopping"],
+  "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "/assets/img/pwa/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "/assets/img/pwa/icon-192.png",
       "sizes": "192x192",
@@ -32,6 +41,41 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Inicio",
+      "short_name": "Inicio",
+      "url": "/home.html",
+      "icons": [
+        {
+          "src": "/assets/img/pwa/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "short_name": "Productos",
+      "url": "/products.html",
+      "icons": [
+        {
+          "src": "/assets/img/pwa/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "FULLTECH POS",
+      "short_name": "POS",
+      "url": "/fullpos.html",
+      "icons": [
+        {
+          "src": "/assets/img/pwa/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

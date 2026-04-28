@@ -738,16 +738,16 @@
             flex: 1 1 auto;
             min-width: 0;
             display: grid;
-            gap: 6px;
+            gap: 4px;
             white-space: normal;
             overflow: visible;
         }
 
         .license-mainRow {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
         }
 
         .license-heading {
@@ -760,49 +760,47 @@
             max-width: none;
             font-size: 0.98rem;
             line-height: 1.2;
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-        }
-
-        .license-subtitle {
-            font-size: 0.8rem;
-            color: #64748b;
-            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .license-meta {
-            flex: none;
+            min-width: 0;
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            font-size: 0.78rem;
-            color: #475569;
-            overflow: visible;
-            text-overflow: unset;
-        }
-
-        .license-chip {
-            display: inline-flex;
             align-items: center;
             gap: 6px;
-            min-height: 28px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid #dbe4f0;
-            background: #f8fafc;
+            font-size: 0.76rem;
+            color: #475569;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .license-metaText,
+        .license-metaKey {
             font-weight: 800;
         }
 
-        .license-chip.key {
+        .license-metaKey {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            color: #0f172a;
+        }
+
+        .license-dot {
+            flex: 0 0 auto;
+            width: 3px;
+            height: 3px;
+            border-radius: 999px;
+            background: #cbd5e1;
         }
 
         .license-actions {
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
+            align-items: center;
+            gap: 8px;
             position: relative;
+            flex: 0 0 auto;
         }
 
         .icon-btn {
@@ -835,6 +833,7 @@
             font-size: 0.76rem;
             letter-spacing: 0.04em;
             text-transform: uppercase;
+            flex: 0 0 auto;
         }
 
         .status-pill.ok {
@@ -1181,22 +1180,32 @@
             }
 
             .license-line {
-                flex-direction: column;
+                align-items: center;
             }
 
             .license-mainRow {
-                flex-direction: column;
+                align-items: center;
             }
 
             .license-actions {
-                width: 100%;
-                justify-content: space-between;
+                width: auto;
+                justify-content: flex-start;
                 align-items: center;
             }
 
             .icon-btn {
                 width: 42px;
                 height: 42px;
+            }
+
+            .license-meta {
+                font-size: 0.72rem;
+            }
+
+            .status-pill {
+                min-height: 28px;
+                padding: 5px 9px;
+                font-size: 0.68rem;
             }
 
             .license-detailHeroTop,
@@ -1723,7 +1732,7 @@
                 const estado = getEffectiveLicenseStatus(license);
                 const fechaFin = license?.fecha_fin ? new Date(license.fecha_fin).toLocaleDateString('es-ES') : '—';
                 const keyShort = shortKey(license?.license_key);
-                const projectText = `${project} · ${icon} ${tipo || '—'}`;
+                const projectText = `${project} ${icon} ${tipo || '—'}`;
                 const bidText = biz ? `BID ${biz}` : 'Sin BID';
                 const dateText = fechaFin !== '—' ? `Vence ${fechaFin}` : 'Sin fecha';
 
@@ -1734,14 +1743,17 @@
                                 <div class="license-mainRow">
                                     <div class="license-heading">
                                         <div class="license-title">${esc(cliente)}</div>
-                                        <div class="license-subtitle">${esc(projectText)}</div>
                                     </div>
                                     ${statusPill(estado)}
                                 </div>
                                 <div class="license-meta">
-                                    <span class="license-chip">${esc(bidText)}</span>
-                                    <span class="license-chip">${esc(dateText)}</span>
-                                    <span class="license-chip key">Key ${esc(keyShort)}</span>
+                                    <span class="license-metaText">${esc(projectText)}</span>
+                                    <span class="license-dot" aria-hidden="true"></span>
+                                    <span class="license-metaText">${esc(bidText)}</span>
+                                    <span class="license-dot" aria-hidden="true"></span>
+                                    <span class="license-metaText">${esc(dateText)}</span>
+                                    <span class="license-dot" aria-hidden="true"></span>
+                                    <span class="license-metaKey">Key ${esc(keyShort)}</span>
                                 </div>
                             </div>
                             <div class="license-actions" onclick="event.stopPropagation();">
