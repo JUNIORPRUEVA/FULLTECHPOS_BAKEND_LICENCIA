@@ -9,8 +9,8 @@
 .jr-adminDrawerOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.7);
-  backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(6px);
   z-index: var(--jr-drawer-z);
   opacity: 0;
   pointer-events: none;
@@ -23,16 +23,13 @@
   left: 0;
   bottom: 0;
   width: min(var(--jr-drawer-w), 92vw);
-  background:
-    radial-gradient(620px 320px at 0% 0%, rgba(59, 130, 246, 0.18), transparent 56%),
-    radial-gradient(520px 280px at 100% 0%, rgba(147, 51, 234, 0.16), transparent 52%),
-    var(--jr-grad-brand-vert);
-  color: #fff;
+  background: #ffffff;
+  color: #0f172a;
   z-index: calc(var(--jr-drawer-z) + 1);
   transform: translateX(-102%);
   transition: transform 0.22s ease;
-  box-shadow: 18px 0 44px rgba(2, 6, 23, 0.34);
-  border-right: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 14px 0 30px rgba(15, 23, 42, 0.08);
+  border-right: 1px solid rgba(226, 232, 240, 0.96);
   display: grid;
   grid-template-rows: auto 1fr auto;
 }
@@ -47,22 +44,22 @@ body.jr-admin-drawer-open .jr-adminDrawerOverlay {
 }
 
 .jr-adminDrawerHeader {
-  padding: 18px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.96);
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .jr-adminDrawerHeader img {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   object-fit: contain;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.96);
   padding: 6px;
-  box-shadow: 0 18px 34px rgba(2, 6, 23, 0.26);
+  box-shadow: none;
 }
 
 .jr-adminDrawerTitle {
@@ -81,12 +78,13 @@ body.jr-admin-drawer-open .jr-adminDrawerOverlay {
 
 .jr-adminDrawerTitle span {
   font-size: 0.85rem;
-  opacity: 0.92;
+  opacity: 1;
   font-weight: 700;
+  color: #64748b;
 }
 
 .jr-adminDrawerNav {
-  padding: 10px;
+  padding: 8px;
   overflow: auto;
 }
 
@@ -94,55 +92,56 @@ body.jr-admin-drawer-open .jr-adminDrawerOverlay {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 12px;
-  color: rgba(255, 255, 255, 0.92);
+  padding: 11px 12px;
+  color: #334155;
   text-decoration: none;
-  border-radius: 14px;
+  border-radius: 12px;
   font-weight: 800;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0);
   transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
 }
 
 .jr-adminDrawerNav a:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.08);
-  transform: translateX(2px);
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  transform: none;
 }
 
 .jr-adminDrawerNav a[aria-current="page"] {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(147, 51, 234, 0.16) 100%);
-  border-color: rgba(6, 182, 212, 0.22);
-  outline: 2px solid rgba(6, 182, 212, 0.18);
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  outline: none;
+  color: #1d4ed8;
 }
 
 .jr-adminDrawerFooter {
   padding: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(226, 232, 240, 0.96);
 }
 
 .jr-adminDrawerFooter .jr-adminDrawerClose {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  border-radius: 16px;
-  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 12px;
+  padding: 9px 12px;
   font-weight: 900;
   cursor: pointer;
 }
 
 .jr-adminDrawerFooter .jr-adminDrawerClose:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 /* Hamburger button (opt-in, doesn't break existing layouts) */
 .jr-adminDrawerBtn {
   display: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 12px;
   padding: 8px 10px;
   font-weight: 900;
   cursor: pointer;

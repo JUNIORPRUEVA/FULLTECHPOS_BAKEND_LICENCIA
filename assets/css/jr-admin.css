@@ -205,59 +205,50 @@
   }
 }
 
-/* Appyra premium overrides */
+/* Appyra clean admin overrides */
 
 :root {
-  --jr-blue: #3B82F6;
-  --jr-blue-dark: #020617;
-  --jr-cyan: #06B6D4;
+  --jr-blue: #2563EB;
+  --jr-blue-dark: #1D4ED8;
+  --jr-cyan: #0891B2;
   --jr-green-dark: #0F172A;
-  --jr-green: #9333EA;
-  --jr-admin-bg: #020617;
-  --jr-admin-card: rgba(15, 23, 42, 0.78);
-  --jr-admin-text: #E2E8F0;
-  --jr-admin-muted: #94A3B8;
-  --jr-admin-border: rgba(148, 163, 184, 0.16);
-  --jr-grad-brand: linear-gradient(135deg, #020617 0%, #0F172A 28%, #102A43 54%, #0B1F4D 76%, #020617 100%);
-  --jr-grad-brand-vert: linear-gradient(180deg, #020617 0%, #0F172A 26%, #102A43 62%, #020617 100%);
+  --jr-green: #0F766E;
+  --jr-admin-bg: #FFFFFF;
+  --jr-admin-card: #FFFFFF;
+  --jr-admin-text: #0F172A;
+  --jr-admin-muted: #64748B;
+  --jr-admin-border: rgba(148, 163, 184, 0.28);
+  --jr-grad-brand: linear-gradient(135deg, #1D4ED8 0%, #2563EB 48%, #0891B2 100%);
+  --jr-grad-brand-vert: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
 }
 
-body.jr-admin {
+body.jr-admin,
+body.jr-admin.admin-compact-page,
+.jr-admin {
   font-family: 'Inter', 'Segoe UI', sans-serif !important;
-  background:
-    radial-gradient(900px 520px at 0% 0%, rgba(59, 130, 246, 0.18), transparent 56%),
-    radial-gradient(820px 460px at 100% 0%, rgba(147, 51, 234, 0.16), transparent 54%),
-    radial-gradient(720px 420px at 50% 100%, rgba(6, 182, 212, 0.12), transparent 50%),
-    #020617 !important;
+  background: #FFFFFF !important;
   color: var(--jr-admin-text) !important;
 }
 
 body.jr-admin::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(circle at center, black 24%, transparent 84%);
-  opacity: 0.12;
+  content: none !important;
 }
 
 .jr-admin,
 .jr-admin * {
-  scrollbar-color: rgba(59, 130, 246, 0.35) rgba(15, 23, 42, 0.45);
+  scrollbar-color: rgba(148, 163, 184, 0.65) rgba(241, 245, 249, 0.9);
 }
 
 .jr-admin .navbar,
 .jr-admin .top-navbar,
-.jr-admin .topbar {
-  background: rgba(2, 6, 23, 0.72) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14) !important;
-  box-shadow: 0 18px 44px rgba(2, 6, 23, 0.24) !important;
+.jr-admin .topbar,
+.jr-admin .admin-compactBar {
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #0F172A !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.96) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05) !important;
 }
 
 .jr-admin .navbar,
@@ -273,8 +264,18 @@ body.jr-admin::before {
 .jr-admin .content-area,
 .jr-admin .container,
 .jr-admin .admin-layout,
-.jr-admin .main-layout {
-  background: transparent !important;
+.jr-admin .main-layout,
+.jr-admin .page {
+  background: #FFFFFF !important;
+}
+
+.jr-admin .content,
+.jr-admin .container,
+.jr-admin .page,
+.jr-admin .content-area {
+  width: min(980px, calc(100% - 24px)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 .jr-admin .section,
@@ -294,11 +295,14 @@ body.jr-admin::before {
 .jr-admin .list-controls,
 .jr-admin .toolbar,
 .jr-admin .actions,
-.jr-admin .welcome-box {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.66) 100%) !important;
-  border: 1px solid rgba(148, 163, 184, 0.14) !important;
-  box-shadow: 0 26px 70px rgba(2, 6, 23, 0.26) !important;
-  backdrop-filter: blur(20px) !important;
+.jr-admin .welcome-box,
+.jr-admin .surface,
+.jr-admin .report-card,
+.jr-admin .linkRow {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(226, 232, 240, 0.96) !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04) !important;
+  backdrop-filter: none !important;
 }
 
 .jr-admin .section,
@@ -306,27 +310,31 @@ body.jr-admin::before {
 .jr-admin .login-container,
 .jr-admin .modal-card,
 .jr-admin .card,
-.jr-admin .quick-link-card {
-  border-radius: 24px !important;
+.jr-admin .quick-link-card,
+.jr-admin .surface,
+.jr-admin .report-card {
+  border-radius: 18px !important;
 }
 
 .jr-admin .section,
 .jr-admin .panel,
-.jr-admin .login-container {
-  padding: 28px !important;
+.jr-admin .login-container,
+.jr-admin .surface {
+  padding: 18px !important;
 }
 
 .jr-admin .sidebar,
 .jr-admin .drawer,
 .jr-admin .drawer-content {
-  background: rgba(2, 6, 23, 0.84) !important;
-  backdrop-filter: blur(18px) !important;
-  border-right: 1px solid rgba(148, 163, 184, 0.12) !important;
+  background: #FFFFFF !important;
+  backdrop-filter: none !important;
+  border-right: 1px solid rgba(226, 232, 240, 0.96) !important;
+  box-shadow: 10px 0 26px rgba(15, 23, 42, 0.05) !important;
 }
 
 .jr-admin .sidebar-header,
 .jr-admin .sidebar-footer {
-  border-color: rgba(148, 163, 184, 0.12) !important;
+  border-color: rgba(226, 232, 240, 0.96) !important;
 }
 
 .jr-admin .sidebar h2,
@@ -340,8 +348,9 @@ body.jr-admin::before {
 .jr-admin h3,
 .jr-admin h4,
 .jr-admin label,
-.jr-admin th {
-  color: #FFFFFF !important;
+.jr-admin th,
+.jr-admin .admin-compactBarTitle {
+  color: #0F172A !important;
 }
 
 .jr-admin .section-subtitle,
@@ -360,36 +369,38 @@ body.jr-admin::before {
 .jr-admin .demo-info p,
 .jr-admin p,
 .jr-admin li,
-.jr-admin td {
+.jr-admin td,
+.jr-admin .surfaceText,
+.jr-admin .linkRowText span {
   color: var(--jr-admin-muted) !important;
 }
 
 .jr-admin .jr-admin-brandLogo,
 .jr-admin .sidebar-logo img,
 .jr-admin .login-header img {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.26) !important;
+  background: #F8FAFC !important;
+  border: 1px solid rgba(226, 232, 240, 0.96) !important;
+  box-shadow: none !important;
 }
 
 .jr-admin .sidebar-nav a,
 .jr-admin .drawer-nav a {
-  color: rgba(226, 232, 240, 0.88) !important;
-  border-radius: 14px !important;
-  transition: background 0.22s ease, border-color 0.22s ease, transform 0.22s ease !important;
+  color: #334155 !important;
+  border-radius: 12px !important;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease !important;
 }
 
 .jr-admin .sidebar-nav a:hover,
 .jr-admin .drawer-nav a:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  transform: translateX(2px) !important;
+  background: #F8FAFC !important;
+  transform: none !important;
 }
 
 .jr-admin .sidebar-nav a.active,
 .jr-admin .sidebar-nav a[aria-current='page'] {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(147, 51, 234, 0.14) 100%) !important;
-  border-left-color: rgba(6, 182, 212, 0.94) !important;
-  color: #FFFFFF !important;
+  background: #EFF6FF !important;
+  border-left-color: #2563EB !important;
+  color: #1D4ED8 !important;
 }
 
 .jr-admin input,
@@ -401,29 +412,29 @@ body.jr-admin::before {
 .jr-admin input[type='search'],
 .jr-admin input[type='number'],
 .jr-admin input[type='password'] {
-  min-height: 50px;
-  border-radius: 16px !important;
-  border: 1px solid rgba(148, 163, 184, 0.14) !important;
-  background: rgba(2, 6, 23, 0.54) !important;
-  color: #FFFFFF !important;
+  min-height: 42px;
+  border-radius: 12px !important;
+  border: 1px solid rgba(203, 213, 225, 0.96) !important;
+  background: #FFFFFF !important;
+  color: #0F172A !important;
   box-shadow: none !important;
 }
 
 .jr-admin textarea {
-  min-height: 110px;
+  min-height: 96px;
 }
 
 .jr-admin input::placeholder,
 .jr-admin textarea::placeholder {
-  color: rgba(148, 163, 184, 0.72) !important;
+  color: #94A3B8 !important;
 }
 
 .jr-admin input:focus,
 .jr-admin select:focus,
 .jr-admin textarea:focus {
-  background: rgba(2, 6, 23, 0.76) !important;
-  border-color: rgba(59, 130, 246, 0.48) !important;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14) !important;
+  background: #FFFFFF !important;
+  border-color: rgba(37, 99, 235, 0.46) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
 }
 
 .jr-admin .btn,
@@ -434,27 +445,30 @@ body.jr-admin::before {
 .jr-admin .icon-btn,
 .jr-admin .close-btn,
 .jr-admin .menu-btn,
-.jr-admin .jr-fab {
-  border-radius: 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease !important;
+.jr-admin .jr-fab,
+.jr-admin .linkBtn {
+  min-height: 38px;
+  border-radius: 12px !important;
+  border: 1px solid rgba(203, 213, 225, 0.96) !important;
+  transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
+  box-shadow: none !important;
 }
 
 .jr-admin .btn-primary,
 .jr-admin .btn-save,
-.jr-admin button:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.btn-muted):not(.logout-btn):not(.close-btn):not(.pager-btn):not(.icon-btn):not(.menu-btn),
+.jr-admin button[type='submit']:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.btn-muted):not(.logout-btn):not(.close-btn):not(.pager-btn):not(.icon-btn):not(.menu-btn),
 .jr-admin .jr-fab {
-  background: linear-gradient(135deg, #3B82F6 0%, #06B6D4 48%, #9333EA 100%) !important;
+  background: var(--jr-grad-brand) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 20px 42px rgba(59, 130, 246, 0.24) !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18) !important;
 }
 
 .jr-admin .btn-primary:hover,
 .jr-admin .btn-save:hover,
-.jr-admin button:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.btn-muted):not(.logout-btn):not(.close-btn):not(.pager-btn):not(.icon-btn):not(.menu-btn):hover,
+.jr-admin button[type='submit']:not(.btn-secondary):not(.btn-danger):not(.btn-warning):not(.btn-success):not(.btn-muted):not(.logout-btn):not(.close-btn):not(.pager-btn):not(.icon-btn):not(.menu-btn):hover,
 .jr-admin .jr-fab:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 26px 56px rgba(59, 130, 246, 0.3) !important;
+  transform: none !important;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2) !important;
 }
 
 .jr-admin .btn-secondary,
@@ -463,27 +477,29 @@ body.jr-admin::before {
 .jr-admin .pager-btn,
 .jr-admin .icon-btn,
 .jr-admin .close-btn,
-.jr-admin .menu-btn {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #FFFFFF !important;
+.jr-admin .menu-btn,
+.jr-admin .logout-btn,
+.jr-admin .linkBtn {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
 }
 
 .jr-admin .btn-danger {
-  background: rgba(239, 68, 68, 0.16) !important;
-  color: #FCA5A5 !important;
-  border-color: rgba(239, 68, 68, 0.28) !important;
+  background: #FEF2F2 !important;
+  color: #B91C1C !important;
+  border-color: #FECACA !important;
 }
 
 .jr-admin .btn-warning {
-  background: rgba(245, 158, 11, 0.16) !important;
-  color: #FCD34D !important;
-  border-color: rgba(245, 158, 11, 0.28) !important;
+  background: #FFFBEB !important;
+  color: #A16207 !important;
+  border-color: #FDE68A !important;
 }
 
 .jr-admin .btn-success {
-  background: rgba(34, 197, 94, 0.16) !important;
-  color: #86EFAC !important;
-  border-color: rgba(34, 197, 94, 0.28) !important;
+  background: #ECFDF5 !important;
+  color: #047857 !important;
+  border-color: #A7F3D0 !important;
 }
 
 .jr-admin .logout-btn:hover,
@@ -493,9 +509,10 @@ body.jr-admin::before {
 .jr-admin .pager-btn:hover,
 .jr-admin .icon-btn:hover,
 .jr-admin .close-btn:hover,
-.jr-admin .menu-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  transform: translateY(-2px) !important;
+.jr-admin .menu-btn:hover,
+.jr-admin .linkBtn:hover {
+  background: #F8FAFC !important;
+  transform: none !important;
 }
 
 .jr-admin table,
@@ -504,22 +521,22 @@ body.jr-admin::before {
   border-collapse: separate !important;
   border-spacing: 0;
   overflow: hidden;
-  border-radius: 20px !important;
+  border-radius: 14px !important;
 }
 
 .jr-admin thead,
 .jr-admin .versions-table thead {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: #F8FAFC !important;
 }
 
 .jr-admin th,
 .jr-admin td {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.96) !important;
 }
 
 .jr-admin tr:hover td,
 .jr-admin .versions-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: #F8FAFC !important;
 }
 
 .jr-admin .pill,
@@ -528,12 +545,12 @@ body.jr-admin::before {
 .jr-admin .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   border-radius: 999px !important;
-  border: 1px solid rgba(59, 130, 246, 0.22) !important;
-  background: rgba(59, 130, 246, 0.12) !important;
-  color: #DBEAFE !important;
+  border: 1px solid #DBEAFE !important;
+  background: #F8FAFC !important;
+  color: #334155 !important;
   font-weight: 800 !important;
 }
 
@@ -543,41 +560,45 @@ body.jr-admin::before {
 .jr-admin .error-message.show,
 .jr-admin .alert {
   display: block;
-  border-radius: 18px !important;
+  border-radius: 14px !important;
 }
 
 .jr-admin .success-message,
 .jr-admin .message.success,
-.jr-admin .msg.success {
-  background: rgba(34, 197, 94, 0.14) !important;
-  border: 1px solid rgba(34, 197, 94, 0.24) !important;
-  color: #BBF7D0 !important;
+.jr-admin .msg.success,
+.jr-admin .msg.ok {
+  background: #ECFDF5 !important;
+  border: 1px solid #A7F3D0 !important;
+  color: #047857 !important;
 }
 
 .jr-admin .error-message,
 .jr-admin .message.error,
 .jr-admin .msg.error {
-  background: rgba(239, 68, 68, 0.14) !important;
-  border: 1px solid rgba(239, 68, 68, 0.24) !important;
-  color: #FECACA !important;
+  background: #FEF2F2 !important;
+  border: 1px solid #FECACA !important;
+  color: #B91C1C !important;
 }
 
 .jr-admin .alert,
 .jr-admin div[style*='background-color: #F0FDF4'] {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(6, 182, 212, 0.1) 48%, rgba(147, 51, 234, 0.1) 100%) !important;
-  border: 1px solid rgba(59, 130, 246, 0.18) !important;
-  color: #DBEAFE !important;
-  border-left: 3px solid rgba(6, 182, 212, 0.8) !important;
+  background: #F8FAFC !important;
+  border: 1px solid rgba(226, 232, 240, 0.96) !important;
+  color: #334155 !important;
+  border-left: 3px solid #2563EB !important;
 }
 
 .jr-admin a,
 .jr-admin .download-link {
-  color: #7DD3FC !important;
+  color: #1D4ED8 !important;
 }
 
 .jr-admin .quick-link-card,
 .jr-admin .metric-card,
-.jr-admin .summary-card {
+.jr-admin .summary-card,
+.jr-admin .panel,
+.jr-admin .section,
+.jr-admin .login-container {
   position: relative;
   overflow: hidden;
 }
@@ -586,57 +607,49 @@ body.jr-admin::before {
 .jr-admin .panel::before,
 .jr-admin .section::before,
 .jr-admin .login-container::before {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 32%);
-  pointer-events: none;
+  content: none;
 }
 
 .jr-admin .login-container {
-  max-width: 480px;
+  max-width: 440px;
 }
 
 .jr-admin.jr-admin-login {
-  background:
-    radial-gradient(880px 520px at 0% 0%, rgba(59, 130, 246, 0.2), transparent 56%),
-    radial-gradient(860px 520px at 100% 0%, rgba(147, 51, 234, 0.18), transparent 52%),
-    linear-gradient(180deg, #020617 0%, #0F172A 100%) !important;
+  background: #FFFFFF !important;
 }
 
 .jr-admin .login-header h1,
-.jr-admin .login-header p {
-  color: #FFFFFF !important;
-}
-
+.jr-admin .login-header p,
 .jr-admin .demo-info strong,
 .jr-admin .topbar-user strong,
 .jr-admin .navbar-user strong {
-  color: #FFFFFF !important;
+  color: #0F172A !important;
 }
 
 @media (max-width: 900px) {
   .jr-admin .section,
   .jr-admin .panel,
-  .jr-admin .login-container {
-    padding: 22px !important;
+  .jr-admin .login-container,
+  .jr-admin .surface {
+    padding: 16px !important;
   }
 }
 
 @media (max-width: 640px) {
   .jr-admin .navbar,
   .jr-admin .topbar,
-  .jr-admin .top-navbar {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
+  .jr-admin .top-navbar,
+  .jr-admin .admin-compactBar {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
 
   .jr-admin .section,
   .jr-admin .panel,
   .jr-admin .modal-card,
-  .jr-admin .login-container {
-    border-radius: 20px !important;
+  .jr-admin .login-container,
+  .jr-admin .surface {
+    border-radius: 16px !important;
   }
 }
 
@@ -650,7 +663,7 @@ body.jr-admin::before {
 
   .jr-admin .table-wrap table,
   .jr-admin #tableWrap table {
-    min-width: 760px !important;
+    min-width: 700px !important;
   }
 
   .jr-admin .toolbar,
@@ -660,7 +673,7 @@ body.jr-admin::before {
   .jr-admin .list-controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px;
   }
 
   .jr-admin .toolbar > *,
