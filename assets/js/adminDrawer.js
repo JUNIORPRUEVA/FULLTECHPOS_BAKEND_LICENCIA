@@ -9,8 +9,7 @@
     { href: '/admin/licenses.html', label: 'Gestionar Licencias', icon: '📜' },
     { href: '/admin/license-config.html', label: 'Tokens Reset', icon: '🔐' },
     { href: '/admin/products.html', label: 'Productos', icon: '🧩' },
-    { href: '/admin/store-settings.html', label: 'Store Settings', icon: '🏷️' },
-    { href: '/admin/dashboard.html', label: 'Dashboard', icon: '📊' }
+    { href: '/admin/store-settings.html', label: 'Store Settings', icon: '🏷️' }
   ];
 
   function hasSidebarLayout() {

@@ -21,12 +21,24 @@
   gap: 12px;
 }
 
+.admin-compactBarLead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .admin-compactBarTitle {
   margin: 0;
   font-size: 1.12rem;
   font-weight: 900;
   letter-spacing: -0.04em;
   color: #0f172a;
+  min-width: 0;
+}
+
+.admin-compactBack {
+  text-decoration: none;
 }
 
 .admin-compactBarActions {
@@ -133,6 +145,10 @@
 @media (max-width: 768px) {
   .admin-compactBar {
     padding: 10px 10px 8px;
+  }
+
+  .admin-compactBarLead {
+    gap: 8px;
   }
 
   .admin-compactBarTitle {
