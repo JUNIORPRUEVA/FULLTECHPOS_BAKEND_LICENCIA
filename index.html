@@ -46,7 +46,7 @@
                 </button>
 
                 <!-- Acceso administrativo (discreto) -->
-                <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+                <a id="adminLoginLink" href="#" class="navbar-admin" aria-label="Acceso administrativo">⚙</a>
             </div>
         </div>
 
@@ -55,7 +55,7 @@
             <button class="navbar-mobile-btn" type="button" onclick="scrollToSection('demo')">Demo</button>
             <button class="navbar-mobile-btn" type="button" onclick="scrollToSection('license')">Licencia</button>
             <a href="https://wa.me/18295319442" class="navbar-mobile-btn" target="_blank" rel="noopener">WhatsApp</a>
-            <a id="adminLoginLinkMobile" href="#" class="navbar-mobile-btn" target="_blank" rel="noopener">Admin</a>
+            <a id="adminLoginLinkMobile" href="#" class="navbar-mobile-btn">Admin</a>
         </div>
     </nav>
 
@@ -502,7 +502,9 @@
             .filter(Boolean)
             .forEach((link) => {
                 const returnTo = encodeURIComponent(window.location.href);
-                link.href = `${BACKEND_API_BASE}/admin/login.html?returnTo=${returnTo}`;
+                link.target = '_self';
+                link.removeAttribute('rel');
+                link.href = `/admin/login.html?returnTo=${returnTo}`;
             });
 
         const licenseForm = document.getElementById('license-request-form');

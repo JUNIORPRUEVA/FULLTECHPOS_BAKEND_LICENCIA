@@ -45,7 +45,7 @@
           <span class="nav-text">Instalar</span>
         </button>
         <button id="navbarToggle" class="navbar-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
-        <a id="adminLoginLink" href="#" class="navbar-admin" target="_blank" rel="noopener" aria-label="Acceso administrativo">⚙</a>
+        <a id="adminLoginLink" href="#" class="navbar-admin" aria-label="Acceso administrativo">⚙</a>
       </div>
     </div>
 
@@ -88,7 +88,7 @@
         </a>
 
         <div class="navbar-mobile-footerCard navbar-mobile-footerCard--minimal">
-          <a id="adminLoginLinkMobile" class="navbar-mobile-adminLink" href="#" target="_blank" rel="noopener">Acceso admin</a>
+          <a id="adminLoginLinkMobile" class="navbar-mobile-adminLink" href="#">Acceso admin</a>
         </div>
       </div>
     </div>
@@ -138,7 +138,7 @@
           <div style="opacity:0.9; line-height:1.9;">
             <a href="/home.html">Inicio</a><br />
             <a href="/products.html">Catálogo</a><br />
-            <a href="/admin/login.html" target="_blank" rel="noopener">Admin</a>
+            <a href="/admin/login.html">Admin</a>
           </div>
         </div>
 
@@ -279,7 +279,9 @@
         .filter(Boolean)
         .forEach((link) => {
           const returnTo = encodeURIComponent(window.location.href);
-          link.href = `${StorePublic.API_BASE}/admin/login.html?returnTo=${returnTo}`;
+          link.target = '_self';
+          link.removeAttribute('rel');
+          link.href = `/admin/login.html?returnTo=${returnTo}`;
         });
 
       let settings = null;
