@@ -49,6 +49,7 @@ async function run() {
   const allowlist = new Set([
     '001_create_license_tables.sql',
     '002_create_license_config.sql',
+    '003_create_multi_company_and_sync.sql',
     '007_create_projects_and_project_scoping.sql',
     '008_add_customer_business_role.sql',
     '009_create_demo_trials.sql',
@@ -61,7 +62,19 @@ async function run() {
     '011_create_store_settings.sql',
     '012_create_products.sql',
     '013_create_product_media.sql',
-    '014_create_product_files.sql'
+    '014_create_product_files.sql',
+    // SaaS Foundation Phase 1 (Platform IAM + Subscriptions)
+    '022_create_platform_users.sql',
+    '023_create_roles.sql',
+    '024_create_permissions.sql',
+    '025_create_platform_user_roles.sql',
+    '026_create_product_plans.sql',
+    '027_create_company_subscriptions.sql',
+    '028_create_subscription_payments.sql',
+    '029_create_audit_logs.sql',
+    '030_update_licenses_saas_fields.sql',
+    '031_seed_roles_and_permissions.sql',
+    '032_seed_default_plans.sql'
   ]);
 
   const selectedFiles = licenseOnly
