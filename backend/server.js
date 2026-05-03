@@ -67,9 +67,44 @@ const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
 const syncRoutes = LICENSE_ONLY ? null : require('./modules/sync/sync.routes');
 const backupRoutes = LICENSE_ONLY ? null : require('./modules/backup/backup.routes');
 const { pool } = require('./db/pool');
+const { rateLimit } = require('./middleware/rateLimit');
 
 const app = express();
 const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
+
+// ==========================================
+// SECURITY STARTUP CHECKS
+// ==========================================
+(function checkProductionSecrets() {
+  const NODE_ENV = String(process.env.NODE_ENV || '').toLowerCase();
+  const isProduction = NODE_ENV === 'production';
+
+  const warnings = [];
+
+  if (!process.env.ADMIN_USERNAME || process.env.ADMIN_USERNAME === 'fulltechsd@gmail.com') {
+    warnings.push('ADMIN_USERNAME is using the default value — set a strong custom value in production');
+  }
+  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'Ayleen10') {
+    warnings.push('ADMIN_PASSWORD is using the default value — set a strong password in production');
+  }
+  if (!process.env.DATABASE_URL) {
+    warnings.push('DATABASE_URL is not set — using individual PG* env vars');
+  }
+  if (!process.env.CORS_ORIGINS && isProduction) {
+    warnings.push('CORS_ORIGINS is not set — all origins are allowed (unsafe in production)');
+  }
+
+  if (warnings.length) {
+    const tag = isProduction ? '🚨 [SECURITY]' : '⚠️  [SECURITY]';
+    console.warn(`\n${tag} Security configuration warnings:`);
+    warnings.forEach((w) => console.warn(`   • ${w}`));
+    if (isProduction) {
+      console.error('\n[SECURITY] Refusing to start in production with default credentials.');
+      process.exit(1);
+    }
+    console.warn('');
+  }
+})();
 
 function setNoCacheHeaders(res) {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -328,8 +363,11 @@ app.use('/api/admin/activations', adminActivationsRoutes);
 app.use('/api/admin/projects', adminProjectsRoutes);
 
 // APP ESCRITORIO
-app.use('/api/licenses', licensesPublicRoutes);
-app.use('/api/v2/licenses', licenseValidationRoutes);
+// Rate limit public endpoints: 120 req/min per IP (generous for POS apps,
+// tight enough to block naive brute-force and scraping).
+const licensePublicLimiter = rateLimit({ windowMs: 60_000, max: 120, message: 'Límite de peticiones alcanzado. Espere un momento.' });
+app.use('/api/licenses', licensePublicLimiter, licensesPublicRoutes);
+app.use('/api/v2/licenses', licensePublicLimiter, licenseValidationRoutes);
 
 // Registro de negocios + auto-licencia (sin device_id)
 // Soportamos ambas rutas por compatibilidad con la especificación.
@@ -569,6 +607,30 @@ app.get('/admin/login', (req, res) => {
 // GET /admin/dashboard - Servir dashboard.html
 app.get('/admin/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin/dashboard.html'));
+});
+
+// ==========================================
+// GLOBAL ERROR HANDLER
+// ==========================================
+// Must be declared after all routes. Catches unhandled errors from next(err).
+// In production: never expose stack traces or internal error details.
+// eslint-disable-next-line no-unused-vars
+app.use(function globalErrorHandler(err, req, res, next) {
+  const NODE_ENV = String(process.env.NODE_ENV || '').toLowerCase();
+  const isProduction = NODE_ENV === 'production';
+
+  // Log full error server-side always.
+  console.error('[error]', req.method, req.path, err?.message || err);
+
+  const status = typeof err?.status === 'number' ? err.status : 500;
+
+  if (isProduction) {
+    // Never expose internals to clients in production.
+    return res.status(status).json({ ok: false, message: 'Error interno del servidor' });
+  }
+
+  // Dev: include message but never stack in response body to avoid accidental leakage.
+  return res.status(status).json({ ok: false, message: err?.message || 'Error interno del servidor' });
 });
 
 // ==========================================
