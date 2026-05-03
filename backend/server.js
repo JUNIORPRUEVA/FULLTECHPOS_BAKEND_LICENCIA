@@ -43,8 +43,15 @@ const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
+const licenseValidationRoutes = require('./routes/licenseValidationRoutes');
 const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
+const adminProductPlansRoutes = require('./routes/adminProductPlansRoutes');
+const adminSubscriptionsRoutes = require('./routes/adminSubscriptionsRoutes');
+const adminPaymentsRoutes = require('./routes/adminPaymentsRoutes');
+const adminAuditLogsRoutes = require('./routes/adminAuditLogsRoutes');
+const adminPlatformUsersRoutes = require('./routes/adminPlatformUsersRoutes');
+const adminRolesRoutes = require('./routes/adminRolesRoutes');
 const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
 const adminSupportResetRoutes = require('./routes/adminSupportResetRoutes');
 const adminSupportMessageConfigRoutes = require('./routes/adminSupportMessageConfigRoutes');
@@ -233,6 +240,12 @@ app.use('/api/public', publicAssetsRoutes);
 // Admin APIs (protected by x-session-id)
 app.use('/api/admin', adminProductsRoutes);
 app.use('/api/admin', adminStoreSettingsRoutes);
+app.use('/api/admin/product-plans', adminProductPlansRoutes);
+app.use('/api/admin/subscriptions', adminSubscriptionsRoutes);
+app.use('/api/admin/payments', adminPaymentsRoutes);
+app.use('/api/admin/audit-logs', adminAuditLogsRoutes);
+app.use('/api/admin/platform-users', adminPlatformUsersRoutes);
+app.use('/api/admin/roles', adminRolesRoutes);
 app.use('/api/admin/support-reset', adminSupportResetRoutes);
 app.use('/api/admin/support-message-config', adminSupportMessageConfigRoutes);
 
@@ -312,6 +325,7 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 
 // APP ESCRITORIO
 app.use('/api/licenses', licensesPublicRoutes);
+app.use('/api/v2/licenses', licenseValidationRoutes);
 
 // Registro de negocios + auto-licencia (sin device_id)
 // Soportamos ambas rutas por compatibilidad con la especificación.
