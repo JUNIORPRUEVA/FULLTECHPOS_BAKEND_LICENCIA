@@ -165,25 +165,26 @@
   // ─── Shared Sidebar ───────────────────────────────────────────────────────
 
   const SIDEBAR_ITEMS = [
-    { key: 'dashboard',     icon: '🏠', label: 'Panel',           href: 'admin-hub.html' },
-    { key: 'customers',     icon: '👥', label: 'Clientes',         href: 'customers.html' },
-    { key: 'products',      icon: '🧩', label: 'Productos',        href: 'products.html' },
-    { key: 'plans',         icon: '🧾', label: 'Planes',           href: 'product-plans.html' },
-    { key: 'subscriptions', icon: '🔄', label: 'Suscripciones',    href: 'subscriptions.html' },
-    { key: 'payments',      icon: '💳', label: 'Pagos',            href: 'payments.html' },
-    { key: 'licenses',      icon: '📜', label: 'Licencias',        href: 'licenses.html' },
-    { key: 'tokens',        icon: '🔐', label: 'Tokens reset',     href: 'license-config.html' },
-    { key: 'audit',         icon: '🧷', label: 'Audit Logs',       href: 'audit-logs.html' },
-    { key: 'users',         icon: '🛡️', label: 'Platform Users',  href: 'platform-users.html' },
-    { key: 'settings',      icon: '🏷️', label: 'Store settings',  href: 'store-settings.html' },
+    { key: 'dashboard',     icon: '🏠', label: 'Panel',              href: 'admin-hub.html' },
+    { key: 'customers',     icon: '👥', label: 'Clientes',            href: 'customers.html' },
+    { key: 'products',      icon: '🧩', label: 'Productos',           href: 'products.html' },
+    { key: 'plans',         icon: '🧾', label: 'Planes',              href: 'product-plans.html' },
+    { key: 'subscriptions', icon: '🔄', label: 'Suscripciones',       href: 'subscriptions.html' },
+    { key: 'payments',      icon: '💳', label: 'Pagos',               href: 'payments.html' },
+    { key: 'licenses',      icon: '📜', label: 'Licencias',           href: 'licenses.html' },
+    { key: 'tokens',        icon: '🔐', label: 'Tokens de acceso',    href: 'license-config.html' },
+    { key: 'audit',         icon: '🧷', label: 'Registros de auditoría', href: 'audit-logs.html' },
+    { key: 'users',         icon: '🛡️', label: 'Usuarios del sistema', href: 'platform-users.html' },
+    { key: 'settings',      icon: '🏷️', label: 'Configuración tienda', href: 'store-settings.html' },
   ];
 
   const SIDEBAR_GROUPS = [
-    { label: null,                    keys: ['dashboard'] },
-    { label: 'Clientes & Licencias',  keys: ['customers', 'licenses', 'tokens'] },
-    { label: 'Planes & Productos',    keys: ['plans', 'products', 'settings'] },
-    { label: 'Facturación',           keys: ['subscriptions', 'payments'] },
-    { label: 'Sistema',               keys: ['audit', 'users'] },
+    { label: null,                          keys: ['dashboard'] },
+    { label: 'Clientes y Licencias',        keys: ['customers', 'licenses', 'tokens'] },
+    { label: 'Catálogo y Planes',           keys: ['plans', 'products'] },
+    { label: 'Facturación',                 keys: ['subscriptions', 'payments'] },
+    { label: 'Sistema',                     keys: ['audit', 'users'] },
+    { label: 'Configuración',               keys: ['settings'] },
   ];
 
   function renderSidebar(activeKey) {
@@ -208,7 +209,7 @@
       <img class="sidebar-logo-img" src="${logoSrc}" alt="Logo" onerror="this.style.display='none'" />
       <div class="sidebar-title">
         <strong id="sidebarBrandName">Appyra</strong>
-        <span>License Manager</span>
+        <span>Gestor de licencias</span>
       </div>
     </div>
   </div>
