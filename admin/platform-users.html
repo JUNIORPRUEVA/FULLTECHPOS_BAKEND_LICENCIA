@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Platform Users - SaaS Manager</title>
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
+  <link rel="icon" href="../assets/img/pwa/icon-192.png" />
+  <link rel="stylesheet" href="../assets/css/jr-admin.css" />
+  <link rel="stylesheet" href="../assets/css/admin-compact-bar.css" />
+  <link rel="stylesheet" href="../assets/css/admin-saas.css" />
+  <script defer src="../assets/js/pwa.js"></script>
+  <script defer src="../assets/js/adminCommon.js"></script>
+  <script defer src="../assets/js/adminCompactBar.js"></script>
+  <script defer src="../assets/js/adminPlatformUsers.js"></script>
+</head>
+<body class="jr-admin admin-compact-page">
+  <header class="admin-compactBar">
+    <div class="admin-compactBarInner">
+      <div class="admin-compactBarLead">
+        <a class="admin-compactBarBtn admin-compactBack" href="admin-hub.html" aria-label="Volver">←</a>
+        <h1 class="admin-compactBarTitle">Platform Users</h1>
+      </div>
+      <div class="admin-compactBarActions">
+        <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="usersMenu" onclick="AdminCompactBar.toggle('usersMenu', event)" aria-label="Opciones">⋮</button>
+        <div id="usersMenu" class="admin-compactBarMenu">
+          <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
+          <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
+          <a class="admin-compactBarMenuItem" href="saas-dashboard.html">SaaS Dashboard</a>
+          <a class="admin-compactBarMenuItem" href="product-plans.html">Plans</a>
+          <a class="admin-compactBarMenuItem" href="subscriptions.html">Subscriptions</a>
+          <a class="admin-compactBarMenuItem" href="payments.html">Payments</a>
+          <a class="admin-compactBarMenuItem" href="audit-logs.html">Audit Logs</a>
+          <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <h2 class="section-title">Usuarios y roles de plataforma</h2>
+      <p class="section-subtitle">Gestion interna sin reemplazar login actual.</p>
+      <div id="message" class="message"></div>
+
+      <div class="toolbar">
+        <div class="filters">
+          <div class="form-group">
+            <label for="filterStatus">Estado</label>
+            <select id="filterStatus">
+              <option value="">Todos</option>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterType">Tipo</label>
+            <select id="filterType">
+              <option value="">Todos</option>
+              <option value="admin">admin</option>
+              <option value="operator">operator</option>
+              <option value="support">support</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterQ">Buscar</label>
+            <input id="filterQ" type="text" placeholder="email o nombre" />
+          </div>
+          <button id="filterBtn" class="btn btn-secondary" type="button">Filtrar</button>
+        </div>
+        <button id="newUserBtn" class="btn btn-primary" type="button">+ Nuevo usuario</button>
+      </div>
+
+      <div id="loading" class="loading" style="display:none;">Cargando usuarios...</div>
+      <div id="tableWrap" class="table-shell"></div>
+    </section>
+  </main>
+
+  <div id="userModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="userModal"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Crear usuario de plataforma</h3>
+          <p>No afecta el flujo actual de login del panel.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" data-close-modal="userModal">Cerrar</button>
+      </div>
+      <form id="userForm">
+        <div class="modal-grid">
+          <div class="form-group span-2">
+            <label for="userEmail">Email *</label>
+            <input id="userEmail" type="email" required />
+          </div>
+          <div class="form-group">
+            <label for="userDisplayName">Display name</label>
+            <input id="userDisplayName" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="userPhone">Telefono</label>
+            <input id="userPhone" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="userStatus">Status</label>
+            <select id="userStatus">
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="userType">User type</label>
+            <select id="userType">
+              <option value="admin">admin</option>
+              <option value="operator">operator</option>
+              <option value="support">support</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" type="button" data-close-modal="userModal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Crear usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="roleModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="roleModal"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Asignar rol</h3>
+          <p id="roleModalUser" class="muted">Usuario</p>
+        </div>
+        <button class="btn btn-secondary" type="button" data-close-modal="roleModal">Cerrar</button>
+      </div>
+      <form id="roleForm">
+        <input id="roleUserId" type="hidden" />
+        <div class="modal-grid">
+          <div class="form-group span-2">
+            <label for="roleId">Rol *</label>
+            <select id="roleId" required>
+              <option value="">Seleccionar rol</option>
+            </select>
+          </div>
+          <div class="form-group span-2">
+            <label for="roleCompanyId">Company ID (opcional)</label>
+            <input id="roleCompanyId" type="text" />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" type="button" data-close-modal="roleModal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Asignar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

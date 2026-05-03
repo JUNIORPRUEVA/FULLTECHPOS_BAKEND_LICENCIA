@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Subscriptions - SaaS Manager</title>
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
+  <link rel="icon" href="../assets/img/pwa/icon-192.png" />
+  <link rel="stylesheet" href="../assets/css/jr-admin.css" />
+  <link rel="stylesheet" href="../assets/css/admin-compact-bar.css" />
+  <link rel="stylesheet" href="../assets/css/admin-saas.css" />
+  <script defer src="../assets/js/pwa.js"></script>
+  <script defer src="../assets/js/adminCommon.js"></script>
+  <script defer src="../assets/js/adminCompactBar.js"></script>
+  <script defer src="../assets/js/adminSubscriptions.js"></script>
+</head>
+<body class="jr-admin admin-compact-page">
+  <header class="admin-compactBar">
+    <div class="admin-compactBarInner">
+      <div class="admin-compactBarLead">
+        <a class="admin-compactBarBtn admin-compactBack" href="admin-hub.html" aria-label="Volver">←</a>
+        <h1 class="admin-compactBarTitle">Subscriptions</h1>
+      </div>
+      <div class="admin-compactBarActions">
+        <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="subscriptionsMenu" onclick="AdminCompactBar.toggle('subscriptionsMenu', event)" aria-label="Opciones">⋮</button>
+        <div id="subscriptionsMenu" class="admin-compactBarMenu">
+          <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
+          <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
+          <a class="admin-compactBarMenuItem" href="saas-dashboard.html">SaaS Dashboard</a>
+          <a class="admin-compactBarMenuItem" href="product-plans.html">Plans</a>
+          <a class="admin-compactBarMenuItem" href="payments.html">Payments</a>
+          <a class="admin-compactBarMenuItem" href="audit-logs.html">Audit Logs</a>
+          <a class="admin-compactBarMenuItem" href="platform-users.html">Platform Users</a>
+          <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <h2 class="section-title">Suscripciones SaaS</h2>
+      <p class="section-subtitle">Crea y administra suscripciones por company y plan.</p>
+      <div id="message" class="message"></div>
+
+      <div class="toolbar">
+        <div class="filters">
+          <div class="form-group">
+            <label for="filterCompany">Company (UUID)</label>
+            <input id="filterCompany" type="text" placeholder="Opcional" />
+          </div>
+          <div class="form-group">
+            <label for="filterStatus">Estado</label>
+            <select id="filterStatus">
+              <option value="">Todos</option>
+              <option value="active">active</option>
+              <option value="trial">trial</option>
+              <option value="past_due">past_due</option>
+              <option value="suspended">suspended</option>
+              <option value="cancelled">cancelled</option>
+              <option value="expired">expired</option>
+              <option value="lifetime">lifetime</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterProduct">Producto</label>
+            <select id="filterProduct"><option value="">Todos</option></select>
+          </div>
+          <div class="form-group">
+            <label for="filterProject">Proyecto</label>
+            <select id="filterProject"><option value="">Todos</option></select>
+          </div>
+          <button id="filterBtn" class="btn btn-secondary" type="button">Filtrar</button>
+        </div>
+        <button id="newSubscriptionBtn" class="btn btn-primary" type="button">+ Nueva suscripcion</button>
+      </div>
+
+      <div id="loading" class="loading" style="display:none;">Cargando suscripciones...</div>
+      <div id="tableWrap" class="table-shell"></div>
+    </section>
+  </main>
+
+  <div id="subscriptionModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="subscriptionModal"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Nueva suscripcion</h3>
+          <p>Crea una suscripcion para una company y un plan.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" data-close-modal="subscriptionModal">Cerrar</button>
+      </div>
+      <form id="subscriptionForm">
+        <div class="modal-grid">
+          <div class="form-group span-2">
+            <label for="subCompanyId">Company ID *</label>
+            <input id="subCompanyId" type="text" required placeholder="UUID de company" />
+          </div>
+          <div class="form-group span-2">
+            <label for="subPlanId">Plan *</label>
+            <select id="subPlanId" required><option value="">Seleccionar plan</option></select>
+          </div>
+          <div class="form-group">
+            <label for="subStatus">Estado inicial</label>
+            <select id="subStatus">
+              <option value="">Automatico segun plan</option>
+              <option value="active">active</option>
+              <option value="trial">trial</option>
+              <option value="past_due">past_due</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="subStartDate">Fecha inicio</label>
+            <input id="subStartDate" type="date" />
+          </div>
+          <div class="form-group span-2">
+            <label for="subNotes">Notas</label>
+            <textarea id="subNotes"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" type="button" data-close-modal="subscriptionModal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Crear suscripcion</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="extendModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="extendModal"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Extender suscripcion</h3>
+          <p id="extendModalRef" class="muted">Suscripcion</p>
+        </div>
+        <button class="btn btn-secondary" type="button" data-close-modal="extendModal">Cerrar</button>
+      </div>
+      <form id="extendForm">
+        <input id="extendSubscriptionId" type="hidden" />
+        <div class="modal-grid">
+          <div class="form-group">
+            <label for="extendDays">Dias a extender *</label>
+            <input id="extendDays" type="number" min="1" step="1" value="30" required />
+          </div>
+          <div class="form-group">
+            <label for="extendGraceUntil">Grace until (opcional)</label>
+            <input id="extendGraceUntil" type="date" />
+          </div>
+          <div class="form-group span-2">
+            <label for="extendNotes">Notas</label>
+            <textarea id="extendNotes"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" type="button" data-close-modal="extendModal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Aplicar extension</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

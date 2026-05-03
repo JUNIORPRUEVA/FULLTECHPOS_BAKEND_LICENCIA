@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Planes - SaaS Manager</title>
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
+  <link rel="icon" href="../assets/img/pwa/icon-192.png" />
+  <link rel="stylesheet" href="../assets/css/jr-admin.css" />
+  <link rel="stylesheet" href="../assets/css/admin-compact-bar.css" />
+  <link rel="stylesheet" href="../assets/css/admin-saas.css" />
+  <script defer src="../assets/js/pwa.js"></script>
+  <script defer src="../assets/js/adminCommon.js"></script>
+  <script defer src="../assets/js/adminCompactBar.js"></script>
+  <script defer src="../assets/js/adminProductPlans.js"></script>
+</head>
+<body class="jr-admin admin-compact-page">
+  <header class="admin-compactBar">
+    <div class="admin-compactBarInner">
+      <div class="admin-compactBarLead">
+        <a class="admin-compactBarBtn admin-compactBack" href="admin-hub.html" aria-label="Volver">←</a>
+        <h1 class="admin-compactBarTitle">Product Plans</h1>
+      </div>
+      <div class="admin-compactBarActions">
+        <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="plansMenu" onclick="AdminCompactBar.toggle('plansMenu', event)" aria-label="Opciones">⋮</button>
+        <div id="plansMenu" class="admin-compactBarMenu">
+          <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
+          <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
+          <a class="admin-compactBarMenuItem" href="saas-dashboard.html">SaaS Dashboard</a>
+          <a class="admin-compactBarMenuItem" href="subscriptions.html">Subscriptions</a>
+          <a class="admin-compactBarMenuItem" href="payments.html">Payments</a>
+          <a class="admin-compactBarMenuItem" href="audit-logs.html">Audit Logs</a>
+          <a class="admin-compactBarMenuItem" href="platform-users.html">Platform Users</a>
+          <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <h2 class="section-title">Planes de producto/proyecto</h2>
+      <p class="section-subtitle">Administra precios, periodos y limites por plan.</p>
+      <div id="message" class="message"></div>
+
+      <div class="toolbar">
+        <div class="filters">
+          <div class="form-group">
+            <label for="filterProduct">Producto</label>
+            <select id="filterProduct">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterProject">Proyecto</label>
+            <select id="filterProject">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterIsActive">Estado</label>
+            <select id="filterIsActive">
+              <option value="">Todos</option>
+              <option value="true">Activos</option>
+              <option value="false">Inactivos</option>
+            </select>
+          </div>
+          <button id="filterBtn" class="btn btn-secondary" type="button">Filtrar</button>
+        </div>
+        <button id="newPlanBtn" class="btn btn-primary" type="button">+ Nuevo plan</button>
+      </div>
+
+      <div id="loading" class="loading" style="display:none;">Cargando planes...</div>
+      <div id="tableWrap" class="table-shell"></div>
+    </section>
+  </main>
+
+  <div id="planModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="planModal"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3 id="planModalTitle">Nuevo plan</h3>
+          <p>Debe pertenecer a un producto o a un proyecto.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" data-close-modal="planModal">Cerrar</button>
+      </div>
+      <form id="planForm">
+        <input id="planId" type="hidden" />
+        <div class="modal-grid">
+          <div class="form-group">
+            <label for="planProductId">Producto</label>
+            <select id="planProductId">
+              <option value="">Ninguno</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="planProjectId">Proyecto</label>
+            <select id="planProjectId">
+              <option value="">Ninguno</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="planCode">Codigo *</label>
+            <input id="planCode" type="text" maxlength="80" required />
+          </div>
+          <div class="form-group">
+            <label for="planName">Nombre *</label>
+            <input id="planName" type="text" maxlength="160" required />
+          </div>
+          <div class="form-group">
+            <label for="planBilling">Periodo *</label>
+            <select id="planBilling" required>
+              <option value="monthly">monthly</option>
+              <option value="annual">annual</option>
+              <option value="trial">trial</option>
+              <option value="lifetime">lifetime</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="planPrice">Precio *</label>
+            <input id="planPrice" type="number" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label for="planCurrency">Moneda</label>
+            <input id="planCurrency" type="text" maxlength="10" value="DOP" />
+          </div>
+          <div class="form-group">
+            <label for="planDeviceLimit">Limite de dispositivos</label>
+            <input id="planDeviceLimit" type="number" min="0" step="1" value="1" />
+          </div>
+          <div class="form-group">
+            <label for="planGraceDays">Dias de gracia</label>
+            <input id="planGraceDays" type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="planTrialDays">Dias de trial</label>
+            <input id="planTrialDays" type="number" min="0" step="1" />
+          </div>
+          <div class="form-group">
+            <label for="planCompanyLimit">Limite de companies</label>
+            <input id="planCompanyLimit" type="number" min="0" step="1" value="1" />
+          </div>
+          <div class="form-group span-2">
+            <label for="planMetadata">Metadata (JSON opcional)</label>
+            <textarea id="planMetadata" placeholder='{"feature_flags":["support"]}'></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" type="button" data-close-modal="planModal">Cancelar</button>
+          <button class="btn btn-primary" id="savePlanBtn" type="submit">Guardar plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
