@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -9,11 +9,7 @@
   <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
   <link rel="icon" href="../assets/img/pwa/icon-192.png">
   <script defer src="../assets/js/pwa.js"></script>
-  <script defer src="../assets/js/adminDrawer.js"></script>
-  <script defer src="../assets/js/adminCompactBar.js"></script>
   <link rel="stylesheet" href="../assets/css/jr-admin.css">
-  <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
-  <link rel="stylesheet" href="../assets/css/admin-compact-bar.css">
   <style>
     :root {
       --bg: #f3f4f6;
@@ -329,26 +325,22 @@
       .actions .btn { width: 100%; }
     }
   </style>
+  <script src="../assets/js/adminCommon.js"></script>
+  <link rel="stylesheet" href="../assets/css/admin-unified.css" />
 </head>
-<body class="jr-admin admin-compact-page">
-  <header class="admin-compactBar">
-    <div class="admin-compactBarInner">
-      <div class="admin-compactBarLead">
-        <a class="admin-compactBarBtn admin-compactBack" href="admin-hub.html" aria-label="Volver al panel principal">←</a>
-        <h1 class="admin-compactBarTitle">Configuracion</h1>
-      </div>
-      <div class="admin-compactBarActions">
-        <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="licenseConfigCompactMenu" onclick="AdminCompactBar.toggle('licenseConfigCompactMenu', event)" aria-label="Opciones">⋮</button>
-        <div id="licenseConfigCompactMenu" class="admin-compactBarMenu">
-          <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
-          <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
-          <button class="admin-compactBarMenuItem" type="button" onclick="openModal('licenseModal'); AdminCompactBar.closeAll();">Licencias por defecto</button>
-          <button class="admin-compactBarMenuItem" type="button" onclick="openModal('supportMessageModal'); AdminCompactBar.closeAll();">Mensaje soporte</button>
-          <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); logout();">Cerrar sesion</button>
-        </div>
-      </div>
+<body>
+  <div class="admin-layout">
+  <div id="adminSidebarContainer"></div>
+  <div class="admin-main">
+  <header class="admin-topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+      <span class="topbar-title">Tokens reset</span>
     </div>
+    <div class="topbar-right topbar-user">&#128100; <span id="userName">Admin</span></div>
   </header>
+  <div class="admin-content">
+
 
   <main class="page">
     <section class="cards">
@@ -911,5 +903,7 @@
       window.location.href = '/';
     }
   </script>
+<script>AdminCommon.initSidebarLayout('tokens');</script>
+</div></div></div>
 </body>
 </html>

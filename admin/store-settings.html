@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -8,9 +8,7 @@
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
-    <script defer src="../assets/js/adminCommon.js"></script>
-    <script defer src="../assets/js/adminDrawer.js"></script>
-    <script defer src="../assets/js/adminCompactBar.js"></script>
+    <script src="../assets/js/adminCommon.js"></script>
     <title>Store Settings - Panel Admin</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -139,28 +137,22 @@
             .actions { flex-direction: column; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/admin-unified.css">
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
-    <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
-    <link rel="stylesheet" href="../assets/css/admin-compact-bar.css">
 </head>
-<body class="jr-admin admin-compact-page">
-    <header class="admin-compactBar">
-        <div class="admin-compactBarInner">
-            <div class="admin-compactBarLead">
-                <a class="admin-compactBarBtn admin-compactBack" href="admin-hub.html" aria-label="Volver al panel principal">←</a>
-                <h1 class="admin-compactBarTitle">Store settings</h1>
-            </div>
-            <div class="admin-compactBarActions">
-                <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="storeSettingsCompactMenu" onclick="AdminCompactBar.toggle('storeSettingsCompactMenu', event)" aria-label="Opciones">⋮</button>
-                <div id="storeSettingsCompactMenu" class="admin-compactBarMenu">
-                    <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
-                    <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
-                    <button class="admin-compactBarMenuItem" type="button" onclick="document.getElementById('reloadBtn').click(); AdminCompactBar.closeAll();">Recargar datos</button>
-                    <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
-                </div>
-            </div>
-        </div>
-    </header>
+<body>
+  <div class="admin-layout">
+  <div id="adminSidebarContainer"></div>
+  <div class="admin-main">
+  <header class="admin-topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+      <span class="topbar-title">Store Settings</span>
+    </div>
+    <div class="topbar-right topbar-user">&#128100; <span id="userName">Admin</span></div>
+  </header>
+  <div class="admin-content">
+
 
     <div class="container">
         <div class="section">
@@ -303,5 +295,7 @@
             });
         });
     </script>
+<script>AdminCommon.initSidebarLayout('settings');</script>
+</div></div></div>
 </body>
 </html>

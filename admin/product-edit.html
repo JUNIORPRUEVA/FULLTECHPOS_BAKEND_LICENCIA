@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
@@ -8,9 +8,7 @@
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
     <link rel="icon" href="../assets/img/pwa/icon-192.png" />
     <script defer src="../assets/js/pwa.js"></script>
-    <script defer src="../assets/js/adminCommon.js"></script>
-    <script defer src="../assets/js/adminDrawer.js"></script>
-    <script defer src="../assets/js/adminCompactBar.js"></script>
+    <script src="../assets/js/adminCommon.js"></script>
     <title>Editar Producto - Panel Admin</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -183,29 +181,22 @@
             .section { padding: 18px 16px; border-radius: 22px; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/admin-unified.css" />
     <link rel="stylesheet" href="../assets/css/jr-admin.css" />
-    <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css" />
-    <link rel="stylesheet" href="../assets/css/admin-compact-bar.css" />
 </head>
-<body class="jr-admin admin-compact-page">
-    <header class="admin-compactBar">
-        <div class="admin-compactBarInner">
-            <div class="admin-compactBarLead">
-                <a class="admin-compactBarBtn admin-compactBack" href="products.html" aria-label="Volver a productos">←</a>
-                <h1 id="pageTitleCompact" class="admin-compactBarTitle">Producto</h1>
-            </div>
-            <div class="admin-compactBarActions">
-                <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="productEditCompactMenu" onclick="AdminCompactBar.toggle('productEditCompactMenu', event)" aria-label="Opciones">⋮</button>
-                <div id="productEditCompactMenu" class="admin-compactBarMenu">
-                    <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
-                    <a class="admin-compactBarMenuItem" href="products.html">Volver a productos</a>
-                    <button class="admin-compactBarMenuItem" type="button" onclick="document.getElementById('reloadBtn').click(); AdminCompactBar.closeAll();">Recargar</button>
-                    <button class="admin-compactBarMenuItem" type="button" onclick="document.getElementById('saveBtn').click(); AdminCompactBar.closeAll();">Guardar</button>
-                    <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
-                </div>
-            </div>
-        </div>
-    </header>
+<body>
+  <div class="admin-layout">
+  <div id="adminSidebarContainer"></div>
+  <div class="admin-main">
+  <header class="admin-topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+      <span class="topbar-title">Editar Producto</span>
+    </div>
+    <div class="topbar-right topbar-user">&#128100; <span id="userName">Admin</span></div>
+  </header>
+  <div class="admin-content">
+
 
     <div class="container">
         <div id="message" class="message"></div>
@@ -997,5 +988,7 @@
             await loadProduct();
         });
     </script>
+<script>AdminCommon.initSidebarLayout('products');</script>
+</div></div></div>
 </body>
 </html>

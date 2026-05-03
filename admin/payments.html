@@ -8,38 +8,25 @@
   <link rel="manifest" href="../manifest.webmanifest" />
   <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
   <link rel="icon" href="../assets/img/pwa/icon-192.png" />
-  <link rel="stylesheet" href="../assets/css/jr-admin.css" />
-  <link rel="stylesheet" href="../assets/css/admin-compact-bar.css" />
+  <link rel="stylesheet" href="../assets/css/admin-unified.css" />
   <link rel="stylesheet" href="../assets/css/admin-saas.css" />
   <script defer src="../assets/js/pwa.js"></script>
-  <script defer src="../assets/js/adminCommon.js"></script>
-  <script defer src="../assets/js/adminCompactBar.js"></script>
+  <script src="../assets/js/adminCommon.js"></script>
   <script defer src="../assets/js/adminPayments.js"></script>
 </head>
-<body class="jr-admin admin-compact-page">
-  <header class="admin-compactBar">
-    <div class="admin-compactBarInner">
-      <div class="admin-compactBarLead">
-        <a class="admin-compactBarBtn admin-compactBack" href="admin-hub.html" aria-label="Volver">←</a>
-        <h1 class="admin-compactBarTitle">Payments</h1>
-      </div>
-      <div class="admin-compactBarActions">
-        <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="paymentsMenu" onclick="AdminCompactBar.toggle('paymentsMenu', event)" aria-label="Opciones">⋮</button>
-        <div id="paymentsMenu" class="admin-compactBarMenu">
-          <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
-          <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
-          <a class="admin-compactBarMenuItem" href="saas-dashboard.html">SaaS Dashboard</a>
-          <a class="admin-compactBarMenuItem" href="product-plans.html">Plans</a>
-          <a class="admin-compactBarMenuItem" href="subscriptions.html">Subscriptions</a>
-          <a class="admin-compactBarMenuItem" href="audit-logs.html">Audit Logs</a>
-          <a class="admin-compactBarMenuItem" href="platform-users.html">Platform Users</a>
-          <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
-        </div>
-      </div>
+<body>
+  <div class="admin-layout">
+  <div id="adminSidebarContainer"></div>
+  <div class="admin-main">
+  <header class="admin-topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+      <span class="topbar-title">Pagos</span>
     </div>
+    <div class="topbar-right topbar-user">&#128100; <span id="userName">Admin</span></div>
   </header>
-
-  <main class="container">
+  <div class="admin-content">
+  <main class="container" style="padding:0;max-width:100%;">
     <section class="section">
       <h2 class="section-title">Pagos de suscripciones</h2>
       <p class="section-subtitle">Registra pagos manuales y valida extension visual de suscripcion.</p>
@@ -149,5 +136,7 @@
       </form>
     </div>
   </div>
+  <script>AdminCommon.initSidebarLayout('payments');</script>
+</div></div></div>
 </body>
 </html>

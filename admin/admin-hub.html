@@ -1,944 +1,310 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ffffff">
-    <title>Panel - Appyra</title>
-    <link rel="manifest" href="../manifest.webmanifest">
-    <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
-    <link rel="icon" href="../assets/img/pwa/icon-192.png">
-    <script defer src="../assets/js/pwa.js"></script>
-    <script src="../assets/js/adminCommon.js"></script>
-    <style>
-        :root {
-            --bg: #f5f7fb;
-            --surface: #ffffff;
-            --surface-soft: #f8fafc;
-            --line: #dbe4f0;
-            --text: #0f172a;
-            --muted: #64748b;
-            --brand: #1d4ed8;
-            --brand-soft: #dbeafe;
-            --accent: #0f766e;
-            --accent-soft: #ccfbf1;
-            --warning: #b45309;
-            --warning-soft: #fef3c7;
-            --violet: #7c3aed;
-            --violet-soft: #ede9fe;
-            --shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
-            --radius: 24px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            min-height: 100%;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background:
-                radial-gradient(1200px 400px at 50% -100px, #ffffff 0%, rgba(255, 255, 255, 0.3) 45%, transparent 100%),
-                linear-gradient(180deg, #f8fbff 0%, #f5f7fb 100%);
-            color: var(--text);
-        }
-
-        a {
-            color: inherit;
-        }
-
-        button {
-            font: inherit;
-        }
-
-        .main-layout {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 280px;
-            background: rgba(255, 255, 255, 0.96);
-            border-right: 1px solid var(--line);
-            padding: 24px 18px 18px;
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            overflow-y: auto;
-            transition: transform .22s ease;
-            z-index: 1101;
-            box-shadow: 18px 0 40px rgba(15, 23, 42, 0.06);
-        }
-
-        .sidebar-header {
-            display: grid;
-            gap: 12px;
-            padding: 6px 8px 18px;
-            border-bottom: 1px solid var(--line);
-            margin-bottom: 18px;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sidebar-logo {
-            width: 52px;
-            height: 52px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
-            border: 1px solid #d7e3f4;
-            padding: 8px;
-            object-fit: contain;
-        }
-
-        .sidebar-title {
-            display: grid;
-            gap: 2px;
-        }
-
-        .sidebar-title strong {
-            font-size: 1rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-        }
-
-        .sidebar-title span {
-            font-size: 0.86rem;
-            color: var(--muted);
-            font-weight: 600;
-        }
-
-        .sidebar-nav {
-            list-style: none;
-            display: grid;
-            gap: 8px;
-        }
-
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 14px;
-            text-decoration: none;
-            border: 1px solid transparent;
-            border-radius: 16px;
-            color: #1e293b;
-            font-weight: 700;
-            transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
-        }
-
-        .sidebar-nav a:hover {
-            background: #f8fafc;
-            border-color: #dbe4f0;
-            transform: translateX(2px);
-        }
-
-        .sidebar-nav a.active {
-            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
-            border-color: #bfd5ff;
-            color: #1d4ed8;
-        }
-
-        .sidebar-nav .icon {
-            width: 28px;
-            text-align: center;
-            font-size: 1.05rem;
-        }
-
-        .sidebar-footer {
-            margin-top: 18px;
-            padding-top: 18px;
-            border-top: 1px solid var(--line);
-        }
-
-        .logout-btn {
-            width: 100%;
-            border: 1px solid #fecaca;
-            background: #fff1f2;
-            color: #b91c1c;
-            border-radius: 16px;
-            padding: 14px 16px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .logout-btn:hover {
-            background: #ffe4e6;
-        }
-
-        .drawer-overlay,
-        .profile-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.22);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .2s ease;
-            z-index: 1100;
-        }
-
-        body.drawer-open .drawer-overlay,
-        body.profile-open .profile-overlay {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .main-content {
-            margin-left: 280px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .top-navbar {
-            position: sticky;
-            top: 0;
-            z-index: 60;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(219, 228, 240, 0.92);
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .top-navbar-left {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            min-width: 0;
-        }
-
-        .menu-btn,
-        .profile-btn {
-            border: 1px solid var(--line);
-            background: var(--surface);
-            color: var(--text);
-            border-radius: 18px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-        }
-
-        .menu-btn {
-            width: 56px;
-            height: 56px;
-            font-size: 1.4rem;
-            font-weight: 900;
-            flex: 0 0 auto;
-        }
-
-        .profile-btn {
-            width: 50px;
-            height: 50px;
-            font-size: 1.1rem;
-            font-weight: 900;
-            color: #1d4ed8;
-            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
-            border-color: #cfe0ff;
-        }
-
-        .top-navbar h1 {
-            font-size: 1.3rem;
-            font-weight: 900;
-            letter-spacing: -0.04em;
-            color: var(--text);
-            white-space: nowrap;
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 18px;
-        }
-
-        .report-shell {
-            max-width: 760px;
-            margin: 0 auto;
-        }
-
-        .report-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .report-card {
-            position: relative;
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            padding: 16px 14px;
-            min-height: 132px;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 12px;
-            overflow: hidden;
-        }
-
-        .report-card::before {
-            content: '';
-            position: absolute;
-            inset: 0 auto auto 0;
-            width: 100%;
-            height: 5px;
-            border-radius: 24px 24px 0 0;
-            background: #dbeafe;
-        }
-
-        .report-card.tone-blue::before {
-            background: #60a5fa;
-        }
-
-        .report-card.tone-teal::before {
-            background: #2dd4bf;
-        }
-
-        .report-card.tone-amber::before {
-            background: #f59e0b;
-        }
-
-        .report-card.tone-violet::before {
-            background: #8b5cf6;
-        }
-
-        .report-card.tone-slate::before {
-            background: #94a3b8;
-        }
-
-        .card-label {
-            font-size: 0.76rem;
-            line-height: 1.2;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-weight: 800;
-            color: var(--muted);
-        }
-
-        .card-value {
-            font-size: clamp(1rem, 4.6vw, 1.8rem);
-            font-weight: 900;
-            letter-spacing: -0.05em;
-            color: var(--text);
-            line-height: 1;
-            word-break: break-word;
-        }
-
-        .card-meta {
-            font-size: 0.8rem;
-            line-height: 1.35;
-            color: var(--muted);
-            min-height: 2.15em;
-        }
-
-        .status-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-top: 14px;
-            padding: 14px 16px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.84);
-            border: 1px solid var(--line);
-            color: var(--muted);
-            box-shadow: var(--shadow);
-        }
-
-        .status-row strong {
-            color: var(--text);
-        }
-
-        .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: var(--surface-soft);
-            border: 1px solid var(--line);
-            color: #1e293b;
-            font-size: 0.8rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: #10b981;
-            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.12);
-        }
-
-        .profile-sheet {
-            position: fixed;
-            right: 18px;
-            top: 86px;
-            width: min(340px, calc(100vw - 36px));
-            background: rgba(255, 255, 255, 0.98);
-            border: 1px solid var(--line);
-            border-radius: 28px;
-            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.18);
-            padding: 22px;
-            display: grid;
-            gap: 16px;
-            opacity: 0;
-            transform: translateY(-8px) scale(0.98);
-            pointer-events: none;
-            transition: opacity .18s ease, transform .18s ease;
-            z-index: 1200;
-        }
-
-        body.profile-open .profile-sheet {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            pointer-events: auto;
-        }
-
-        .profile-head {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .profile-avatar {
-            width: 58px;
-            height: 58px;
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%);
-            color: #1d4ed8;
-            font-size: 1.2rem;
-            font-weight: 900;
-            border: 1px solid #d6ddfa;
-        }
-
-        .profile-title {
-            display: grid;
-            gap: 4px;
-            min-width: 0;
-        }
-
-        .profile-title strong {
-            font-size: 1rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-        }
-
-        .profile-title span {
-            font-size: 0.88rem;
-            color: var(--muted);
-            word-break: break-word;
-        }
-
-        .profile-data {
-            display: grid;
-            gap: 10px;
-        }
-
-        .profile-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 12px 14px;
-            border-radius: 18px;
-            background: #f8fafc;
-            border: 1px solid var(--line);
-        }
-
-        .profile-item span {
-            font-size: 0.84rem;
-            color: var(--muted);
-            font-weight: 700;
-        }
-
-        .profile-item strong {
-            font-size: 0.9rem;
-            color: var(--text);
-            text-align: right;
-            word-break: break-word;
-        }
-
-        .profile-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .profile-action {
-            border: 1px solid var(--line);
-            background: var(--surface);
-            color: var(--text);
-            border-radius: 16px;
-            padding: 12px 14px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .profile-action.primary {
-            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
-            border-color: #c7dbff;
-            color: #1d4ed8;
-        }
-
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-
-        @media (max-width: 980px) {
-            .sidebar {
-                transform: translateX(-102%);
-                width: min(320px, 88vw);
-            }
-
-            body.drawer-open .sidebar {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-        }
-
-        @media (min-width: 981px) {
-            .menu-btn {
-                display: none;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .top-navbar {
-                padding: 14px 16px;
-            }
-
-            .content-area {
-                padding: 14px;
-            }
-
-            .report-grid {
-                gap: 10px;
-            }
-
-            .report-card {
-                padding: 14px 12px;
-                min-height: 122px;
-                border-radius: 22px;
-            }
-
-            .status-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-
-        @media (max-width: 420px) {
-            .top-navbar h1 {
-                font-size: 1.18rem;
-            }
-
-            .menu-btn {
-                width: 54px;
-                height: 54px;
-            }
-
-            .profile-btn {
-                width: 48px;
-                height: 48px;
-            }
-
-            .card-label {
-                font-size: 0.72rem;
-            }
-
-            .card-meta {
-                font-size: 0.76rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Dashboard - Appyra</title>
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
+  <link rel="icon" href="../assets/img/pwa/icon-192.png" />
+  <script defer src="../assets/js/pwa.js"></script>
+  <script src="../assets/js/adminCommon.js"></script>
+  <link rel="stylesheet" href="../assets/css/admin-unified.css" />
+  <style>
+    .dash-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .kpi-card {
+      position: relative;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      box-shadow: 0 6px 20px rgba(15,23,42,.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      border-radius: 16px 16px 0 0;
+      background: #dbeafe;
+    }
+    .kpi-card.tone-blue::before   { background: #60a5fa; }
+    .kpi-card.tone-teal::before   { background: #2dd4bf; }
+    .kpi-card.tone-green::before  { background: #4ade80; }
+    .kpi-card.tone-amber::before  { background: #fbbf24; }
+    .kpi-card.tone-violet::before { background: #a78bfa; }
+    .kpi-card.tone-red::before    { background: #f87171; }
+    .kpi-card.tone-slate::before  { background: #94a3b8; }
+    .kpi-card.tone-indigo::before { background: #818cf8; }
+    .kpi-label {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; color: #64748b;
+    }
+    .kpi-value {
+      font-size: clamp(1.1rem,3.5vw,1.8rem); font-weight: 900;
+      letter-spacing: -.05em; color: #0f172a; line-height: 1;
+    }
+    .kpi-meta { font-size: .76rem; color: #64748b; line-height: 1.3; }
+    .dash-section {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+      padding: 16px; box-shadow: 0 6px 20px rgba(15,23,42,.05); margin-bottom: 14px;
+    }
+    .dash-section-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .dash-section-head h2 { font-size: .95rem; font-weight: 900; letter-spacing: -.02em; margin: 0; }
+    .dash-section-head p  { font-size: .82rem; color: #64748b; margin: 3px 0 0; }
+    .dash-status-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 12px 14px; border: 1px solid #e2e8f0;
+      border-radius: 12px; background: #f8fafc; font-size: .84rem; flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+      border-radius: 999px; background: #f0fdf4; border: 1px solid #bbf7d0;
+      color: #166534; font-size: .78rem; font-weight: 700;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,.15); }
+    .table-shell { overflow: auto; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; min-width: 480px; font-size: .86rem; }
+    thead { background: #f8fafc; }
+    th,td { padding: 9px 11px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    th { font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .mono { font-family: Menlo,Consolas,monospace; font-size: .8rem; }
+    .muted { color: #64748b; }
+    .empty { padding: 18px; color: #94a3b8; font-size: .88rem; text-align: center; }
+    .message-bar { display: none; padding: 10px 14px; border-radius: 10px; font-size: .88rem; font-weight: 700; margin-bottom: 14px; }
+    .message-bar.show { display: block; }
+    .message-bar.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .message-bar.error   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .btn { border: 1px solid transparent; border-radius: 10px; padding: 8px 13px; font-weight: 800; font-size: .84rem; cursor: pointer; white-space: nowrap; }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-secondary { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+    .btn-primary { background: linear-gradient(135deg,#1d4ed8,#1e40af); color: #fff; }
+    .btn-warning { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    @media (max-width: 1100px) { .dash-grid { grid-template-columns: repeat(3,1fr); } }
+    @media (max-width: 760px)  { .dash-grid { grid-template-columns: repeat(2,1fr); } }
+  </style>
 </head>
 <body>
-    <div class="main-layout">
-        <aside class="sidebar" aria-label="Menu administrativo">
-            <div class="sidebar-header">
-                <div class="sidebar-brand">
-                    <img src="../assets/img/logo/logoprincipal.png" alt="Appyra" class="sidebar-logo">
-                    <div class="sidebar-title">
-                        <strong>Appyra</strong>
-                        <span>Panel principal</span>
-                    </div>
-                </div>
-            </div>
-
-            <ul class="sidebar-nav">
-                <li>
-                    <a href="admin-hub.html" class="active">
-                        <span class="icon">🏠</span>
-                        <span>Panel</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="customers.html">
-                        <span class="icon">👥</span>
-                        <span>Clientes</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="licenses.html">
-                        <span class="icon">📜</span>
-                        <span>Licencias</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="license-config.html">
-                        <span class="icon">🔐</span>
-                        <span>Tokens reset</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="products.html">
-                        <span class="icon">🧩</span>
-                        <span>Productos</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="store-settings.html">
-                        <span class="icon">🏷️</span>
-                        <span>Store settings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="saas-dashboard.html">
-                        <span class="icon">📊</span>
-                        <span>SaaS Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="product-plans.html">
-                        <span class="icon">🧾</span>
-                        <span>Plans</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="subscriptions.html">
-                        <span class="icon">🔄</span>
-                        <span>Subscriptions</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="payments.html">
-                        <span class="icon">💳</span>
-                        <span>Payments</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="audit-logs.html">
-                        <span class="icon">🧷</span>
-                        <span>Audit Logs</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="platform-users.html">
-                        <span class="icon">🛡️</span>
-                        <span>Platform Users</span>
-                    </a>
-                </li>
-            </ul>
-
-            <div class="sidebar-footer">
-                <button class="logout-btn" type="button" onclick="logout()">Cerrar sesion</button>
-            </div>
-        </aside>
-
-        <div class="drawer-overlay" onclick="closeDrawer()"></div>
-        <div class="profile-overlay" onclick="closeProfile()"></div>
-
-        <div class="main-content">
-            <header class="top-navbar">
-                <div class="top-navbar-left">
-                    <button class="menu-btn" type="button" onclick="toggleDrawer()" aria-label="Abrir menu">☰</button>
-                    <h1>Panel</h1>
-                </div>
-
-                <button class="profile-btn" type="button" onclick="toggleProfile()" aria-label="Ver informacion del usuario">👤</button>
-            </header>
-
-            <main class="content-area">
-                <section class="report-shell" aria-label="Reporte principal">
-                    <h2 class="visually-hidden">Reporte principal</h2>
-
-                    <div class="report-grid">
-                        <article class="report-card tone-blue">
-                            <span class="card-label">Clientes</span>
-                            <strong class="card-value" id="reportCustomers">--</strong>
-                            <span class="card-meta" id="reportCustomersMeta">Negocios registrados</span>
-                        </article>
-
-                        <article class="report-card tone-teal">
-                            <span class="card-label">Licencias</span>
-                            <strong class="card-value" id="reportLicenses">--</strong>
-                            <span class="card-meta" id="reportLicensesMeta">Cargando resumen</span>
-                        </article>
-
-                        <article class="report-card tone-amber">
-                            <span class="card-label">Activas</span>
-                            <strong class="card-value" id="reportActiveLicenses">--</strong>
-                            <span class="card-meta" id="reportActiveLicensesMeta">Licencias vigentes</span>
-                        </article>
-
-                        <article class="report-card tone-violet">
-                            <span class="card-label">Licencias FULL</span>
-                            <strong class="card-value" id="reportFullLicenses">--</strong>
-                            <span class="card-meta" id="reportFullLicensesMeta">Ventas tipo FULL</span>
-                        </article>
-
-                        <article class="report-card tone-slate">
-                            <span class="card-label">Productos</span>
-                            <strong class="card-value" id="reportProducts">--</strong>
-                            <span class="card-meta" id="reportProductsMeta">Catalogo administrativo</span>
-                        </article>
-
-                        <article class="report-card tone-blue">
-                            <span class="card-label">Sistema top</span>
-                            <strong class="card-value" id="reportTopSystem">--</strong>
-                            <span class="card-meta" id="reportTopSystemMeta">Proyecto con mas licencias</span>
-                        </article>
-                    </div>
-
-                    <div class="status-row">
-                        <strong id="reportStatus">Actualizando reporte...</strong>
-                        <span class="status-pill">
-                            <span class="status-dot"></span>
-                            <span id="reportUpdatedAt">Sincronizando</span>
-                        </span>
-                    </div>
-                </section>
-            </main>
+  <div class="admin-layout">
+    <div id="adminSidebarContainer"></div>
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+          <span class="topbar-title">Dashboard</span>
         </div>
+        <div class="topbar-right">
+          <div class="topbar-user">&#128100; <span id="userName">Admin</span></div>
+          <button class="btn btn-secondary" id="refreshBtn" type="button">&#8635; Actualizar</button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div id="messageBar" class="message-bar"></div>
+        <div class="dash-grid">
+          <div class="kpi-card tone-blue">
+            <span class="kpi-label">Clientes</span>
+            <strong class="kpi-value" id="kpiClients">--</strong>
+            <span class="kpi-meta">Negocios registrados</span>
+          </div>
+          <div class="kpi-card tone-teal">
+            <span class="kpi-label">Licencias</span>
+            <strong class="kpi-value" id="kpiLicenses">--</strong>
+            <span class="kpi-meta" id="kpiLicensesMeta">FULL &middot; DEMO</span>
+          </div>
+          <div class="kpi-card tone-green">
+            <span class="kpi-label">Lic. activas</span>
+            <strong class="kpi-value" id="kpiActiveLicenses">--</strong>
+            <span class="kpi-meta">Vigentes hoy</span>
+          </div>
+          <div class="kpi-card tone-amber">
+            <span class="kpi-label">Suscripciones activas</span>
+            <strong class="kpi-value" id="kpiActiveSubs">--</strong>
+            <span class="kpi-meta">active / lifetime</span>
+          </div>
+          <div class="kpi-card tone-red">
+            <span class="kpi-label">Suscripciones expiradas</span>
+            <strong class="kpi-value" id="kpiExpiredSubs">--</strong>
+            <span class="kpi-meta">estado expired</span>
+          </div>
+          <div class="kpi-card tone-violet">
+            <span class="kpi-label">Suspendidas</span>
+            <strong class="kpi-value" id="kpiSuspendedSubs">--</strong>
+            <span class="kpi-meta">suspended</span>
+          </div>
+          <div class="kpi-card tone-indigo">
+            <span class="kpi-label">Pagos pendientes</span>
+            <strong class="kpi-value" id="kpiPendingPayments">--</strong>
+            <span class="kpi-meta">status pending</span>
+          </div>
+          <div class="kpi-card tone-green">
+            <span class="kpi-label">Ingreso estimado</span>
+            <strong class="kpi-value" id="kpiMonthlyRevenue">--</strong>
+            <span class="kpi-meta" id="kpiCollectedMeta">Cobrado este mes</span>
+          </div>
+        </div>
+        <div class="dash-status-bar">
+          <strong id="dashStatusText">Cargando datos...</strong>
+          <span class="status-pill"><span class="status-dot"></span> <span id="dashUpdatedAt">Sincronizando</span></span>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-head">
+            <div>
+              <h2>Clientes cerca de expiracion</h2>
+              <p>Suscripciones que vencen en los proximos 15 dias.</p>
+            </div>
+          </div>
+          <div id="nearExpWrap" class="table-shell"><div class="empty">Cargando...</div></div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-head">
+            <div>
+              <h2>Ingresos por producto / proyecto</h2>
+              <p>Estimado mensual normalizado por planes activos.</p>
+            </div>
+          </div>
+          <div id="revenueByOwnershipWrap" class="table-shell"><div class="empty">Cargando...</div></div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-head">
+            <div>
+              <h2>Mantenimiento de suscripciones</h2>
+              <p>Detecta y expira suscripciones vencidas. Bloquea licencias vinculadas.</p>
+            </div>
+            <button id="maintenanceBtn" class="btn btn-warning" type="button">Ejecutar mantenimiento</button>
+          </div>
+          <div id="maintenanceResult" hidden></div>
+        </div>
+      </div>
     </div>
-
-    <aside class="profile-sheet" aria-label="Informacion del usuario">
-        <div class="profile-head">
-            <div class="profile-avatar" id="profileAvatar">AD</div>
-            <div class="profile-title">
-                <strong id="userName">Admin</strong>
-                <span id="profileEmail">Usuario logueado</span>
-            </div>
-        </div>
-
-        <div class="profile-data">
-            <div class="profile-item">
-                <span>Sesion</span>
-                <strong>Activa</strong>
-            </div>
-            <div class="profile-item">
-                <span>Origen API</span>
-                <strong id="profileApiOrigin">--</strong>
-            </div>
-            <div class="profile-item">
-                <span>Panel</span>
-                <strong>Principal</strong>
-            </div>
-        </div>
-
-        <div class="profile-actions">
-            <button class="profile-action" type="button" onclick="closeProfile()">Cerrar</button>
-            <button class="profile-action primary" type="button" onclick="logout()">Cerrar sesion</button>
-        </div>
-    </aside>
-
-    <script>
-        let currentSessionId = null;
-
-        window.addEventListener('DOMContentLoaded', init);
-        window.addEventListener('pageshow', () => {
-            closeDrawer();
-            closeProfile();
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                closeDrawer();
-                closeProfile();
-            }
-        });
-
-        async function init() {
-            closeDrawer();
-            closeProfile();
-            bindDrawerAutoClose();
-
-            currentSessionId = await AdminCommon.ensureAuth({ userNameElId: 'userName' });
-            if (!currentSessionId) return;
-
-            hydrateProfile();
-            await loadHubReport();
-        }
-
-        function bindDrawerAutoClose() {
-            const sidebar = document.querySelector('.sidebar');
-            if (!sidebar) return;
-
-            sidebar.addEventListener('click', (event) => {
-                const link = event.target && event.target.closest ? event.target.closest('a') : null;
-                if (!link) return;
-                closeDrawer();
-            });
-        }
-
-        function toggleDrawer() {
-            document.body.classList.toggle('drawer-open');
-        }
-
-        function closeDrawer() {
-            document.body.classList.remove('drawer-open');
-        }
-
-        function toggleProfile() {
-            document.body.classList.toggle('profile-open');
-        }
-
-        function closeProfile() {
-            document.body.classList.remove('profile-open');
-        }
-
-        function hydrateProfile() {
-            const userName = String(document.getElementById('userName')?.textContent || 'Admin').trim() || 'Admin';
-            const initials = userName
-                .split(/\s+/)
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part) => part.charAt(0).toUpperCase())
-                .join('') || 'AD';
-
-            document.getElementById('profileAvatar').textContent = initials;
-            document.getElementById('profileEmail').textContent = userName;
-            document.getElementById('profileApiOrigin').textContent = AdminCommon.BACKEND_API_BASE || window.location.origin || '--';
-        }
-
-        function setMetric(valueId, value, metaId, meta) {
-            const valueEl = document.getElementById(valueId);
-            const metaEl = document.getElementById(metaId);
-            if (valueEl) valueEl.textContent = value;
-            if (metaEl) metaEl.textContent = meta;
-        }
-
-        function formatNumber(value) {
-            const number = Number(value || 0);
-            return new Intl.NumberFormat('es-DO').format(number);
-        }
-
-        async function getTotal(path) {
-            const { data } = await AdminCommon.adminFetchJson(path, { sessionId: currentSessionId });
-            return Number(data?.total || 0);
-        }
-
-        async function loadTopProject() {
-            const { data } = await AdminCommon.adminFetchJson('/api/admin/projects', { sessionId: currentSessionId });
-            const projects = Array.isArray(data?.projects) ? data.projects : [];
-
-            if (!projects.length) {
-                return { name: 'Sin datos', total: 0 };
-            }
-
-            const counts = await Promise.all(projects.map(async (project) => {
-                const total = await getTotal(`/api/admin/licenses?limit=1&page=1&project_id=${encodeURIComponent(project.id)}`);
-                return { project, total };
-            }));
-
-            const ranked = counts
-                .filter((item) => item.total > 0)
-                .sort((left, right) => right.total - left.total);
-
-            if (!ranked.length) {
-                return { name: 'Sin ventas', total: 0 };
-            }
-
-            const nonDefault = ranked.find((item) => String(item.project?.code || '').toUpperCase() !== 'DEFAULT');
-            const winner = nonDefault || ranked[0];
-            const projectName = String(winner.project?.name || winner.project?.code || 'Sin datos').trim();
-            return { name: projectName, total: winner.total };
-        }
-
-        async function loadHubReport() {
-            const statusEl = document.getElementById('reportStatus');
-            const updatedAtEl = document.getElementById('reportUpdatedAt');
-
-            try {
-                const [
-                    customers,
-                    licenses,
-                    activeLicenses,
-                    fullLicenses,
-                    demoLicenses,
-                    products,
-                    publishedProducts,
-                    topProject
-                ] = await Promise.all([
-                    getTotal('/api/admin/customers?limit=1&page=1'),
-                    getTotal('/api/admin/licenses?limit=1&page=1'),
-                    getTotal('/api/admin/licenses?limit=1&page=1&estado=ACTIVA'),
-                    getTotal('/api/admin/licenses?limit=1&page=1&tipo=FULL'),
-                    getTotal('/api/admin/licenses?limit=1&page=1&tipo=DEMO'),
-                    getTotal('/api/admin/products?limit=1&offset=0'),
-                    getTotal('/api/admin/products?limit=1&offset=0&status=published'),
-                    loadTopProject()
-                ]);
-
-                setMetric('reportCustomers', formatNumber(customers), 'reportCustomersMeta', 'Negocios registrados');
-                setMetric('reportLicenses', formatNumber(licenses), 'reportLicensesMeta', `FULL ${formatNumber(fullLicenses)} · DEMO ${formatNumber(demoLicenses)}`);
-                setMetric('reportActiveLicenses', formatNumber(activeLicenses), 'reportActiveLicensesMeta', 'Licencias vigentes hoy');
-                setMetric('reportFullLicenses', formatNumber(fullLicenses), 'reportFullLicensesMeta', 'Licencias FULL creadas');
-                setMetric('reportProducts', formatNumber(products), 'reportProductsMeta', `Publicados ${formatNumber(publishedProducts)}`);
-                setMetric('reportTopSystem', topProject.name, 'reportTopSystemMeta', topProject.total > 0 ? `${formatNumber(topProject.total)} licencias` : 'Aun sin licencias');
-
-                if (statusEl) {
-                    statusEl.textContent = `Resumen de ${formatNumber(customers)} clientes y ${formatNumber(licenses)} licencias.`;
-                }
-
-                if (updatedAtEl) {
-                    updatedAtEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}`;
-                }
-            } catch (error) {
-                console.error('loadHubReport error:', error);
-                if (statusEl) statusEl.textContent = 'No se pudo cargar el reporte ahora mismo.';
-                if (updatedAtEl) updatedAtEl.textContent = 'Sin conexion';
-                setMetric('reportTopSystem', '--', 'reportTopSystemMeta', 'Intenta recargar el panel');
-            }
-        }
-
-        async function logout() {
-            closeDrawer();
-            closeProfile();
-            await AdminCommon.logout();
-        }
-    </script>
+  </div>
+  <script>
+    var _sid = null;
+    window.addEventListener('DOMContentLoaded', init);
+    function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});}
+    function fmtNum(v){return new Intl.NumberFormat('es-DO').format(Number(v||0));}
+    function fmtCur(v){return 'DOP\u00a0'+new Intl.NumberFormat('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v||0));}
+    function fmtDate(v){if(!v)return'-';var d=new Date(v);return isNaN(d)?'-':d.toLocaleDateString('es-DO');}
+    function setText(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+    function showMsg(txt,type){var el=document.getElementById('messageBar');if(!el)return;el.textContent=txt;el.className='message-bar'+(txt?' show '+(type||''):'');}
+    async function getTotal(path){var r=await AdminCommon.adminFetchJson(path,{sessionId:_sid});return Number(r.data&&r.data.total||0);}
+    async function loadTopProject(){
+      var r=await AdminCommon.adminFetchJson('/api/admin/projects',{sessionId:_sid});
+      var projects=Array.isArray(r.data&&r.data.projects)?r.data.projects:[];
+      if(!projects.length)return{name:'Sin datos',total:0};
+      var counts=await Promise.all(projects.map(async function(p){return{p:p,total:await getTotal('/api/admin/licenses?limit=1&page=1&project_id='+encodeURIComponent(p.id))};}));
+      var ranked=counts.filter(function(x){return x.total>0;}).sort(function(a,b){return b.total-a.total;});
+      if(!ranked.length)return{name:'Sin ventas',total:0};
+      var winner=ranked.find(function(x){return String(x.p&&x.p.code||'').toUpperCase()!=='DEFAULT';})||ranked[0];
+      return{name:String(winner.p&&winner.p.name||winner.p&&winner.p.code||'?').trim(),total:winner.total};
+    }
+    async function init(){
+      AdminCommon.initSidebarLayout('dashboard');
+      _sid=await AdminCommon.ensureAuth({userNameElId:'userName'});
+      if(!_sid)return;
+      document.getElementById('refreshBtn').addEventListener('click',loadAll);
+      document.getElementById('maintenanceBtn').addEventListener('click',runMaintenance);
+      await loadAll();
+    }
+    async function loadAll(){
+      document.getElementById('refreshBtn').disabled=true;
+      setText('dashStatusText','Actualizando...');
+      try{
+        await Promise.all([loadLicenseKPIs(),loadSaasKPIs()]);
+        setText('dashUpdatedAt','Actualizado '+new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'}));
+        showMsg('','');
+      }catch(e){
+        showMsg(e&&e.message||'Error al cargar dashboard','error');
+        setText('dashStatusText','Error al cargar datos');
+      }finally{
+        document.getElementById('refreshBtn').disabled=false;
+      }
+    }
+    async function loadLicenseKPIs(){
+      var results=await Promise.all([
+        getTotal('/api/admin/customers?limit=1&page=1'),
+        getTotal('/api/admin/licenses?limit=1&page=1'),
+        getTotal('/api/admin/licenses?limit=1&page=1&estado=ACTIVA'),
+        getTotal('/api/admin/licenses?limit=1&page=1&tipo=FULL'),
+        getTotal('/api/admin/licenses?limit=1&page=1&tipo=DEMO'),
+        loadTopProject()
+      ]);
+      var customers=results[0],licenses=results[1],activeLicenses=results[2],fullLicenses=results[3],demoLicenses=results[4],topProject=results[5];
+      setText('kpiClients',fmtNum(customers));
+      setText('kpiLicenses',fmtNum(licenses));
+      setText('kpiLicensesMeta','FULL '+fmtNum(fullLicenses)+' \u00b7 DEMO '+fmtNum(demoLicenses));
+      setText('kpiActiveLicenses',fmtNum(activeLicenses));
+      setText('dashStatusText',fmtNum(customers)+' clientes \u00b7 '+fmtNum(licenses)+' licencias \u00b7 Top: '+topProject.name);
+    }
+    async function loadSaasKPIs(){
+      var res=await AdminCommon.adminFetchJson('/api/admin/saas-dashboard',{sessionId:_sid});
+      var d=res.data;
+      setText('kpiActiveSubs',fmtNum(d.active_subscriptions));
+      setText('kpiExpiredSubs',fmtNum(d.expired_subscriptions));
+      setText('kpiSuspendedSubs',fmtNum(d.suspended_subscriptions));
+      setText('kpiPendingPayments',fmtNum(d.pending_payments));
+      setText('kpiMonthlyRevenue',fmtCur(d.monthly_revenue_estimate));
+      setText('kpiCollectedMeta','Cobrado mes: '+fmtCur(d.payments_collected_this_month));
+      renderNearExpiration(d.clients_near_expiration||[]);
+      renderRevenueByOwnership(d.revenue_by_product_or_project||[]);
+    }
+    function renderNearExpiration(rows){
+      var wrap=document.getElementById('nearExpWrap');
+      if(!rows.length){wrap.innerHTML='<div class="empty">Sin clientes proximos a expirar en los proximos 15 dias.</div>';return;}
+      wrap.innerHTML='<table><thead><tr><th>Cliente</th><th>Plan</th><th>Estado</th><th>Vence</th><th></th></tr></thead><tbody>'
+        +rows.map(function(sub){return'<tr><td><div>'+esc(sub.company_name||'-')+'</div><div class="muted mono">'+esc(sub.company_id||'')+'</div></td>'
+          +'<td><div>'+esc(sub.plan_name||'-')+'</div><div class="muted">'+esc(sub.product_name||sub.project_name||'')+'</div></td>'
+          +'<td><span class="chip '+esc(String(sub.status||'').toLowerCase())+'">'+esc(sub.status||'-')+'</span></td>'
+          +'<td>'+fmtDate(sub.end_date)+'</td>'
+          +'<td><a href="customer-detail.html?id='+esc(sub.company_id)+'" class="btn btn-secondary" style="padding:5px 10px;font-size:.78rem;">Ver</a></td>'
+          +'</tr>';}).join('')+'</tbody></table>';
+    }
+    function renderRevenueByOwnership(rows){
+      var wrap=document.getElementById('revenueByOwnershipWrap');
+      if(!rows.length){wrap.innerHTML='<div class="empty">Sin datos de ingresos por producto/proyecto.</div>';return;}
+      wrap.innerHTML='<table><thead><tr><th>Producto / Proyecto</th><th>Tipo</th><th>Suscripciones</th><th>Estimado mensual</th></tr></thead><tbody>'
+        +rows.map(function(r){return'<tr><td>'+esc(r.product_name||r.project_name||'-')+'</td><td>'+esc(r.ownership_type||'-')+'</td><td>'+fmtNum(r.subscription_count)+'</td><td>'+fmtCur(r.monthly_estimate)+'</td></tr>';}).join('')+'</tbody></table>';
+    }
+    async function runMaintenance(){
+      var btn=document.getElementById('maintenanceBtn');
+      btn.disabled=true; btn.textContent='Ejecutando...';
+      var wrap=document.getElementById('maintenanceResult');
+      wrap.hidden=true; wrap.innerHTML='';
+      try{
+        var res=await AdminCommon.adminFetchJson('/api/admin/subscriptions/run-maintenance',{sessionId:_sid,method:'POST'});
+        var d=res.data;
+        wrap.hidden=false;
+        wrap.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;">'
+          +'<span class="chip expired">'+esc(d.expired_count||0)+' expiradas</span>'
+          +'<span class="chip past_due">'+esc(d.past_due_count||0)+' en mora</span>'
+          +'<span class="chip cancelled">'+esc(d.skipped_count||0)+' omitidas</span>'
+          +'<span class="chip suspended">'+esc(d.licenses_blocked_count||0)+' licencias bloqueadas</span>'
+          +'<span class="muted" style="font-size:.76rem;align-self:center;">de '+esc(d.candidates_checked||0)+' candidatas</span>'
+          +'</div>';
+        showMsg(res.message||'Mantenimiento completado.','success');
+        await loadSaasKPIs();
+      }catch(e){
+        showMsg(e&&e.message||'Error en mantenimiento','error');
+      }finally{
+        btn.disabled=false; btn.textContent='Ejecutar mantenimiento';
+      }
+    }
+  </script>
 </body>
 </html>

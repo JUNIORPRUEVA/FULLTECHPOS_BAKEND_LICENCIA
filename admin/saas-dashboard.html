@@ -1,93 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#ffffff" />
-  <title>SaaS Dashboard</title>
-  <link rel="manifest" href="../manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
-  <link rel="icon" href="../assets/img/pwa/icon-192.png" />
-  <link rel="stylesheet" href="../assets/css/jr-admin.css" />
-  <link rel="stylesheet" href="../assets/css/admin-compact-bar.css" />
-  <link rel="stylesheet" href="../assets/css/admin-saas.css" />
-  <script defer src="../assets/js/pwa.js"></script>
-  <script defer src="../assets/js/adminCommon.js"></script>
-  <script defer src="../assets/js/adminCompactBar.js"></script>
-  <script defer src="../assets/js/adminSaasDashboard.js"></script>
+  <meta http-equiv="refresh" content="0;url=admin-hub.html" />
+  <title>SaaS Dashboard - Redirigiendo...</title>
 </head>
-<body class="jr-admin admin-compact-page">
-  <header class="admin-compactBar">
-    <div class="admin-compactBarInner">
-      <div class="admin-compactBarLead">
-        <a class="admin-compactBarBtn admin-compactBack" href="admin-hub.html" aria-label="Volver">←</a>
-        <h1 class="admin-compactBarTitle">SaaS Dashboard</h1>
-      </div>
-      <div class="admin-compactBarActions">
-        <button class="admin-compactBarBtn" type="button" data-admin-compact-toggle="saasMenu" onclick="AdminCompactBar.toggle('saasMenu', event)" aria-label="Opciones">⋮</button>
-        <div id="saasMenu" class="admin-compactBarMenu">
-          <div class="admin-compactBarMenuMeta">Sesion: <strong id="userName">Admin</strong></div>
-          <a class="admin-compactBarMenuItem" href="admin-hub.html">Panel principal</a>
-          <a class="admin-compactBarMenuItem" href="product-plans.html">Plans</a>
-          <a class="admin-compactBarMenuItem" href="subscriptions.html">Subscriptions</a>
-          <a class="admin-compactBarMenuItem" href="payments.html">Payments</a>
-          <a class="admin-compactBarMenuItem" href="audit-logs.html">Audit Logs</a>
-          <a class="admin-compactBarMenuItem" href="platform-users.html">Platform Users</a>
-          <button class="admin-compactBarMenuItem danger" type="button" onclick="AdminCompactBar.closeAll(); AdminCommon.logout();">Cerrar sesion</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="section">
-      <h2 class="section-title">Resumen operativo SaaS</h2>
-      <p class="section-subtitle">Vista ejecutiva con señales de ingresos y riesgo de expiracion.</p>
-      <div id="message" class="message"></div>
-
-      <div class="card-grid">
-        <article class="metric-card"><p class="metric-label">Total companies</p><p id="metricCompanies" class="metric-value">--</p><p class="metric-meta">con suscripcion registrada</p></article>
-        <article class="metric-card"><p class="metric-label">Active subscriptions</p><p id="metricActive" class="metric-value">--</p><p class="metric-meta">estado active/lifetime</p></article>
-        <article class="metric-card"><p class="metric-label">Expired subscriptions</p><p id="metricExpired" class="metric-value">--</p><p class="metric-meta">estado expired</p></article>
-        <article class="metric-card"><p class="metric-label">Suspended subscriptions</p><p id="metricSuspended" class="metric-value">--</p><p class="metric-meta">estado suspended</p></article>
-        <article class="metric-card"><p class="metric-label">Pending payments</p><p id="metricPendingPayments" class="metric-value">--</p><p class="metric-meta">status pending</p></article>
-        <article class="metric-card"><p class="metric-label">Monthly estimate</p><p id="metricMonthlyEstimate" class="metric-value">--</p><p class="metric-meta">estimado por planes activos</p></article>
-        <article class="metric-card"><p class="metric-label">Collected this month</p><p id="metricCollectedMonth" class="metric-value">--</p><p class="metric-meta">pagos paid del mes</p></article>
-        <article class="metric-card"><p class="metric-label">Near expiration</p><p id="metricNearExpiration" class="metric-value">--</p><p class="metric-meta">vence en <= 15 dias</p></article>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="toolbar" style="margin-top:0;">
-        <div>
-          <h3 style="margin:0;font-size:1rem;">Clientes cercanos a expiracion</h3>
-          <p class="section-subtitle" style="margin-top:4px;">Prioriza renovaciones y seguimiento.</p>
-        </div>
-        <button id="refreshBtn" class="btn btn-secondary" type="button">Recargar</button>
-      </div>
-      <div id="nearExpWrap" class="table-shell"></div>
-    </section>
-
-    <section class="section">
-      <div class="toolbar" style="margin-top:0;">
-        <div>
-          <h3 style="margin:0;font-size:1rem;">Ingresos por producto / proyecto</h3>
-          <p class="section-subtitle" style="margin-top:4px;">Estimado mensual normalizado por planes activos.</p>
-        </div>
-      </div>
-      <div id="revenueByOwnershipWrap" class="table-shell"></div>
-    </section>
-
-    <section class="section">
-      <div class="toolbar" style="margin-top:0;">
-        <div>
-          <h3 style="margin:0;font-size:1rem;">Mantenimiento de suscripciones</h3>
-          <p class="section-subtitle" style="margin-top:4px;">Detecta y expira suscripciones vencidas. Bloquea licencias vinculadas.</p>
-        </div>
-        <button id="maintenanceBtn" class="btn btn-primary" type="button">Ejecutar mantenimiento</button>
-      </div>
-      <div id="maintenanceResult" class="table-shell" hidden></div>
-    </section>
-  </main>
+<body>
+  <p>Redirigiendo al <a href="admin-hub.html">Dashboard principal</a>...</p>
+  <script>window.location.replace('admin-hub.html');</script>
 </body>
 </html>

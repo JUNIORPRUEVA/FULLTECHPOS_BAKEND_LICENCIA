@@ -8,7 +8,6 @@
     <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png">
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
-    <script defer src="../assets/js/adminDrawer.js"></script>
     <script defer src="../assets/js/adminActionsDialog.js"></script>
     <title>Gestionar Licencias - Appyra</title>
     <style>
@@ -1234,69 +1233,39 @@
         }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
-    <link rel="stylesheet" href="../assets/css/jr-admin-drawer.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
+    <link rel="stylesheet" href="../assets/css/admin-unified.css">
+    <script src="../assets/js/adminCommon.js"></script>
 </head>
-<body class="jr-admin licenses-screen">
-    <header class="license-appbar">
-        <div class="license-appbarInner">
-            <div class="license-appbarTop">
-                <div class="license-appbarLead">
-                    <button class="toolbar-icon" type="button" onclick="goBackToAdmin()" aria-label="Volver al panel principal">←</button>
-                    <div class="license-appbarTitleWrap">
-                        <h1 class="license-appbarTitle">Licencias</h1>
-                        <div class="license-appbarMeta">Vista compacta para gestionar licencias y detalle movil</div>
-                    </div>
-                </div>
-                <div class="license-appbarActions">
-                    <button id="licenseSearchToggle" class="toolbar-icon" type="button" onclick="toggleLicenseSearch()" aria-label="Buscar licencias">⌕</button>
-                    <button id="licenseFilterToggle" class="toolbar-icon" type="button" onclick="toggleLicenseFilters(event)" aria-label="Filtros y opciones">⋮</button>
-
-                    <div id="licenseFilterMenu" class="license-filterMenu">
-                        <div class="license-filterTitle">Filtros y opciones</div>
-                        <div class="license-filterField">
-                            <label for="projectFilter">Proyecto</label>
-                            <select id="projectFilter">
-                                <option value="ALL">Todos</option>
-                            </select>
-                        </div>
-                        <div class="license-filterField">
-                            <label for="licenseStatusFilter">Estado</label>
-                            <select id="licenseStatusFilter" aria-label="Estado">
-                                <option value="ALL">Todos</option>
-                                <option value="ACTIVA">Activa</option>
-                                <option value="PENDIENTE">Pendiente</option>
-                                <option value="VENCIDA">Vencida</option>
-                                <option value="BLOQUEADA">Bloqueada</option>
-                            </select>
-                        </div>
-                        <div class="license-filterField">
-                            <label for="licenseTypeFilter">Tipo</label>
-                            <select id="licenseTypeFilter" aria-label="Tipo">
-                                <option value="ALL">Todos</option>
-                                <option value="DEMO">DEMO</option>
-                                <option value="FULL">FULL</option>
-                            </select>
-                        </div>
-                        <div class="license-filterActions">
-                            <button class="filter-btn" type="button" onclick="clearLicenseFilters()">Limpiar</button>
-                            <button class="filter-btn primary" type="button" onclick="applyLicenseFilters()">Aplicar</button>
-                        </div>
-                        <div class="license-filterActions">
-                            <button class="filter-btn" type="button" onclick="openCreateLicense(); closeLicenseFilters();">Nueva licencia</button>
-                            <button class="filter-btn" type="button" onclick="goBackToAdmin()">Panel principal</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="licenseSearchDock" class="license-searchDock">
-                <input id="licenseSearch" type="search" placeholder="Buscar licencia, cliente, business id o clave" autocomplete="off" />
-            </div>
-        </div>
-    </header>
-
-    <div class="container">
+<body>
+<div class="admin-layout">
+<div id="adminSidebarContainer"></div>
+<div class="admin-main">
+<header class="admin-topbar">
+  <div class="topbar-left">
+    <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+    <span class="topbar-title">Licencias</span>
+  </div>
+  <div class="topbar-right">
+    <button id="licenseSearchToggle" class="btn btn-secondary" type="button" onclick="toggleLicenseSearch()" style="padding:6px 10px;">&#128269;</button>
+    <button id="licenseFilterToggle" class="btn btn-secondary" type="button" onclick="toggleLicenseFilters(event)" style="padding:6px 10px;">&#8942; Filtros</button>
+    <div id="licenseFilterMenu" class="license-filterMenu" style="position:absolute;right:16px;top:64px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px;box-shadow:0 10px 30px rgba(15,23,42,.12);z-index:200;min-width:220px;display:none;">
+      <div style="font-weight:800;font-size:.84rem;margin-bottom:10px;">Filtros</div>
+      <div style="margin-bottom:8px;"><label style="font-size:.8rem;font-weight:700;">Proyecto</label><select id="projectFilter" style="width:100%;margin-top:4px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:8px;"><option value="ALL">Todos</option></select></div>
+      <div style="margin-bottom:8px;"><label style="font-size:.8rem;font-weight:700;">Estado</label><select id="licenseStatusFilter" style="width:100%;margin-top:4px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:8px;"><option value="ALL">Todos</option><option value="ACTIVA">Activa</option><option value="PENDIENTE">Pendiente</option><option value="VENCIDA">Vencida</option><option value="BLOQUEADA">Bloqueada</option></select></div>
+      <div style="margin-bottom:8px;"><label style="font-size:.8rem;font-weight:700;">Tipo</label><select id="licenseTypeFilter" style="width:100%;margin-top:4px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:8px;"><option value="ALL">Todos</option><option value="DEMO">DEMO</option><option value="FULL">FULL</option></select></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn btn-secondary" type="button" onclick="clearLicenseFilters()">Limpiar</button>
+        <button class="btn btn-primary" type="button" onclick="applyLicenseFilters()">Aplicar</button>
+        <button class="btn btn-secondary" type="button" onclick="openCreateLicense();closeLicenseFilters();">+ Nueva</button>
+      </div>
+    </div>
+    <div class="topbar-user">&#128100; <span id="userName">Admin</span></div>
+  </div>
+</header>
+<div id="licenseSearchDock" class="license-searchDock" style="display:none;padding:8px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;"><input id="licenseSearch" type="search" placeholder="Buscar licencia, cliente, business id o clave" autocomplete="off" style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:10px;" /></div>
+<div class="admin-content">
+<div class="container">
         <!-- SECCIÓN: Crear Nueva Licencia -->
         <div class="section" id="createLicenseSection">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
@@ -2780,5 +2749,7 @@
             }
         }
     </script>
+    <script>AdminCommon.initSidebarLayout('licenses');</script>
+</div></div></div></div>
 </body>
 </html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -10,6 +10,8 @@
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
     <script defer src="../assets/js/adminActionsDialog.js"></script>
+    <script src="../assets/js/adminCommon.js"></script>
+    <link rel="stylesheet" href="../assets/css/admin-unified.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1155,63 +1157,37 @@
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
 </head>
-<body class="jr-admin">
+<body>
     <div class="admin-layout">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <img src="../assets/img/logo/logoprincipal.png" alt="Appyra" />
-                </div>
-                <h2>Appyra</h2>
+        <div id="adminSidebarContainer"></div>
+        <div class="admin-main">
+        <header class="admin-topbar">
+          <div class="topbar-left">
+            <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+            <span class="topbar-title">Clientes</span>
+          </div>
+          <div class="topbar-right">
+            <button class="toolbar-icon-btn" id="searchToggleBtn" type="button" onclick="toggleSearch()" aria-label="Buscar" style="border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;padding:6px 10px;font-weight:800;cursor:pointer;">&#128269;</button>
+            <div class="slim-menuWrap">
+              <button class="toolbar-icon-btn" type="button" onclick="toggleActionsMenu(event,'screenOptionsMenu')" aria-label="Opciones" style="border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;padding:6px 10px;font-weight:800;cursor:pointer;">&#8942;</button>
+              <div id="screenOptionsMenu" class="slim-menu slim-menu-screen" onclick="event.stopPropagation()">
+                <div class="slim-menuMeta"><strong>Clientes</strong></div>
+                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('refresh')">Refrescar listado</button>
+                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('all')">Mostrar todos</button>
+                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('has_business_id')">Solo con Business ID</button>
+                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('no_business_id')">Solo sin Business ID</button>
+                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('has_email')">Solo con email</button>
+              </div>
             </div>
-
-            <ul class="sidebar-nav">
-                <li><a href="admin-hub.html"><span>🏠</span> Panel Principal</a></li>
-                <li><a class="active" href="customers.html"><span>👥</span> Gestionar Clientes</a></li>
-                <li><a href="licenses.html"><span>📜</span> Gestionar Licencias</a></li>
-                <li><a href="license-config.html"><span>🔐</span> Tokens Reset</a></li>
-                <li><a href="products.html"><span>🧩</span> Productos</a></li>
-                <li><a href="store-settings.html"><span>🏷️</span> Store Settings</a></li>
-            </ul>
-
-            <div class="sidebar-footer">
-                <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
-            </div>
-        </aside>
-
-        <div class="drawer-overlay" onclick="closeDrawer()"></div>
-
-        <main class="main customers-shell">
-            <section class="content customers-content">
-                <div class="customers-header">
-                    <div class="customers-topline">
-                        <button class="nav-icon-btn" type="button" onclick="goBack()" aria-label="Volver">&#8592;</button>
-                        <div class="customers-titleWrap">
-                            <h1>Clientes</h1>
-                        </div>
-                        <button class="toolbar-icon-btn" id="searchToggleBtn" type="button" onclick="toggleSearch()" aria-label="Buscar">&#128269;</button>
-                        <div class="slim-menuWrap">
-                            <button class="toolbar-icon-btn" type="button" onclick="toggleActionsMenu(event, 'screenOptionsMenu')" aria-label="Opciones">&#8942;</button>
-                            <div id="screenOptionsMenu" class="slim-menu slim-menu-screen" onclick="event.stopPropagation()">
-                                <div class="slim-menuMeta">
-                                    <strong>Clientes</strong>
-                                    Filtros y acciones de esta vista
-                                </div>
-                                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('refresh')">Refrescar listado</button>
-                                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('all')">Mostrar todos</button>
-                                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('has_business_id')">Solo con Business ID</button>
-                                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('no_business_id')">Solo sin Business ID</button>
-                                <button class="slim-menuItem" type="button" onclick="runScreenMenuAction('has_email')">Solo con email</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="customers-searchRow" id="searchRow">
-                        <input id="searchInput" type="search" placeholder="Buscar por nombre, teléfono, email, business ID o cliente..." autocomplete="off" />
-                    </div>
-                </div>
-
-                <div id="msg" class="msg"></div>
+            <div class="topbar-user">&#128100; <span id="userName">Admin</span></div>
+          </div>
+        </header>
+        <div class="customers-searchRow" id="searchRow" style="display:none;padding:8px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+          <input id="searchInput" type="search" placeholder="Buscar por nombre, telefono, email, business ID o cliente..." autocomplete="off" style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:10px;" />
+        </div>
+        <div class="admin-content">
+        <main class="main customers-shell" style="margin:0;min-height:auto;">
+            <section class="content customers-content"><div id="msg" class="msg"></div>
 
                 <div class="customers-listSurface">
                     <div class="customers-list" id="customersList">
@@ -1845,5 +1821,7 @@
             window.location.href = '/';
         }
     </script>
+<script>AdminCommon.initSidebarLayout('customers');</script>
+</div></div></div></div>
 </body>
 </html>

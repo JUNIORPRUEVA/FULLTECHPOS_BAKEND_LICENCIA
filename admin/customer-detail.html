@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -10,6 +10,8 @@
     <link rel="icon" href="../assets/img/pwa/icon-192.png">
     <script defer src="../assets/js/pwa.js"></script>
     <script defer src="../assets/js/adminActionsDialog.js"></script>
+    <script src="../assets/js/adminCommon.js"></script>
+    <link rel="stylesheet" href="../assets/css/admin-unified.css">
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
     <style>
@@ -569,29 +571,19 @@
         }
     </style>
 </head>
-<body class="jr-admin">
+<body>
     <div class="admin-layout">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <img src="../assets/img/logo/logoprincipal.png" alt="Appyra" />
-                </div>
-                <h2>Appyra</h2>
-            </div>
+        <div id="adminSidebarContainer"></div>
+        <div class="admin-main">
+        <header class="admin-topbar">
+          <div class="topbar-left">
+            <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
+            <span class="topbar-title">Detalle de Cliente</span>
+          </div>
+          <div class="topbar-right topbar-user">&#128100; <span id="userName">Admin</span></div>
+        </header>
+        <div class="admin-content">
 
-            <ul class="sidebar-nav">
-                <li><a href="admin-hub.html"><span>🏠</span> Panel Principal</a></li>
-                <li><a class="active" href="customers.html"><span>👥</span> Gestionar Clientes</a></li>
-                <li><a href="licenses.html"><span>📜</span> Gestionar Licencias</a></li>
-                <li><a href="license-config.html"><span>🔐</span> Tokens Reset</a></li>
-                <li><a href="products.html"><span>🧩</span> Productos</a></li>
-                <li><a href="store-settings.html"><span>🏷️</span> Store Settings</a></li>
-            </ul>
-
-            <div class="sidebar-footer">
-                <button class="logout-btn" type="button" onclick="logout()">Cerrar sesión</button>
-            </div>
-        </aside>
 
         <main class="main">
             <section class="content">
@@ -1121,5 +1113,7 @@
             window.location.href = '/';
         }
     </script>
+<script>AdminCommon.initSidebarLayout('customers');</script>
+</div></div></div>
 </body>
 </html>
