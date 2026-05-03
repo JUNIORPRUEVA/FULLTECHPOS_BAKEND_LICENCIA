@@ -165,7 +165,7 @@
   // ─── Shared Sidebar ───────────────────────────────────────────────────────
 
   const SIDEBAR_ITEMS = [
-    { key: 'dashboard',     icon: '🏠', label: 'Dashboard',       href: 'admin-hub.html' },
+    { key: 'dashboard',     icon: '🏠', label: 'Panel',           href: 'admin-hub.html' },
     { key: 'customers',     icon: '👥', label: 'Clientes',         href: 'customers.html' },
     { key: 'products',      icon: '🧩', label: 'Productos',        href: 'products.html' },
     { key: 'plans',         icon: '🧾', label: 'Planes',           href: 'product-plans.html' },

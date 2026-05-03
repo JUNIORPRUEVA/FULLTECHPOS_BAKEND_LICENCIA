@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#ffffff" />
-  <title>Dashboard - Appyra</title>
+  <title>Panel - Appyra</title>
   <link rel="manifest" href="../manifest.webmanifest" />
   <link rel="apple-touch-icon" href="../assets/img/pwa/icon-180.png" />
   <link rel="icon" href="../assets/img/pwa/icon-192.png" />
@@ -108,7 +108,7 @@
       <header class="admin-topbar">
         <div class="topbar-left">
           <button class="sidebar-toggle-btn" type="button" onclick="AdminCommon.toggleSidebar()" aria-label="Abrir menu">&#9776;</button>
-          <span class="topbar-title">Dashboard</span>
+          <span class="topbar-title">Panel</span>
         </div>
         <div class="topbar-right">
           <div class="topbar-user">&#128100; <span id="userName">Admin</span></div>
@@ -230,7 +230,7 @@
         setText('dashUpdatedAt','Actualizado '+new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'}));
         showMsg('','');
       }catch(e){
-        showMsg(e&&e.message||'Error al cargar dashboard','error');
+        showMsg(e&&e.message||'Error al cargar panel','error');
         setText('dashStatusText','Error al cargar datos');
       }finally{
         document.getElementById('refreshBtn').disabled=false;
