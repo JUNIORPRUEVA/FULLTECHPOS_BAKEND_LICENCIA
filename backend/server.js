@@ -52,6 +52,8 @@ const adminPaymentsRoutes = require('./routes/adminPaymentsRoutes');
 const adminAuditLogsRoutes = require('./routes/adminAuditLogsRoutes');
 const adminPlatformUsersRoutes = require('./routes/adminPlatformUsersRoutes');
 const adminRolesRoutes = require('./routes/adminRolesRoutes');
+const adminSaasDashboardRoutes = require('./routes/adminSaasDashboardRoutes');
+const adminMaintenanceRoutes = require('./routes/adminMaintenanceRoutes');
 const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
 const adminSupportResetRoutes = require('./routes/adminSupportResetRoutes');
 const adminSupportMessageConfigRoutes = require('./routes/adminSupportMessageConfigRoutes');
@@ -246,6 +248,8 @@ app.use('/api/admin/payments', adminPaymentsRoutes);
 app.use('/api/admin/audit-logs', adminAuditLogsRoutes);
 app.use('/api/admin/platform-users', adminPlatformUsersRoutes);
 app.use('/api/admin/roles', adminRolesRoutes);
+app.use('/api/admin/saas-dashboard', adminSaasDashboardRoutes);
+app.use('/api/admin/subscriptions', adminMaintenanceRoutes);
 app.use('/api/admin/support-reset', adminSupportResetRoutes);
 app.use('/api/admin/support-message-config', adminSupportMessageConfigRoutes);
 
