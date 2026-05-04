@@ -72,33 +72,73 @@ const { rateLimit } = require('./middleware/rateLimit');
 const app = express();
 const ADMIN_PORT = Number.parseInt(process.env.PORT || '3000', 10);
 
+function readEnvValue(name) {
+  const value = process.env[name];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function readEnvValueFromFile(name) {
+  const filePath = readEnvValue(`${name}_FILE`);
+  if (!filePath) return '';
+  try {
+    return fs.readFileSync(filePath, 'utf8').trim();
+  } catch (error) {
+    console.warn(`[SECURITY] Could not read ${name}_FILE at ${filePath}: ${error.message || error}`);
+    return '';
+  }
+}
+
+function resolveFirstNonEmpty(names, fallback = '') {
+  for (const name of names) {
+    const fromEnv = readEnvValue(name);
+    if (fromEnv) return fromEnv;
+    const fromFile = readEnvValueFromFile(name);
+    if (fromFile) return fromFile;
+  }
+  return fallback;
+}
+
+function getAdminCredentials() {
+  return {
+    username: resolveFirstNonEmpty(['ADMIN_USERNAME', 'ADMIN_USER', 'ADMIN_EMAIL'], 'fulltechsd@gmail.com'),
+    password: resolveFirstNonEmpty(['ADMIN_PASSWORD', 'ADMIN_PASS', 'ADMIN_SECRET'], 'Ayleen10')
+  };
+}
+
 // ==========================================
 // SECURITY STARTUP CHECKS
 // ==========================================
 (function checkProductionSecrets() {
   const NODE_ENV = String(process.env.NODE_ENV || '').toLowerCase();
   const isProduction = NODE_ENV === 'production';
+  const adminCredentials = getAdminCredentials();
 
-  const warnings = [];
+  const blockingWarnings = [];
+  const advisoryWarnings = [];
 
-  if (!process.env.ADMIN_USERNAME || process.env.ADMIN_USERNAME === 'fulltechsd@gmail.com') {
-    warnings.push('ADMIN_USERNAME is using the default value — set a strong custom value in production');
+  if (!adminCredentials.username || adminCredentials.username === 'fulltechsd@gmail.com') {
+    blockingWarnings.push('ADMIN_USERNAME is using the default value — set a strong custom value in production');
   }
-  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'Ayleen10') {
-    warnings.push('ADMIN_PASSWORD is using the default value — set a strong password in production');
+  if (!adminCredentials.password || adminCredentials.password === 'Ayleen10') {
+    blockingWarnings.push('ADMIN_PASSWORD is using the default value — set a strong password in production');
   }
   if (!process.env.DATABASE_URL) {
-    warnings.push('DATABASE_URL is not set — using individual PG* env vars');
+    advisoryWarnings.push('DATABASE_URL is not set — using individual PG* env vars');
   }
   if (!process.env.CORS_ORIGINS && isProduction) {
-    warnings.push('CORS_ORIGINS is not set — all origins are allowed (unsafe in production)');
+    advisoryWarnings.push('CORS_ORIGINS is not set — all origins are allowed (unsafe in production)');
   }
+
+  const warnings = [...blockingWarnings, ...advisoryWarnings];
 
   if (warnings.length) {
     const tag = isProduction ? '🚨 [SECURITY]' : '⚠️  [SECURITY]';
     console.warn(`\n${tag} Security configuration warnings:`);
     warnings.forEach((w) => console.warn(`   • ${w}`));
-    if (isProduction) {
+    if (isProduction && blockingWarnings.length) {
+      console.error('   • Expected env vars in EasyPanel: ADMIN_USERNAME + ADMIN_PASSWORD');
+      console.error('   • Also supported: ADMIN_USER / ADMIN_EMAIL and ADMIN_PASS / ADMIN_SECRET');
+      console.error('   • File secrets are supported too: ADMIN_USERNAME_FILE / ADMIN_PASSWORD_FILE');
       console.error('\n[SECURITY] Refusing to start in production with default credentials.');
       process.exit(1);
     }
@@ -299,8 +339,7 @@ app.use('/api/support', supportRequestRoutes);
 // ==========================================
 
 // Credenciales fijas (MUY BÁSICO - para desarrollo)
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'fulltechsd@gmail.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ayleen10';
+const { username: ADMIN_USERNAME, password: ADMIN_PASSWORD } = getAdminCredentials();
 const AUTH_DEBUG = String(process.env.AUTH_DEBUG || '').trim() === '1';
 
 // POST /api/login - Verificar credenciales
