@@ -1242,15 +1242,17 @@ tbody tr {
 /* Listview + right detail panel (narrow and attached) */
 @media (min-width: 861px) {
   .workspace-shell {
-    grid-template-columns: minmax(0, 1fr) minmax(318px, 360px) !important;
+    grid-template-columns: minmax(0, 60%) minmax(0, 40%) !important;
     gap: 8px !important;
   }
 
   .workspace-panel {
     top: calc(var(--u-topbar-h) + 8px);
+    align-self: stretch;
   }
 
   .workspace-panelCard {
     min-height: calc(100vh - var(--u-topbar-h) - 16px);
+    height: calc(100vh - var(--u-topbar-h) - 16px);
   }
 }

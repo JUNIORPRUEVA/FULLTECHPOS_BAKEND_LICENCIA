@@ -1088,9 +1088,14 @@
         }
 
         .customer-mainBtn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
             padding: 10px 10px;
             border-radius: 14px;
             transition: background .16s ease;
+            width: 100%;
         }
 
         .customer-mainBtn:hover {
@@ -1098,22 +1103,39 @@
         }
 
         .customer-linePrimary {
+            display: flex;
+            align-items: center;
             justify-content: space-between;
             gap: 10px;
+            min-width: 0;
+            flex: 1 1 auto;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
         .customer-lineSecondary {
-            margin-top: 6px;
+            margin-top: 0;
+            display: inline-flex;
+            align-items: center;
             gap: 8px;
+            flex: 0 0 auto;
+            white-space: nowrap;
         }
 
         .customer-name {
             font-size: 0.95rem;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .customer-phone,
         .customer-idMeta {
             font-size: 0.76rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .customers-panel {
@@ -1351,8 +1373,8 @@
 
         @media (min-width: 861px) {
             .customers-workspace.workspace-shell {
-                grid-template-columns: minmax(0, 1fr) minmax(460px, 42vw);
-                gap: 14px;
+                grid-template-columns: minmax(0, 60%) minmax(0, 40%);
+                gap: 8px;
             }
 
             .customers-listCard,
@@ -1385,6 +1407,21 @@
 
             .customer-linePrimary {
                 font-size: 0.87rem;
+            }
+
+            .customer-mainBtn {
+                min-height: 38px;
+                padding: 7px 8px;
+            }
+
+            .customer-linePrimary,
+            .customer-lineSecondary {
+                gap: 6px;
+            }
+
+            .customers-panel .workspace-panelCard {
+                height: calc(100vh - var(--u-topbar-h) - 16px);
+                min-height: calc(100vh - var(--u-topbar-h) - 16px);
             }
 
             .workspace-panelHeader {
