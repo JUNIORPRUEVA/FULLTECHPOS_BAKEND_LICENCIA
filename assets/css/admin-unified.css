@@ -1134,3 +1134,123 @@ tbody tr {
     page-break-inside: avoid;
   }
 }
+
+/* Sidebar real icons + desktop expand/collapse */
+.admin-sidebar .icon svg,
+.sidebar-expand-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sidebar-expand-btn {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #dbe6f7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.sidebar-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+@media (min-width: 861px) {
+  .admin-sidebar {
+    width: 72px;
+    transition: width 160ms ease;
+  }
+
+  .admin-main {
+    margin-left: 72px;
+    transition: margin-left 160ms ease;
+  }
+
+  body.sidebar-expanded .admin-sidebar {
+    width: 238px;
+  }
+
+  body.sidebar-expanded .admin-main {
+    margin-left: 238px;
+  }
+
+  body.sidebar-expanded .sidebar-header {
+    justify-content: stretch;
+  }
+
+  body.sidebar-expanded .sidebar-brand {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  body.sidebar-expanded .sidebar-title,
+  body.sidebar-expanded .nav-label {
+    display: initial;
+  }
+
+  body.sidebar-expanded .sidebar-title {
+    display: grid;
+  }
+
+  body.sidebar-expanded .sidebar-nav {
+    justify-items: stretch;
+  }
+
+  body.sidebar-expanded .sidebar-nav a {
+    width: 100%;
+    height: 42px;
+    justify-content: flex-start;
+    padding: 0 11px;
+    gap: 10px;
+  }
+
+  body.sidebar-expanded .sidebar-footer {
+    justify-content: stretch;
+  }
+
+  body.sidebar-expanded .logout-btn {
+    width: 100%;
+    text-indent: 0;
+    overflow: visible;
+    color: #d4dded;
+    padding-left: 12px;
+    text-align: left;
+  }
+
+  body.sidebar-expanded .logout-btn::after {
+    display: none;
+  }
+
+  body.sidebar-expanded .sidebar-expand-btn svg {
+    transform: rotate(180deg);
+  }
+}
+
+/* Listview + right detail panel (narrow and attached) */
+@media (min-width: 861px) {
+  .workspace-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(318px, 360px) !important;
+    gap: 8px !important;
+  }
+
+  .workspace-panel {
+    top: calc(var(--u-topbar-h) + 8px);
+  }
+
+  .workspace-panelCard {
+    min-height: calc(100vh - var(--u-topbar-h) - 16px);
+  }
+}

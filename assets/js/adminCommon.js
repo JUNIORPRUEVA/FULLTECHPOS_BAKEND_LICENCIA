@@ -165,25 +165,43 @@
   // ─── Shared Sidebar ───────────────────────────────────────────────────────
 
   const SIDEBAR_ITEMS = [
-    { key: 'dashboard',     icon: '🏠', label: 'Panel',              href: 'admin-hub.html' },
-    { key: 'customers',     icon: '👥', label: 'Clientes',            href: 'customers.html' },
-    { key: 'products',      icon: '🧩', label: 'Productos',           href: 'products.html' },
-    { key: 'plans',         icon: '🧾', label: 'Planes',              href: 'product-plans.html' },
-    { key: 'subscriptions', icon: '🔄', label: 'Suscripciones',       href: 'subscriptions.html' },
-    { key: 'payments',      icon: '💳', label: 'Pagos',               href: 'payments.html' },
-    { key: 'licenses',      icon: '📜', label: 'Licencias',           href: 'licenses.html' },
-    { key: 'tokens',        icon: '🔐', label: 'Tokens de acceso',    href: 'license-config.html' },
-    { key: 'audit',         icon: '🧷', label: 'Registros de auditoría', href: 'audit-logs.html' },
-    { key: 'users',         icon: '🛡️', label: 'Usuarios del sistema', href: 'platform-users.html' },
-    { key: 'settings',      icon: '🏷️', label: 'Configuración tienda', href: 'store-settings.html' },
+    { key: 'dashboard',     label: 'Panel',                 href: 'admin-hub.html' },
+    { key: 'customers',     label: 'Clientes',              href: 'customers.html' },
+    { key: 'products',      label: 'Productos',             href: 'products.html' },
+    { key: 'plans',         label: 'Planes',                href: 'product-plans.html' },
+    { key: 'subscriptions', label: 'Suscripciones',         href: 'subscriptions.html' },
+    { key: 'payments',      label: 'Pagos',                 href: 'payments.html' },
+    { key: 'licenses',      label: 'Licencias',             href: 'licenses.html' },
+    { key: 'tokens',        label: 'Tokens de acceso',      href: 'license-config.html' },
+    { key: 'audit',         label: 'Registros de auditoría', href: 'audit-logs.html' },
+    { key: 'users',         label: 'Usuarios del sistema',  href: 'platform-users.html' },
+    { key: 'settings',      label: 'Configuración tienda',  href: 'store-settings.html' },
   ];
+
+  const SIDEBAR_SVG = {
+    dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5 10.5V20h14v-9.5"></path><path d="M9.5 20v-5h5v5"></path></svg>',
+    customers: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 19.5v-1.2a3.8 3.8 0 0 0-3.8-3.8H8.8A3.8 3.8 0 0 0 5 18.3v1.2"></path><circle cx="10.8" cy="8.2" r="3.2"></circle><path d="M19 19.5v-1a3.2 3.2 0 0 0-2.2-3"></path><path d="M15.5 5.5a3 3 0 0 1 0 5.8"></path></svg>',
+    products: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 7.5 12 3l8.2 4.5L12 12z"></path><path d="M3.8 7.5V16.5L12 21l8.2-4.5V7.5"></path><path d="M12 12v9"></path></svg>',
+    plans: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg>',
+    subscriptions: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7.8A8 8 0 0 0 6.2 5.5"></path><path d="M6.2 5.5V9.2H2.5"></path><path d="M4 16.2A8 8 0 0 0 17.8 18.5"></path><path d="M17.8 18.5v-3.7h3.7"></path></svg>',
+    payments: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h4"></path></svg>',
+    licenses: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h6"></path></svg>',
+    tokens: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="12" r="3.5"></circle><path d="M11.5 12H21"></path><path d="M17 12v2.5M14 12v2.5"></path></svg>',
+    audit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h11l5 5v11H4z"></path><path d="M15 4v5h5"></path><path d="M8 14h8"></path></svg>',
+    users: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 5 6.5V12c0 4.5 3 7.6 7 8.5 4-1 7-4 7-8.5V6.5z"></path><path d="M9 12.8 11 14.8 15 10.8"></path></svg>',
+    settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.8 3h2.4l.6 2.2a7 7 0 0 1 1.7.7l2-1.1 1.7 1.7-1.1 2c.3.5.5 1.1.7 1.7L21 11v2l-2.2.6a7 7 0 0 1-.7 1.7l1.1 2-1.7 1.7-2-1.1c-.5.3-1.1.5-1.7.7L13.2 21h-2.4l-.6-2.2a7 7 0 0 1-1.7-.7l-2 1.1-1.7-1.7 1.1-2a7 7 0 0 1-.7-1.7L3 13v-2l2.2-.6c.1-.6.4-1.2.7-1.7l-1.1-2 1.7-1.7 2 1.1c.5-.3 1.1-.5 1.7-.7z"></path><circle cx="12" cy="12" r="2.7"></circle></svg>'
+  };
+
+  function iconForKey(key) {
+    return SIDEBAR_SVG[key] || SIDEBAR_SVG.dashboard;
+  }
 
   function renderSidebar(activeKey) {
     const logoSrc = '../assets/img/logo/logo.png';
 
     const linksHTML = SIDEBAR_ITEMS.map((item) => {
       const cls = item.key === activeKey ? ' class="active"' : '';
-      return `<li><a href="${item.href}"${cls} title="${item.label}" aria-label="${item.label}"><span class="icon" aria-hidden="true">${item.icon}</span><span class="nav-label">${item.label}</span></a></li>`;
+      return `<li><a href="${item.href}"${cls} title="${item.label}" aria-label="${item.label}"><span class="icon" aria-hidden="true">${iconForKey(item.key)}</span><span class="nav-label">${item.label}</span></a></li>`;
     }).join('');
 
     const sidebarHTML = `
@@ -195,6 +213,9 @@
         <strong id="sidebarBrandName">Appyra</strong>
         <span>Gestor de licencias</span>
       </div>
+      <button class="sidebar-expand-btn" type="button" title="Expandir o contraer" aria-label="Expandir o contraer" onclick="AdminCommon.toggleSidebarExpanded()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+      </button>
     </div>
   </div>
   <ul class="sidebar-nav">${linksHTML}</ul>
@@ -230,10 +251,53 @@
     document.body.classList.remove('sidebar-open');
   }
 
+  function isDesktop() {
+    return window.matchMedia('(min-width: 861px)').matches;
+  }
+
+  function toggleSidebarExpanded(force) {
+    const next = typeof force === 'boolean'
+      ? force
+      : !document.body.classList.contains('sidebar-expanded');
+
+    if (next) {
+      document.body.classList.add('sidebar-expanded');
+    } else {
+      document.body.classList.remove('sidebar-expanded');
+    }
+
+    try {
+      localStorage.setItem('adminSidebarExpanded', next ? '1' : '0');
+    } catch (_) {}
+  }
+
+  function initSidebarExpandState() {
+    try {
+      const stored = localStorage.getItem('adminSidebarExpanded');
+      if (isDesktop()) {
+        // Default desktop state: collapsed (not expanded)
+        toggleSidebarExpanded(stored === '1');
+      } else {
+        document.body.classList.remove('sidebar-expanded');
+      }
+    } catch (_) {
+      if (!isDesktop()) {
+        document.body.classList.remove('sidebar-expanded');
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      if (!isDesktop()) {
+        document.body.classList.remove('sidebar-expanded');
+      }
+    });
+  }
+
   let _sidebarReady = false;
 
   function initSidebarLayout(activeKey) {
     renderSidebar(activeKey);
+    initSidebarExpandState();
     if (!_sidebarReady) {
       _sidebarReady = true;
       document.addEventListener('keydown', (e) => {
@@ -346,5 +410,6 @@
     initSidebarLayout,
     toggleSidebar,
     closeSidebar,
+    toggleSidebarExpanded,
   };
 })();
