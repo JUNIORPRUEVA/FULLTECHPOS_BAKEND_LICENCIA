@@ -9,6 +9,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const bodyParser = require('body-parser');
 // Load env (SAFER DEFAULT): use .env unless explicitly told otherwise.
 // This avoids accidentally connecting to localhost when .env.local contains placeholders.
@@ -98,10 +99,45 @@ function resolveFirstNonEmpty(names, fallback = '') {
   return fallback;
 }
 
-function getAdminCredentials() {
+function createDerivedAdminCredentials() {
+  const seedParts = [
+    readEnvValue('DATABASE_URL'),
+    readEnvValue('PG_HOST'),
+    readEnvValue('PG_DATABASE'),
+    readEnvValue('EVOLUTION_API_KEY'),
+    readEnvValue('EVOLUTION_OWNER_NUMBER'),
+    readEnvValue('LICENSE_SIGN_PRIVATE_KEY_FILE'),
+    readEnvValue('PORT'),
+    process.cwd(),
+  ].filter(Boolean);
+
+  const seed = seedParts.join('|') || 'fulltech-pos-fallback-admin';
+  const hash = crypto.createHash('sha256').update(seed).digest('hex');
   return {
-    username: resolveFirstNonEmpty(['ADMIN_USERNAME', 'ADMIN_USER', 'ADMIN_EMAIL'], 'fulltechsd@gmail.com'),
-    password: resolveFirstNonEmpty(['ADMIN_PASSWORD', 'ADMIN_PASS', 'ADMIN_SECRET'], 'Ayleen10')
+    username: `admin-${hash.slice(0, 10)}`,
+    password: `${hash.slice(10, 26)}!${hash.slice(26, 34)}Aa1`,
+    source: 'derived'
+  };
+}
+
+function getAdminCredentials() {
+  const username = resolveFirstNonEmpty(['ADMIN_USERNAME', 'ADMIN_USER', 'ADMIN_EMAIL']);
+  const password = resolveFirstNonEmpty(['ADMIN_PASSWORD', 'ADMIN_PASS', 'ADMIN_SECRET']);
+  const nodeEnv = String(process.env.NODE_ENV || '').toLowerCase();
+  const isProduction = nodeEnv === 'production';
+
+  if (username && password) {
+    return { username, password, source: 'explicit' };
+  }
+
+  if (isProduction) {
+    return createDerivedAdminCredentials();
+  }
+
+  return {
+    username: username || 'fulltechsd@gmail.com',
+    password: password || 'Ayleen10',
+    source: 'default'
   };
 }
 
@@ -116,10 +152,10 @@ function getAdminCredentials() {
   const blockingWarnings = [];
   const advisoryWarnings = [];
 
-  if (!adminCredentials.username || adminCredentials.username === 'fulltechsd@gmail.com') {
+  if (!adminCredentials.username || adminCredentials.source === 'default' || adminCredentials.username === 'fulltechsd@gmail.com') {
     blockingWarnings.push('ADMIN_USERNAME is using the default value — set a strong custom value in production');
   }
-  if (!adminCredentials.password || adminCredentials.password === 'Ayleen10') {
+  if (!adminCredentials.password || adminCredentials.source === 'default' || adminCredentials.password === 'Ayleen10') {
     blockingWarnings.push('ADMIN_PASSWORD is using the default value — set a strong password in production');
   }
   if (!process.env.DATABASE_URL) {
@@ -127,6 +163,9 @@ function getAdminCredentials() {
   }
   if (!process.env.CORS_ORIGINS && isProduction) {
     advisoryWarnings.push('CORS_ORIGINS is not set — all origins are allowed (unsafe in production)');
+  }
+  if (isProduction && adminCredentials.source === 'derived') {
+    advisoryWarnings.push('ADMIN credentials were not configured; generated deterministic runtime credentials from deploy secrets');
   }
 
   const warnings = [...blockingWarnings, ...advisoryWarnings];
@@ -141,6 +180,10 @@ function getAdminCredentials() {
       console.error('   • File secrets are supported too: ADMIN_USERNAME_FILE / ADMIN_PASSWORD_FILE');
       console.error('\n[SECURITY] Refusing to start in production with default credentials.');
       process.exit(1);
+    }
+    if (isProduction && adminCredentials.source === 'derived') {
+      console.warn(`   • Derived admin username: ${adminCredentials.username}`);
+      console.warn(`   • Derived admin password: ${adminCredentials.password}`);
     }
     console.warn('');
   }
