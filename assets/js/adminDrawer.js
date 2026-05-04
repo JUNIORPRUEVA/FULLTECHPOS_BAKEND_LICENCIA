@@ -4,12 +4,12 @@
 
 (function () {
   const LINKS = [
-    { href: '/admin/admin-hub.html', label: 'Panel Principal', icon: '🏠' },
-    { href: '/admin/customers.html', label: 'Gestionar Clientes', icon: '👥' },
-    { href: '/admin/licenses.html', label: 'Gestionar Licencias', icon: '📜' },
-    { href: '/admin/license-config.html', label: 'Tokens Reset', icon: '🔐' },
+    { href: '/admin/admin-hub.html', label: 'Panel', icon: '🏠' },
+    { href: '/admin/customers.html', label: 'Clientes', icon: '👥' },
+    { href: '/admin/licenses.html', label: 'Licencias', icon: '📜' },
+    { href: '/admin/license-config.html', label: 'Tokens de acceso', icon: '🔐' },
     { href: '/admin/products.html', label: 'Productos', icon: '🧩' },
-    { href: '/admin/store-settings.html', label: 'Store Settings', icon: '🏷️' }
+    { href: '/admin/store-settings.html', label: 'Configuración tienda', icon: '🏷️' }
   ];
 
   function hasSidebarLayout() {

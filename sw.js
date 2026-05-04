@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = 'v23';
+const CACHE_VERSION = 'v24';
 const STATIC_CACHE = `fulltech-pos-static-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -79,12 +79,19 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
+      // Delete ALL caches that are not the current version (any name/prefix)
       Promise.all(
         keys
-          .filter((key) => key.startsWith('fulltech-pos-static-') && key !== STATIC_CACHE)
+          .filter((key) => key !== STATIC_CACHE)
           .map((key) => caches.delete(key))
       )
     ).then(() => self.clients.claim())
+     .then(() => {
+       // Tell all open clients to reload so they pick up fresh assets
+       self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
+         clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION }));
+       });
+     })
   );
 });
 

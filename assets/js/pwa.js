@@ -105,6 +105,22 @@
         .catch(function () {
           // Silent: PWA is optional.
         });
+
+      // When SW v24+ broadcasts SW_UPDATED, reload once to pick up fresh assets
+      navigator.serviceWorker.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'SW_UPDATED') {
+          // Avoid reload loops: only reload if not already on the latest cache
+          const reloadKey = 'sw-reloaded-' + (event.data.version || '');
+          try {
+            if (!sessionStorage.getItem(reloadKey)) {
+              sessionStorage.setItem(reloadKey, '1');
+              window.location.reload();
+            }
+          } catch (_) {
+            // sessionStorage unavailable — skip auto-reload
+          }
+        }
+      });
     });
   }
 
