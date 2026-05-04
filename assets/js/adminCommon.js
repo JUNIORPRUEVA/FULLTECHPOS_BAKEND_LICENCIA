@@ -257,6 +257,81 @@
     }
   });
 
+  const DesignSystem = {
+    tokens: {
+      color: {
+        bgApp: '#F6F8FC',
+        surfaceBase: '#FFFFFF',
+        surfaceSoft: '#F9FBFE',
+        surfaceTech: '#F5F7FA',
+        borderMain: '#E4EAF2',
+        borderSoft: '#EAF0F7',
+        textPrimary: '#1A2235',
+        textSecondary: '#6B7494',
+        textMuted: '#8893AA',
+        primaryAction: '#1F4B99',
+        primarySoft: '#EAF0FF',
+        dataBlue: '#1565C0',
+        success: '#2E7D32',
+        warning: '#E67E00',
+        error: '#C62828',
+        violet: '#6A1B9A',
+        teal: '#00897B',
+        magenta: '#AD1457'
+      },
+      spacing: [4, 6, 8, 10, 12, 14, 16, 20, 24],
+      radius: {
+        sm: 8,
+        md: 10,
+        lg: 12,
+        xl: 14,
+        dialog: 16
+      },
+      motionMs: {
+        fast: 120,
+        base: 150,
+        slow: 180
+      }
+    },
+    guidelines: {
+      hierarchy: [
+        'Screen title: 20px semibold',
+        'Block title: 13-14px bold',
+        'Field label: 10-11px semibold muted',
+        'Primary value: 12-16px bold',
+        'Support text: 11-12px medium'
+      ],
+      layout: [
+        'Desktop-first with right detail panel',
+        'Compact topbar and dense rows',
+        'No heavy shadows; separate by border and tone',
+        'Grids collapse 3->2->1 without horizontal overflow'
+      ],
+      interaction: [
+        'Hover, press and focus states are required',
+        'AA contrast minimum for functional text',
+        'Motion duration between 120ms and 180ms'
+      ]
+    },
+    utils: {
+      formatMoney(value, currency = 'DOP', locale = 'es-DO') {
+        const n = Number(value || 0);
+        return new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(Number.isFinite(n) ? n : 0);
+      },
+      clampText(text, max = 48) {
+        const s = String(text || '');
+        return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+      }
+    }
+  };
+
+  window.AppyraDesignSystem = DesignSystem;
+
   window.AdminCommon = {
     BACKEND_API_BASE,
     getSessionId,

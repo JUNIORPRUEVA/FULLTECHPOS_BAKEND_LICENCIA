@@ -418,3 +418,193 @@ tr:hover td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Financial profile alignment */
+:root {
+  --saas-bg: var(--ds-bg-app, #F6F8FC);
+  --saas-surface: var(--ds-surface-base, #FFFFFF);
+  --saas-line: var(--ds-border-main, #E4EAF2);
+  --saas-text: var(--ds-text-primary, #1A2235);
+  --saas-muted: var(--ds-text-secondary, #6B7494);
+  --saas-brand: var(--ds-action-primary, #1F4B99);
+  --saas-brand-soft: var(--ds-action-soft, #EAF0FF);
+  --saas-danger: var(--ds-error, #C62828);
+  --saas-danger-soft: rgba(198, 40, 40, 0.08);
+  --saas-success: var(--ds-success, #2E7D32);
+  --saas-success-soft: rgba(46, 125, 50, 0.10);
+  --saas-warning: var(--ds-warning, #E67E00);
+  --saas-warning-soft: rgba(230, 126, 0, 0.10);
+}
+
+body,
+input,
+select,
+textarea,
+button {
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, Roboto, Arial, sans-serif;
+}
+
+.container {
+  max-width: 100%;
+  padding: 12px;
+}
+
+.section {
+  border-radius: 12px;
+  border-color: var(--saas-line);
+  box-shadow: none;
+  padding: 12px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--saas-text);
+}
+
+.section-subtitle {
+  font-size: 12px;
+  color: var(--saas-muted);
+}
+
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8893AA;
+}
+
+input,
+select,
+textarea {
+  min-height: 34px;
+  border-radius: 8px;
+  border-color: var(--saas-line);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.btn {
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.btn-primary {
+  background: var(--saas-brand);
+  border-color: var(--saas-brand);
+}
+
+.btn-primary:hover {
+  background: #173a79;
+  border-color: #173a79;
+}
+
+.btn-secondary {
+  background: var(--saas-brand-soft);
+  border-color: #d9e4ff;
+  color: var(--saas-brand);
+}
+
+.btn-secondary:hover {
+  background: #dde8ff;
+}
+
+.table-shell {
+  border-radius: 12px;
+  border-color: var(--saas-line);
+}
+
+thead {
+  background: #F5F7FA;
+}
+
+th,
+td {
+  font-size: 12px;
+  border-bottom-color: #EAF0F7;
+}
+
+th {
+  font-size: 11px;
+  color: #8893AA;
+  text-transform: none;
+  letter-spacing: .01em;
+}
+
+td.numeric,
+th.numeric,
+.money,
+.amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tr:hover td {
+  background: #F9FBFE;
+}
+
+.metric-card {
+  border-radius: 10px;
+  border-color: var(--saas-line);
+  min-height: 84px;
+  padding: 10px;
+}
+
+.metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8893AA;
+  text-transform: none;
+  letter-spacing: .01em;
+}
+
+.metric-value {
+  font-size: 16px;
+  color: #1A2235;
+}
+
+.chip {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.modal-card {
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+button:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(31, 75, 153, 0.3);
+  outline-offset: 1px;
+}
+
+@media (max-width: 1180px) {
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
