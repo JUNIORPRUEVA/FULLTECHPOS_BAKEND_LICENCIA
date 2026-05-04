@@ -106,6 +106,17 @@
         .message.show { display: block; }
         .message.success { background-color: #DCFCE7; border: 1px solid #BBF7D0; color: #166534; }
         .message.error { background-color: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; }
+        .products-workspace { align-items: stretch; }
+        .products-listCard,
+        .products-editorPanel .workspace-panelCard { border-radius: 24px; }
+        .products-listCard { padding: 30px; }
+        .products-editorFrame {
+            width: 100%;
+            min-height: calc(100vh - 180px);
+            border: none;
+            background: #fff;
+        }
+        .products-empty { min-height: calc(100vh - 220px); }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         thead { background: #F3F4F6; }
         th, td { padding: 12px 12px; border-bottom: 1px solid #E5E7EB; text-align: left; font-size: 0.92rem; }
@@ -152,43 +163,72 @@
 
 
     <div class="container">
-        <div class="section">
-            <h2 class="section-title">Catálogo</h2>
-            <p class="section-subtitle">Crea, publica y gestiona los productos/proyectos que se muestran en la web pública.</p>
+        <div class="products-workspace workspace-shell">
+            <div class="workspace-main">
+                <div class="section products-listCard">
+                    <h2 class="section-title">Catálogo</h2>
+                    <p class="section-subtitle">Crea, publica y gestiona los productos/proyectos que se muestran en la web pública sin salir de la vista principal.</p>
 
-            <div id="message" class="message"></div>
+                    <div id="message" class="message"></div>
 
-            <div class="toolbar">
-                <div class="filters">
-                    <div class="form-group">
-                        <label for="q">Buscar</label>
-                        <input id="q" type="text" placeholder="Nombre o slug" />
+                    <div class="toolbar">
+                        <div class="filters">
+                            <div class="form-group">
+                                <label for="q">Buscar</label>
+                                <input id="q" type="text" placeholder="Nombre o slug" />
+                            </div>
+                            <div class="form-group">
+                                <label for="status">Estado</label>
+                                <select id="status">
+                                    <option value="">Todos</option>
+                                    <option value="draft">Borrador</option>
+                                    <option value="published">Publicado</option>
+                                    <option value="archived">Archivado</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-secondary" id="searchBtn" type="button">Filtrar</button>
+                        </div>
+
+                        <div style="display:flex; gap: 10px; align-items:end;">
+                            <button class="btn btn-primary" id="newBtn" type="button">+ Nuevo Producto</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="status">Estado</label>
-                        <select id="status">
-                            <option value="">Todos</option>
-                            <option value="draft">Borrador</option>
-                            <option value="published">Publicado</option>
-                            <option value="archived">Archivado</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-secondary" id="searchBtn" type="button">Filtrar</button>
-                </div>
 
-                <div style="display:flex; gap: 10px; align-items:end;">
-                    <button class="btn btn-primary" id="newBtn" type="button">+ Nuevo Producto</button>
+                    <div class="muted">Tip: para publicar, el producto debe tener una portada (cover_image) activa.</div>
+
+                    <div id="listArea">
+                        <div class="loading" id="loading" style="display:none;">Cargando...</div>
+                        <div id="tableWrap"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="muted">Tip: para publicar, el producto debe tener una portada (cover_image) activa.</div>
-
-            <div id="listArea">
-                <div class="loading" id="loading" style="display:none;">Cargando...</div>
-                <div id="tableWrap"></div>
-            </div>
+            <aside class="workspace-panel products-editorPanel" id="productsEditorPanel">
+                <section class="workspace-panelCard workspace-card">
+                    <div class="workspace-panelHeader">
+                        <div class="workspace-panelTitle">
+                            <strong id="productsPanelTitle">Editor de producto</strong>
+                            <span id="productsPanelSubtitle">Abre un producto existente o crea uno nuevo desde la lista.</span>
+                        </div>
+                        <div class="workspace-panelActions">
+                            <button type="button" class="workspace-closeBtn" onclick="closeProductPanel()" aria-label="Cerrar editor">✕</button>
+                        </div>
+                    </div>
+                    <div class="workspace-panelBody" id="productsPanelBody">
+                        <div class="workspace-empty products-empty">
+                            <div class="workspace-emptyInner">
+                                <strong>Editor unificado</strong>
+                                <p>El formulario de producto se abre aquí a la derecha para mantener lista y edición en una sola experiencia.</p>
+                                <button type="button" class="btn btn-primary" onclick="openProductPanel()">Nuevo producto</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </aside>
         </div>
     </div>
+
+    <div class="workspace-overlay" id="productsPanelOverlay" onclick="closeProductPanel()"></div>
 
     <script>
         const msgId = 'message';
@@ -266,8 +306,37 @@
             }
         }
 
+        function openProductPanel(id) {
+            const hasId = Boolean(String(id || '').trim());
+            const src = hasId ? `product-edit.html?id=${encodeURIComponent(id)}&embed=1` : 'product-edit.html?embed=1';
+
+            document.getElementById('productsPanelTitle').textContent = hasId ? 'Editar producto' : 'Nuevo producto';
+            document.getElementById('productsPanelSubtitle').textContent = hasId
+                ? 'Trabaja el producto seleccionado sin abandonar el listado.'
+                : 'Crea un producto desde el panel lateral y vuelve a la lista sin cambiar de pantalla.';
+            document.getElementById('productsPanelBody').innerHTML = `<iframe class="products-editorFrame" title="Editor de producto" src="${src}"></iframe>`;
+            document.getElementById('productsEditorPanel').classList.add('is-open');
+            document.getElementById('productsPanelOverlay').classList.add('is-open');
+        }
+
+        function closeProductPanel() {
+            document.getElementById('productsEditorPanel').classList.remove('is-open');
+            document.getElementById('productsPanelOverlay').classList.remove('is-open');
+            document.getElementById('productsPanelTitle').textContent = 'Editor de producto';
+            document.getElementById('productsPanelSubtitle').textContent = 'Abre un producto existente o crea uno nuevo desde la lista.';
+            document.getElementById('productsPanelBody').innerHTML = `
+                <div class="workspace-empty products-empty">
+                    <div class="workspace-emptyInner">
+                        <strong>Editor unificado</strong>
+                        <p>El formulario de producto se abre aquí a la derecha para mantener lista y edición en una sola experiencia.</p>
+                        <button type="button" class="btn btn-primary" onclick="openProductPanel()">Nuevo producto</button>
+                    </div>
+                </div>
+            `;
+        }
+
         function goEdit(id) {
-            window.location.href = `product-edit.html?id=${encodeURIComponent(id)}`;
+            openProductPanel(id);
         }
 
         async function doDelete(id, name) {
@@ -289,6 +358,8 @@
 
         window.goEdit = goEdit;
         window.doDelete = doDelete;
+        window.openProductPanel = openProductPanel;
+        window.closeProductPanel = closeProductPanel;
 
         window.addEventListener('load', async () => {
             currentSessionId = await AdminCommon.ensureAuth({ userNameElId: 'userName' });
@@ -296,7 +367,13 @@
 
             document.getElementById('searchBtn').addEventListener('click', loadProducts);
             document.getElementById('newBtn').addEventListener('click', () => {
-                window.location.href = 'product-edit.html';
+                openProductPanel();
+            });
+
+            window.addEventListener('message', async (event) => {
+                if (event.origin !== window.location.origin) return;
+                if (!event.data || event.data.type !== 'product-editor-saved') return;
+                await loadProducts();
             });
 
             document.getElementById('q').addEventListener('keydown', (e) => {

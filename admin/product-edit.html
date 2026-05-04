@@ -180,6 +180,38 @@
             .container { padding: 14px 14px 96px; }
             .section { padding: 18px 16px; border-radius: 22px; }
         }
+
+        body.embed-mode {
+            background: #ffffff;
+        }
+
+        body.embed-mode .admin-sidebar,
+        body.embed-mode .sidebar-overlay,
+        body.embed-mode .admin-topbar {
+            display: none !important;
+        }
+
+        body.embed-mode .admin-main {
+            margin-left: 0;
+        }
+
+        body.embed-mode .admin-content {
+            padding: 0;
+            max-width: none;
+        }
+
+        body.embed-mode .container {
+            max-width: none;
+            padding: 0 0 96px;
+        }
+
+        body.embed-mode .section {
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            box-shadow: none;
+            margin-bottom: 0;
+        }
     </style>
     <link rel="stylesheet" href="../assets/css/admin-unified.css" />
     <link rel="stylesheet" href="../assets/css/jr-admin.css" />
@@ -482,6 +514,8 @@
             return new URLSearchParams(window.location.search).get(name);
         }
 
+        const EMBED_MODE = qs('embed') === '1';
+
         function esc(s) {
             return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
         }
@@ -584,6 +618,10 @@
                 } else {
                     await AdminCommon.adminFetchJson(`/api/admin/products/${encodeURIComponent(productId)}`, { method: 'PUT', body: payload, sessionId });
                     AdminCommon.showMessage(msgId, '✅ Cambios guardados', 'success');
+                }
+
+                if (EMBED_MODE && window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'product-editor-saved', productId }, window.location.origin);
                 }
 
                 await loadProduct();
@@ -972,6 +1010,7 @@
         }
 
         window.addEventListener('load', async () => {
+            if (EMBED_MODE) document.body.classList.add('embed-mode');
             sessionId = await AdminCommon.ensureAuth({ userNameElId: 'userName' });
             if (!sessionId) return;
 

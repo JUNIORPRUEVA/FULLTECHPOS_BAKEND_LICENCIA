@@ -191,6 +191,45 @@
         .pager-btn:hover { background: #FFFFFF; box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10); }
         .pager-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
 
+        .licenses-workspace {
+            align-items: stretch;
+        }
+
+        .licenses-listCard,
+        .licenses-formPanel .workspace-panelCard {
+            border-radius: 24px;
+        }
+
+        .licenses-listCard {
+            overflow: hidden;
+        }
+
+        .licenses-listCard .section {
+            margin: 0;
+            border: none;
+            border-radius: 0;
+        }
+
+        .licenses-formPanel .workspace-panelBody {
+            padding: 0;
+        }
+
+        .licenses-formPanel #createLicenseSection {
+            display: none;
+            margin: 0;
+            border: none;
+            border-radius: 0;
+            min-height: 100%;
+        }
+
+        .licenses-formPanel #createLicenseSection.is-open {
+            display: block;
+        }
+
+        .licenses-panelEmpty {
+            min-height: calc(100vh - 220px);
+        }
+
         /* Mobile-first list UI for licenses */
         .list-controls {
             display: grid;
@@ -1266,26 +1305,64 @@
 <div id="licenseSearchDock" class="license-searchDock" style="display:none;padding:8px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;"><input id="licenseSearch" type="search" placeholder="Buscar licencia, cliente, business id o clave" autocomplete="off" style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:10px;" /></div>
 <div class="admin-content">
 <div class="container">
-        <!-- SECCIÓN: Crear Nueva Licencia -->
-        <div class="section" id="createLicenseSection">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                <h2 class="section-title" style="margin:0;">➕ Crear Nueva Licencia</h2>
-                <button class="icon-btn" type="button" onclick="closeCreateLicense()" aria-label="Cerrar formulario">✕</button>
+        <div class="licenses-workspace workspace-shell">
+            <div class="workspace-main">
+                <div class="licenses-listCard">
+                    <!-- SECCIÓN: Lista de Licencias -->
+                    <div class="section licenses-section">
+                        <div id="licenseListSummary" class="license-listSummary">
+                            <span><strong>Licencias</strong> en formato compacto</span>
+                            <span id="licenseListSummaryMeta">Cargando...</span>
+                        </div>
+
+                        <div id="licensesList" class="licenses-list">
+                            <div style="text-align: center; padding: 40px; color: #6B7280;">
+                                <p>⏳ Cargando licencias...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <p class="section-subtitle">
-                Completa el formulario para crear una nueva licencia. Los días se rellenarán automáticamente 
-                según la configuración del tipo de licencia que selecciones, pero puedes modificarlos si lo necesitas.
-            </p>
 
-            <div id="message" class="message"></div>
+            <aside class="workspace-panel licenses-formPanel" id="licensesCreatePanel">
+                <section class="workspace-panelCard workspace-card">
+                    <div class="workspace-panelHeader">
+                        <div class="workspace-panelTitle">
+                            <strong>Crear licencia</strong>
+                            <span>El formulario se mantiene fijo a la derecha para un flujo más limpio.</span>
+                        </div>
+                        <div class="workspace-panelActions">
+                            <button type="button" class="workspace-closeBtn" onclick="closeCreateLicense()" aria-label="Cerrar formulario">✕</button>
+                        </div>
+                    </div>
+                    <div class="workspace-panelBody">
+                        <div id="licensesPanelEmpty" class="workspace-empty licenses-panelEmpty">
+                            <div class="workspace-emptyInner">
+                                <strong>Formulario listo cuando lo necesites</strong>
+                                <p>Desde aquí puedes crear nuevas licencias sin abrir modales grandes ni perder el contexto del listado.</p>
+                                <button class="btn btn-primary" type="button" onclick="openCreateLicense()">Nueva licencia</button>
+                            </div>
+                        </div>
 
-            <div class="alert">
-                💡 <strong>Sugerencia:</strong> Primero asegúrate de que la configuración de licencias sea correcta. 
-                Luego el formulario rellenará automáticamente los valores al seleccionar el tipo.
-                <a href="license-config.html" style="color: #1E40AF; text-decoration: underline;">Ir a Configuración →</a>
-            </div>
+                        <div class="section" id="createLicenseSection">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                                <h2 class="section-title" style="margin:0;">➕ Crear Nueva Licencia</h2>
+                                <button class="icon-btn" type="button" onclick="closeCreateLicense()" aria-label="Cerrar formulario">✕</button>
+                            </div>
+                            <p class="section-subtitle">
+                                Completa el formulario para crear una nueva licencia. Los días se rellenarán automáticamente 
+                                según la configuración del tipo de licencia que selecciones, pero puedes modificarlos si lo necesitas.
+                            </p>
 
-            <form id="createLicenseForm">
+                            <div id="message" class="message"></div>
+
+                            <div class="alert">
+                                💡 <strong>Sugerencia:</strong> Primero asegúrate de que la configuración de licencias sea correcta. 
+                                Luego el formulario rellenará automáticamente los valores al seleccionar el tipo.
+                                <a href="license-config.html" style="color: #1E40AF; text-decoration: underline;">Ir a Configuración →</a>
+                            </div>
+
+                            <form id="createLicenseForm">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="project_code">Proyecto *</label>
@@ -1374,30 +1451,14 @@
                     <button type="reset" style="background: #E5E7EB; color: #1F2937;">🔄 Limpiar</button>
                 </div>
             </form>
-        </div>
-
-        <!-- SECCIÓN: Lista de Licencias -->
-        <div class="section licenses-section">
-            <div id="licenseListSummary" class="license-listSummary">
-                <span><strong>Licencias</strong> en formato compacto</span>
-                <span id="licenseListSummaryMeta">Cargando...</span>
-            </div>
-
-            <div id="licensesList" class="licenses-list">
-                <div style="text-align: center; padding: 40px; color: #6B7280;">
-                    <p>⏳ Cargando licencias...</p>
-                </div>
-            </div>
-
-            <div class="pagination">
-                <button type="button" class="pager-btn" id="licensesPrevBtn" onclick="prevLicensesPage()" disabled>← Atrás</button>
-                <div class="pager-info"><span class="status-pill neutral" id="licensesPageInfo">Página 1</span></div>
-                <button type="button" class="pager-btn" id="licensesNextBtn" onclick="nextLicensesPage()">Siguiente →</button>
-            </div>
+                        </div>
+                    </div>
+                </section>
+            </aside>
         </div>
     </div>
 
-    <button class="jr-fab" type="button" onclick="openCreateLicense()" aria-label="Agregar licencia">+</button>
+    <div class="workspace-overlay" id="licensesPanelOverlay" onclick="closeCreateLicense()"></div>
 
     <script src="/assets/js/adminLicenseConfig.js"></script>
     <script>
@@ -1422,7 +1483,7 @@
         let lastLicenses = [];
         let lastLicensesTotal = 0;
         let currentLicensesPage = 1;
-        const licensesLimit = 20;
+        const licensesLimit = 120;
 
         window.addEventListener('load', async () => {
             if (!sessionId) {
@@ -1571,6 +1632,9 @@
         function openCreateLicense() {
             const el = document.getElementById('createLicenseSection');
             if (!el) return;
+            document.getElementById('licensesPanelEmpty')?.style.setProperty('display', 'none');
+            document.getElementById('licensesCreatePanel')?.classList.add('is-open');
+            document.getElementById('licensesPanelOverlay')?.classList.add('is-open');
             el.classList.add('is-open');
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setTimeout(() => {
@@ -1583,6 +1647,9 @@
             const el = document.getElementById('createLicenseSection');
             if (!el) return;
             el.classList.remove('is-open');
+            document.getElementById('licensesPanelEmpty')?.style.setProperty('display', 'grid');
+            document.getElementById('licensesCreatePanel')?.classList.remove('is-open');
+            document.getElementById('licensesPanelOverlay')?.classList.remove('is-open');
         }
 
         function esc(value) {

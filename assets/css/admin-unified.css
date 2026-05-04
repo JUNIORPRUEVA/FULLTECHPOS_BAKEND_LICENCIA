@@ -99,21 +99,10 @@ button { font: inherit; cursor: pointer; }
 .sidebar-nav {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 2px 0 0;
   flex: 1;
   display: grid;
-  gap: 2px;
-}
-
-.sidebar-group-label {
-  font-size: .7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--u-muted);
-  padding: 10px 10px 4px;
-  pointer-events: none;
-  user-select: none;
+  gap: 4px;
 }
 
 .sidebar-nav a {
@@ -257,6 +246,117 @@ button { font: inherit; cursor: pointer; }
   width: 100%;
 }
 
+/* ── Shared workspace: list + right panel ─────────────────────────────── */
+.workspace-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  gap: 20px;
+  align-items: start;
+}
+
+.workspace-main,
+.workspace-panel {
+  min-width: 0;
+}
+
+.workspace-card {
+  background: var(--u-surface);
+  border: 1px solid var(--u-line);
+  border-radius: 20px;
+  box-shadow: var(--u-shadow);
+}
+
+.workspace-panel {
+  position: sticky;
+  top: calc(var(--u-topbar-h) + 20px);
+  align-self: start;
+}
+
+.workspace-panelCard {
+  min-height: calc(100vh - var(--u-topbar-h) - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-panelHeader {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--u-line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-panelTitle {
+  display: grid;
+  gap: 4px;
+}
+
+.workspace-panelTitle strong {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -.03em;
+}
+
+.workspace-panelTitle span {
+  color: var(--u-muted);
+  font-size: .83rem;
+  font-weight: 700;
+}
+
+.workspace-panelBody {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 20px 20px;
+}
+
+.workspace-empty {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--u-muted);
+  padding: 24px;
+}
+
+.workspace-emptyInner {
+  display: grid;
+  gap: 10px;
+  max-width: 280px;
+}
+
+.workspace-emptyInner strong {
+  color: var(--u-text);
+  font-size: 1rem;
+}
+
+.workspace-panelActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workspace-closeBtn {
+  border: 1px solid var(--u-line);
+  background: #fff;
+  color: var(--u-text);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.workspace-closeBtn:hover {
+  background: #f8fafc;
+}
+
+.workspace-overlay {
+  display: none;
+}
+
 /* ── Shared card/chip tokens ───────────────────────────────────────────── */
 .chip {
   display: inline-flex;
@@ -304,5 +404,46 @@ button { font: inherit; cursor: pointer; }
 
   .admin-content {
     padding: 14px;
+  }
+
+  .workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-panel {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(100vw, 100%);
+    max-width: 100%;
+    top: 0;
+    z-index: 1200;
+    transform: translateX(102%);
+    transition: transform .22s ease;
+  }
+
+  .workspace-panel.is-open {
+    transform: translateX(0);
+  }
+
+  .workspace-panelCard {
+    min-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .workspace-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,.42);
+    z-index: 1190;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s ease;
+  }
+
+  .workspace-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
   }
 }

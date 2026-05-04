@@ -178,28 +178,12 @@
     { key: 'settings',      icon: '🏷️', label: 'Configuración tienda', href: 'store-settings.html' },
   ];
 
-  const SIDEBAR_GROUPS = [
-    { label: null,                          keys: ['dashboard'] },
-    { label: 'Clientes y Licencias',        keys: ['customers', 'licenses', 'tokens'] },
-    { label: 'Catálogo y Planes',           keys: ['plans', 'products'] },
-    { label: 'Facturación',                 keys: ['subscriptions', 'payments'] },
-    { label: 'Sistema',                     keys: ['audit', 'users'] },
-    { label: 'Configuración',               keys: ['settings'] },
-  ];
-
   function renderSidebar(activeKey) {
-    const itemMap = Object.fromEntries(SIDEBAR_ITEMS.map((item) => [item.key, item]));
     const logoSrc = '../assets/img/logo/logo.png';
 
-    const groupsHTML = SIDEBAR_GROUPS.map(({ label, keys }) => {
-      const linksHTML = keys.map((k) => {
-        const item = itemMap[k];
-        if (!item) return '';
-        const cls = k === activeKey ? ' class="active"' : '';
-        return `<li><a href="${item.href}"${cls}><span class="icon" aria-hidden="true">${item.icon}</span><span>${item.label}</span></a></li>`;
-      }).join('');
-      const groupLabel = label ? `<li class="sidebar-group-label">${label}</li>` : '';
-      return `${groupLabel}${linksHTML}`;
+    const linksHTML = SIDEBAR_ITEMS.map((item) => {
+      const cls = item.key === activeKey ? ' class="active"' : '';
+      return `<li><a href="${item.href}"${cls}><span class="icon" aria-hidden="true">${item.icon}</span><span>${item.label}</span></a></li>`;
     }).join('');
 
     const sidebarHTML = `
@@ -213,7 +197,7 @@
       </div>
     </div>
   </div>
-  <ul class="sidebar-nav">${groupsHTML}</ul>
+  <ul class="sidebar-nav">${linksHTML}</ul>
   <div class="sidebar-footer">
     <button class="logout-btn" type="button" onclick="AdminCommon.logout()">Cerrar sesión</button>
   </div>

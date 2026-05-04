@@ -1013,6 +1013,341 @@
                 width: 164px;
             }
         }
+
+        .customers-workspace {
+            align-items: stretch;
+        }
+
+        .customers-listCard,
+        .customers-panel .workspace-panelCard {
+            border-radius: 22px;
+            border: 1px solid rgba(226, 232, 240, 0.96);
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.06);
+            background: #ffffff;
+        }
+
+        .customers-listCard {
+            overflow: hidden;
+        }
+
+        .customers-listHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+        }
+
+        .customers-listTitle {
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .customers-listTitle strong {
+            font-size: 1rem;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: -0.03em;
+        }
+
+        .customers-listMeta {
+            font-size: 0.82rem;
+            color: #64748B;
+            font-weight: 700;
+        }
+
+        .customers-listSurface {
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .customers-list {
+            display: grid;
+        }
+
+        .customer-item {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+            transition: background .16s ease, border-color .16s ease;
+        }
+
+        .customer-item:hover {
+            background: #FAFCFF;
+        }
+
+        .customer-item.is-active {
+            background: linear-gradient(180deg, #F8FBFF 0%, #F3F7FF 100%);
+            border-color: rgba(191, 213, 255, 0.96);
+        }
+
+        .customer-mainBtn {
+            padding: 10px 10px;
+            border-radius: 14px;
+            transition: background .16s ease;
+        }
+
+        .customer-mainBtn:hover {
+            background: rgba(239, 246, 255, 0.72);
+        }
+
+        .customer-linePrimary {
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .customer-lineSecondary {
+            margin-top: 6px;
+            gap: 8px;
+        }
+
+        .customer-name {
+            font-size: 0.95rem;
+        }
+
+        .customer-phone,
+        .customer-idMeta {
+            font-size: 0.76rem;
+        }
+
+        .customers-panel {
+            min-width: 0;
+        }
+
+        .customer-panelBody {
+            display: grid;
+            gap: 18px;
+        }
+
+        .panel-block {
+            display: grid;
+            gap: 12px;
+        }
+
+        .panel-blockTitle {
+            font-size: 0.82rem;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #64748B;
+        }
+
+        .detail-hero {
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.92);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .detail-heroHead {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .detail-heroTitle {
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .detail-heroTitle strong {
+            font-size: 1.16rem;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: -0.03em;
+            word-break: break-word;
+        }
+
+        .detail-heroTitle span {
+            font-size: 0.84rem;
+            color: #64748B;
+            font-weight: 700;
+        }
+
+        .detail-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .detail-stat {
+            padding: 12px 13px;
+            border-radius: 14px;
+            border: 1px solid rgba(226, 232, 240, 0.92);
+            background: #fff;
+        }
+
+        .detail-statLabel {
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #64748B;
+            margin-bottom: 4px;
+        }
+
+        .detail-statValue {
+            font-size: 0.94rem;
+            font-weight: 900;
+            color: #0F172A;
+            word-break: break-word;
+        }
+
+        .detail-gridCards {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .detail-card {
+            padding: 13px;
+            border-radius: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.92);
+            background: #fff;
+            display: grid;
+            gap: 4px;
+        }
+
+        .detail-cardLabel {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #64748B;
+        }
+
+        .detail-cardValue {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #0F172A;
+            word-break: break-word;
+        }
+
+        .detail-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn.btn-ghost {
+            background: #fff;
+            color: #0F172A;
+            border: 1px solid #CBD5E1;
+        }
+
+        .btn.btn-ghost:hover {
+            background: #F8FAFC;
+        }
+
+        .panel-licenseList {
+            display: grid;
+            gap: 10px;
+        }
+
+        .panel-licenseItem {
+            border: 1px solid rgba(226, 232, 240, 0.92);
+            border-radius: 16px;
+            padding: 14px;
+            background: #fff;
+            display: grid;
+            gap: 8px;
+        }
+
+        .panel-licenseTop,
+        .panel-licenseMeta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .panel-licenseTitle {
+            font-size: 0.88rem;
+            font-weight: 900;
+            color: #0F172A;
+        }
+
+        .panel-licenseMeta span {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #64748B;
+        }
+
+        .customer-formPanel {
+            display: grid;
+            gap: 18px;
+        }
+
+        .customer-formLead {
+            margin: 0;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #475569;
+        }
+
+        .customer-formActions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .customer-panelStatus {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0 10px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 900;
+        }
+
+        .customer-panelStatus.active {
+            background: rgba(11, 124, 97, 0.12);
+            color: #0B6B56;
+        }
+
+        .customer-panelStatus.inactive {
+            background: rgba(234, 88, 12, 0.12);
+            color: #C2410C;
+        }
+
+        .customer-panelStatus.none,
+        .customer-panelStatus.neutral {
+            background: rgba(148, 163, 184, 0.14);
+            color: #475569;
+        }
+
+        .panel-emptyHint {
+            margin: 0;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            color: #64748B;
+        }
+
+        @media (max-width: 860px) {
+            .customers-listHeader {
+                padding: 16px 16px 12px;
+            }
+
+            .detail-stats,
+            .detail-gridCards {
+                grid-template-columns: 1fr;
+            }
+
+            .workspace-panelHeader {
+                padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+            }
+        }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">
@@ -1047,72 +1382,57 @@
         </div>
         <div class="admin-content">
         <main class="main customers-shell" style="margin:0;min-height:auto;">
-            <section class="content customers-content"><div id="msg" class="msg"></div>
+            <section class="content customers-content">
+                <div id="msg" class="msg"></div>
+                <div class="customers-workspace workspace-shell">
+                    <div class="workspace-main">
+                        <section class="workspace-card customers-listCard">
+                            <div class="customers-listHeader">
+                                <div class="customers-listTitle">
+                                    <strong>Base de clientes</strong>
+                                    <span class="customers-listMeta" id="customersListMeta">Cargando clientes...</span>
+                                </div>
+                                <div class="detail-actions">
+                                    <button type="button" class="btn btn-primary" onclick="openCreatePanel()">Nuevo cliente</button>
+                                </div>
+                            </div>
 
-                <div class="customers-listSurface">
-                    <div class="customers-list" id="customersList">
-                        <div style="padding: 18px 16px; color:#6B7280; font-weight:700;">Cargando...</div>
+                            <div class="customers-listSurface">
+                                <div class="customers-list" id="customersList">
+                                    <div style="padding: 18px 16px; color:#6B7280; font-weight:700;">Cargando...</div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
-                </div>
 
-                <div class="pagination">
-                    <button type="button" class="pager-btn" id="prevBtn" onclick="prevPage()">&#8592; Atrás</button>
-                    <div class="pager-info"><span class="pill" id="pagerStatus">Página 1</span></div>
-                    <button type="button" class="pager-btn" id="nextBtn" onclick="nextPage()">Siguiente &#8594;</button>
+                    <aside class="workspace-panel customers-panel" id="customerWorkspacePanel" aria-label="Panel de cliente">
+                        <section class="workspace-panelCard workspace-card">
+                            <div class="workspace-panelHeader">
+                                <div class="workspace-panelTitle">
+                                    <strong id="customerPanelTitle">Detalle del cliente</strong>
+                                    <span id="customerPanelSubtitle">Selecciona un cliente o crea uno nuevo desde esta misma vista.</span>
+                                </div>
+                                <div class="workspace-panelActions">
+                                    <button type="button" class="workspace-closeBtn" onclick="closeCustomerPanel()" aria-label="Cerrar panel">✕</button>
+                                </div>
+                            </div>
+                            <div class="workspace-panelBody customer-panelBody" id="customerPanelBody">
+                                <div class="workspace-empty">
+                                    <div class="workspace-emptyInner">
+                                        <strong>Todo el detalle vive aquí</strong>
+                                        <p class="panel-emptyHint">En escritorio verás el cliente seleccionado en una columna fija a la derecha. En teléfono se abre como una hoja limpia, sin ruido ni navegación duplicada.</p>
+                                        <button type="button" class="btn btn-primary" onclick="openCreatePanel()">Crear cliente</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </aside>
                 </div>
             </section>
         </main>
     </div>
 
-    <div class="modal" id="createCustomerModal" aria-hidden="true">
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="createClientTitle">
-            <div class="modal-head">
-                <h3 id="createClientTitle">Crear cliente</h3>
-                <button type="button" class="close-btn" onclick="closeCreateModal()">✕</button>
-            </div>
-
-            <form id="createForm">
-                <div class="form-grid">
-                    <div class="field full">
-                        <label for="business_id">Business ID (opcional)</label>
-                        <input id="business_id" name="business_id" placeholder="Ej: a1b2c3d4e5f6..." />
-                    </div>
-
-                    <div class="field full">
-                        <label for="nombre_negocio">Nombre del negocio *</label>
-                        <input id="nombre_negocio" name="nombre_negocio" placeholder="Ej: Colmado La Esquina" required />
-                    </div>
-
-                    <div class="field">
-                        <label for="contacto_nombre">Nombre de contacto</label>
-                        <input id="contacto_nombre" name="contacto_nombre" placeholder="Ej: Juan Pérez" />
-                    </div>
-
-                    <div class="field">
-                        <label for="contacto_telefono">Teléfono *</label>
-                        <input id="contacto_telefono" name="contacto_telefono" placeholder="Ej: 8290000000" required />
-                    </div>
-
-                    <div class="field">
-                        <label for="contacto_email">Email</label>
-                        <input id="contacto_email" name="contacto_email" placeholder="Ej: cliente@correo.com" />
-                    </div>
-
-                    <div class="field">
-                        <label for="rol_negocio">Rol del negocio</label>
-                        <input id="rol_negocio" name="rol_negocio" placeholder="Ej: Ferretería, Colmado, Restaurante" />
-                    </div>
-                </div>
-
-                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
-                    <button type="button" class="btn btn-muted" onclick="resetForm()">Limpiar</button>
-                    <button type="submit" class="btn btn-primary">Crear cliente</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <button class="jr-fab" type="button" onclick="openCreateModal()" aria-label="Agregar cliente">+</button>
+    <div class="workspace-overlay" id="customerPanelOverlay" onclick="closeCustomerPanel()"></div>
 
     <script>
         const API_URL = (() => {
@@ -1124,16 +1444,16 @@
         })();
 
         let sessionId = localStorage.getItem('sessionId');
-        let currentPage = 1;
-        const limit = 20;
+        const limit = 120;
         let lastCustomers = [];
         let currentQuickFilter = 'all';
         let isSearchVisible = false;
+        let selectedCustomerId = '';
+        let currentPanelMode = 'empty';
+        let currentCustomer = null;
+        let currentCustomerLicenses = [];
 
-        window.addEventListener('load', () => {
-            // Always start with the drawer closed.
-            closeDrawer();
-
+        window.addEventListener('load', async () => {
             if (!sessionId) {
                 window.location.href = '/admin/login.html';
                 return;
@@ -1146,23 +1466,12 @@
                 localStorage.setItem('sessionId', sessionId);
             }
 
-            verifySession();
-
-            bindDrawerAutoClose();
-
-            const form = document.getElementById('createForm');
-            form.addEventListener('submit', createCustomer);
-
-            const modal = document.getElementById('createCustomerModal');
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) closeCreateModal();
-            });
+            await verifySession();
 
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {
-                    closeCreateModal();
                     closeAllActionsMenus();
-                    closeDrawer();
+                    closeCustomerPanel();
                 }
             });
 
@@ -1173,45 +1482,15 @@
                 });
             }
 
-            loadCustomers(1);
-        });
+            await loadCustomers();
 
-        // Ensure drawer doesn't stay open on back/forward cache restores.
-        window.addEventListener('pageshow', () => closeDrawer());
-
-        function toggleDrawer() {
-            document.body.classList.toggle('drawer-open');
-        }
-
-        function closeDrawer() {
-            document.body.classList.remove('drawer-open');
-        }
-
-        function bindDrawerAutoClose() {
-            const sidebar = document.querySelector('.sidebar');
-            if (!sidebar) return;
-
-            const overlay = document.querySelector('.drawer-overlay');
-            if (overlay) {
-                overlay.addEventListener('pointerdown', (e) => {
-                    if (e.target === overlay) closeDrawer();
-                });
+            const deepLinkedId = String(urlParams.get('id') || '').trim();
+            if (deepLinkedId) {
+                await openCustomerDetail(deepLinkedId);
+            } else {
+                renderCustomerPanelEmpty();
             }
-
-            sidebar.addEventListener('click', (e) => {
-                const a = e.target && e.target.closest ? e.target.closest('a') : null;
-                if (!a) return;
-                closeDrawer();
-            });
-        }
-
-        function openCreateModal() {
-            document.getElementById('createCustomerModal').classList.add('show');
-        }
-
-        function closeCreateModal() {
-            document.getElementById('createCustomerModal').classList.remove('show');
-        }
+        });
 
         function showMessage(type, text) {
             const el = document.getElementById('msg');
@@ -1251,20 +1530,24 @@
             }
         }
 
-        function resetForm() {
-            document.getElementById('createForm').reset();
+        function resetCreateForm() {
+            const form = document.getElementById('createCustomerPanelForm');
+            if (form) form.reset();
         }
 
         async function createCustomer(e) {
             e.preventDefault();
             clearMessage();
 
-            const business_id = (document.getElementById('business_id').value || '').trim();
-            const nombre_negocio = (document.getElementById('nombre_negocio').value || '').trim();
-            const contacto_nombre = (document.getElementById('contacto_nombre').value || '').trim();
-            const contacto_telefono = (document.getElementById('contacto_telefono').value || '').trim();
-            const contacto_email = (document.getElementById('contacto_email').value || '').trim();
-            const rol_negocio = (document.getElementById('rol_negocio').value || '').trim();
+            const form = document.getElementById('createCustomerPanelForm');
+            if (!form) return;
+
+            const business_id = (document.getElementById('panel_business_id').value || '').trim();
+            const nombre_negocio = (document.getElementById('panel_nombre_negocio').value || '').trim();
+            const contacto_nombre = (document.getElementById('panel_contacto_nombre').value || '').trim();
+            const contacto_telefono = (document.getElementById('panel_contacto_telefono').value || '').trim();
+            const contacto_email = (document.getElementById('panel_contacto_email').value || '').trim();
+            const rol_negocio = (document.getElementById('panel_rol_negocio').value || '').trim();
 
             if (!nombre_negocio) {
                 showMessage('err', 'nombre_negocio es requerido');
@@ -1295,10 +1578,15 @@
                     return;
                 }
 
-                showMessage('ok', '✅ Cliente creado correctamente');
-                document.getElementById('createForm').reset();
-                closeCreateModal();
-                await loadCustomers(1);
+                showMessage('ok', 'Cliente creado correctamente.');
+                form.reset();
+                await loadCustomers();
+                const createdId = String(data?.customer?.id || data?.id || '').trim();
+                if (createdId) {
+                    await openCustomerDetail(createdId);
+                } else {
+                    openCreatePanel();
+                }
             } catch (err) {
                 showMessage('err', 'No se pudo conectar con el servidor');
             }
@@ -1314,33 +1602,39 @@
             }
         }
 
-        async function loadCustomers(page) {
-            currentPage = Math.max(1, Number(page || 1) || 1);
+        async function loadCustomers() {
             const list = document.getElementById('customersList');
             list.innerHTML = '<div style="padding: 14px; color:#6B7280; font-weight:700;">Cargando...</div>';
 
             try {
-                const res = await apiFetch(`/api/admin/customers?page=${encodeURIComponent(currentPage)}&limit=${encodeURIComponent(limit)}`);
+                const res = await apiFetch(`/api/admin/customers?page=1&limit=${encodeURIComponent(limit)}`);
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
                     list.innerHTML = `<div style="padding: 14px; color:#991B1B; font-weight:800;">${escapeHtml(data?.message || 'Error cargando clientes')}</div>`;
+                    updateCustomersMeta(0, 0);
                     return;
                 }
 
-                const customers = data.customers || [];
-                const total = Number(data.total || 0);
-                document.getElementById('pagerStatus').textContent = `Página ${data.page || currentPage}`;
-
-                const hasPrev = currentPage > 1;
-                const hasNext = (currentPage * limit) < total;
-                document.getElementById('prevBtn').disabled = !hasPrev;
-                document.getElementById('nextBtn').disabled = !hasNext;
-
-                lastCustomers = customers;
+                lastCustomers = Array.isArray(data.customers) ? data.customers : [];
                 renderCustomersList();
             } catch (err) {
                 list.innerHTML = '<div style="padding: 14px; color:#991B1B; font-weight:800;">No se pudo conectar con el servidor.</div>';
+                updateCustomersMeta(0, 0);
             }
+        }
+
+        function updateCustomersMeta(visibleCount, totalCount) {
+            const meta = document.getElementById('customersListMeta');
+            if (!meta) return;
+            if (!totalCount) {
+                meta.textContent = 'Sin clientes visibles ahora mismo.';
+                return;
+            }
+            if (visibleCount === totalCount) {
+                meta.textContent = `${totalCount} cliente${totalCount === 1 ? '' : 's'} cargados`;
+                return;
+            }
+            meta.textContent = `${visibleCount} visibles de ${totalCount}`;
         }
 
         function getFilterState() {
@@ -1383,6 +1677,8 @@
                 .filter(c => matchesQuery(c, q))
                 .filter(c => matchesFilter(c, filter));
 
+            updateCustomersMeta(rows.length, lastCustomers.length);
+
             if (!rows.length) {
                 list.innerHTML = '<div style="padding: 14px; color:#6B7280; font-weight:800;">No hay clientes para mostrar.</div>';
                 return;
@@ -1400,7 +1696,7 @@
                 const menuId = `customer-menu-${customerId}`;
 
                 return `
-                    <div class="customer-item" data-customer-id="${escapeAttr(customerId)}">
+                    <div class="customer-item ${String(selectedCustomerId) === String(customerId) ? 'is-active' : ''}" data-customer-id="${escapeAttr(customerId)}">
                         <button class="customer-mainBtn" type="button" onclick="openCustomerDetail('${escapeAttr(customerId)}')" aria-label="Ver detalle del cliente">
                             <div class="customer-linePrimary">
                                 <span class="customer-name">${escapeHtml(displayName)}</span>
@@ -1420,7 +1716,7 @@
                                         ${escapeHtml(tel || businessId || 'Sin datos extra')}
                                     </div>
                                     <button class="slim-menuItem" type="button" onclick="openCustomerDetail('${escapeAttr(customerId)}')">Ver detalle</button>
-                                    <button class="slim-menuItem" type="button" onclick="goToLicenses('${escapeAttr(customerId)}')">Crear licencia</button>
+                                    <button class="slim-menuItem" type="button" onclick="goToLicenses('${escapeAttr(customerId)}', 'create')">Crear licencia</button>
                                     <button class="slim-menuItem" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}', '${escapeAttr(displayName)}', '${escapeAttr(businessId)}')">Asignar Business ID</button>
                                     <button class="slim-menuItem" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Generar token reset</button>
                                     <button class="slim-menuItemDanger" type="button" onclick="deleteCustomer('${escapeAttr(customerId)}', '${escapeAttr(displayName)}')">Eliminar cliente</button>
@@ -1454,14 +1750,233 @@
             toggleActionsMenu(event, `customer-menu-${id}`);
         }
 
-        function openCustomerDetail(customerId) {
+        async function openCustomerDetail(customerId) {
             closeAllActionsMenus();
             if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
                 window.JrAdminActionsDialog.close();
             }
             const id = String(customerId || '').trim();
             if (!id) return;
-            window.location.href = `/admin/customer-detail.html?id=${encodeURIComponent(id)}`;
+            selectedCustomerId = id;
+            currentPanelMode = 'detail';
+            openCustomerPanelSurface();
+            setCustomerPanelHeader('Detalle del cliente', 'Cargando información y licencias...');
+            document.getElementById('customerPanelBody').innerHTML = '<div class="workspace-empty"><div class="workspace-emptyInner"><strong>Cargando cliente</strong><p class="panel-emptyHint">Estamos trayendo el detalle completo y sus licencias.</p></div></div>';
+            renderCustomersList();
+
+            try {
+                const [customerRes, licensesRes] = await Promise.all([
+                    apiFetch(`/api/admin/customers/${encodeURIComponent(id)}`),
+                    apiFetch(`/api/admin/licenses?customer_id=${encodeURIComponent(id)}&limit=50`)
+                ]);
+
+                const customerData = await customerRes.json().catch(() => ({}));
+                const licensesData = await licensesRes.json().catch(() => ({}));
+
+                if (!customerRes.ok || !customerData.ok || !customerData.customer) {
+                    showMessage('err', customerData?.message || 'No se pudo cargar el cliente.');
+                    renderCustomerPanelEmpty('No pudimos cargar este cliente.', 'Prueba refrescando la lista o seleccionando otro registro.');
+                    return;
+                }
+
+                currentCustomer = customerData.customer;
+                currentCustomerLicenses = (licensesRes.ok && licensesData.ok && Array.isArray(licensesData.licenses))
+                    ? licensesData.licenses
+                    : [];
+
+                renderCustomerDetailPanel();
+            } catch (error) {
+                showMessage('err', 'No se pudo conectar con el servidor.');
+                renderCustomerPanelEmpty('Sin conexión al cargar detalle.', 'Verifica la conexión e inténtalo de nuevo.');
+            }
+        }
+
+        function openCreatePanel() {
+            closeAllActionsMenus();
+            currentPanelMode = 'create';
+            selectedCustomerId = '';
+            currentCustomer = null;
+            currentCustomerLicenses = [];
+            renderCustomersList();
+            openCustomerPanelSurface();
+            setCustomerPanelHeader('Crear cliente', 'Completa el formulario sin salir de la lista.');
+            document.getElementById('customerPanelBody').innerHTML = `
+                <div class="customer-formPanel">
+                    <div class="panel-block">
+                        <strong class="panel-blockTitle">Nuevo registro</strong>
+                        <p class="customer-formLead">Usa este panel para crear clientes con un flujo limpio. En escritorio permanece anclado a la derecha; en teléfono abre como una hoja completa.</p>
+                    </div>
+                    <form id="createCustomerPanelForm">
+                        <div class="form-grid">
+                            <div class="field full">
+                                <label for="panel_business_id">Business ID (opcional)</label>
+                                <input id="panel_business_id" name="business_id" placeholder="Ej: a1b2c3d4e5f6..." />
+                            </div>
+                            <div class="field full">
+                                <label for="panel_nombre_negocio">Nombre del negocio *</label>
+                                <input id="panel_nombre_negocio" name="nombre_negocio" placeholder="Ej: Colmado La Esquina" required />
+                            </div>
+                            <div class="field">
+                                <label for="panel_contacto_nombre">Nombre de contacto</label>
+                                <input id="panel_contacto_nombre" name="contacto_nombre" placeholder="Ej: Juan Pérez" />
+                            </div>
+                            <div class="field">
+                                <label for="panel_contacto_telefono">Teléfono *</label>
+                                <input id="panel_contacto_telefono" name="contacto_telefono" placeholder="Ej: 8290000000" required />
+                            </div>
+                            <div class="field">
+                                <label for="panel_contacto_email">Email</label>
+                                <input id="panel_contacto_email" name="contacto_email" placeholder="Ej: cliente@correo.com" />
+                            </div>
+                            <div class="field">
+                                <label for="panel_rol_negocio">Rol del negocio</label>
+                                <input id="panel_rol_negocio" name="rol_negocio" placeholder="Ej: Ferretería, Colmado, Restaurante" />
+                            </div>
+                        </div>
+                        <div class="customer-formActions">
+                            <button type="button" class="btn btn-ghost" onclick="resetCreateForm()">Limpiar</button>
+                            <button type="submit" class="btn btn-primary">Guardar cliente</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            const form = document.getElementById('createCustomerPanelForm');
+            if (form) form.addEventListener('submit', createCustomer);
+            document.getElementById('panel_nombre_negocio')?.focus();
+        }
+
+        function openCustomerPanelSurface() {
+            document.getElementById('customerWorkspacePanel')?.classList.add('is-open');
+            document.getElementById('customerPanelOverlay')?.classList.add('is-open');
+        }
+
+        function closeCustomerPanel() {
+            document.getElementById('customerWorkspacePanel')?.classList.remove('is-open');
+            document.getElementById('customerPanelOverlay')?.classList.remove('is-open');
+            currentPanelMode = 'empty';
+            selectedCustomerId = '';
+            currentCustomer = null;
+            currentCustomerLicenses = [];
+            renderCustomersList();
+            renderCustomerPanelEmpty();
+        }
+
+        function setCustomerPanelHeader(title, subtitle) {
+            const titleEl = document.getElementById('customerPanelTitle');
+            const subtitleEl = document.getElementById('customerPanelSubtitle');
+            if (titleEl) titleEl.textContent = title || 'Detalle del cliente';
+            if (subtitleEl) subtitleEl.textContent = subtitle || '';
+        }
+
+        function renderCustomerPanelEmpty(title, subtitle) {
+            setCustomerPanelHeader('Detalle del cliente', 'Selecciona un cliente o crea uno nuevo desde esta misma vista.');
+            document.getElementById('customerPanelBody').innerHTML = `
+                <div class="workspace-empty">
+                    <div class="workspace-emptyInner">
+                        <strong>${escapeHtml(title || 'Nada abierto todavía')}</strong>
+                        <p class="panel-emptyHint">${escapeHtml(subtitle || 'La lista queda limpia a la izquierda y este panel concentra el detalle y los formularios para mantener la vista profesional.')}</p>
+                        <button type="button" class="btn btn-primary" onclick="openCreatePanel()">Crear cliente</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCustomerDetailPanel() {
+            const customer = currentCustomer || {};
+            const licenses = currentCustomerLicenses || [];
+            const displayName = getDisplayName(customer);
+            const businessName = String(customer?.nombre_negocio || '').trim();
+            const businessId = String(customer?.business_id || '').trim();
+            const summary = getCustomerLicenseSummaryFromList(licenses);
+
+            setCustomerPanelHeader(displayName || 'Detalle del cliente', businessName && businessName !== displayName ? businessName : 'Resumen operativo del cliente y sus licencias.');
+
+            document.getElementById('customerPanelBody').innerHTML = `
+                <div class="panel-block">
+                    <div class="detail-hero">
+                        <div class="detail-heroHead">
+                            <div class="detail-heroTitle">
+                                <strong>${escapeHtml(displayName)}</strong>
+                                <span>${escapeHtml(businessName || customer?.contacto_email || 'Sin negocio registrado')}</span>
+                            </div>
+                            <span class="customer-panelStatus ${summary.className}">${escapeHtml(summary.label)}</span>
+                        </div>
+                        <div class="detail-stats">
+                            <div class="detail-stat">
+                                <div class="detail-statLabel">Licencias</div>
+                                <div class="detail-statValue">${licenses.length}</div>
+                            </div>
+                            <div class="detail-stat">
+                                <div class="detail-statLabel">Business ID</div>
+                                <div class="detail-statValue">${escapeHtml(businessId || 'Sin asignar')}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block">
+                    <strong class="panel-blockTitle">Ficha rápida</strong>
+                    <div class="detail-gridCards">
+                        ${detailCard('Teléfono', customer?.contacto_telefono || 'No registrado')}
+                        ${detailCard('Email', customer?.contacto_email || 'No registrado')}
+                        ${detailCard('Rol', customer?.rol_negocio || 'No definido')}
+                        ${detailCard('Cliente ID', customer?.id || 'Sin ID')}
+                        ${detailCard('Registrado', formatDate(customer?.created_at) || 'Sin fecha')}
+                        ${detailCard('Negocio', businessName || 'No registrado')}
+                    </div>
+                </div>
+
+                <div class="panel-block">
+                    <strong class="panel-blockTitle">Acciones</strong>
+                    <div class="detail-actions">
+                        <button type="button" class="btn btn-primary" onclick="goToLicenses('${escapeAttr(customer?.id || '')}', 'create')">Crear licencia</button>
+                        <button type="button" class="btn btn-ghost" onclick="goToLicenses('${escapeAttr(customer?.id || '')}')">Ver licencias</button>
+                        <button type="button" class="btn btn-ghost" onclick="setBusinessIdPrompt('${escapeAttr(customer?.id || '')}', '${escapeAttr(displayName)}', '${escapeAttr(businessId)}')">Asignar Business ID</button>
+                        <button type="button" class="btn btn-ghost" onclick="goToSupportToken('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Token reset</button>
+                        <button type="button" class="btn btn-muted" onclick="window.location.href='/admin/customer-detail.html?id=${encodeURIComponent(customer?.id || '')}'">Vista completa</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteCustomer('${escapeAttr(customer?.id || '')}', '${escapeAttr(displayName)}')">Eliminar</button>
+                    </div>
+                </div>
+
+                <div class="panel-block">
+                    <strong class="panel-blockTitle">Licencias recientes</strong>
+                    ${renderPanelLicenses(licenses)}
+                </div>
+            `;
+        }
+
+        function detailCard(label, value) {
+            return `
+                <div class="detail-card">
+                    <div class="detail-cardLabel">${escapeHtml(label)}</div>
+                    <div class="detail-cardValue">${escapeHtml(value)}</div>
+                </div>
+            `;
+        }
+
+        function renderPanelLicenses(licenses) {
+            if (!licenses.length) {
+                return '<div class="workspace-empty" style="min-height:220px;"><div class="workspace-emptyInner"><strong>Sin licencias registradas</strong><p class="panel-emptyHint">Puedes crear una nueva licencia desde este mismo panel.</p></div></div>';
+            }
+
+            return `
+                <div class="panel-licenseList">
+                    ${licenses.slice(0, 8).map((license) => {
+                        const state = getLicenseState(license);
+                        const title = [license?.project_code ? `Proyecto: ${license.project_code}` : '', license?.tipo ? `Tipo: ${String(license.tipo).toUpperCase()}` : ''].filter(Boolean).join(' • ') || 'Licencia';
+                        const meta = [license?.license_key ? `Key: ${shortKey(license.license_key)}` : '', license?.fecha_fin ? `Vence: ${formatShortDate(license.fecha_fin)}` : '', license?.id ? `ID: ${license.id}` : ''].filter(Boolean);
+                        return `
+                            <div class="panel-licenseItem">
+                                <div class="panel-licenseTop">
+                                    <span class="panel-licenseTitle">${escapeHtml(title)}</span>
+                                    <span class="customer-panelStatus ${state.className}">${escapeHtml(state.label)}</span>
+                                </div>
+                                <div class="panel-licenseMeta">${meta.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
         }
 
         function toggleSearch() {
@@ -1484,7 +1999,7 @@
             closeAllActionsMenus();
 
             if (action === 'refresh') {
-                loadCustomers(currentPage);
+                loadCustomers();
                 return;
             }
 
@@ -1554,7 +2069,8 @@
                 }
 
                 showMessage('ok', '✅ Business ID actualizado');
-                await loadCustomers(currentPage);
+                await loadCustomers();
+                await openCustomerDetail(id);
             } catch (e) {
                 showMessage('err', 'No se pudo conectar con el servidor');
             }
@@ -1587,19 +2103,52 @@
 
                 const count = Number(data.deletedLicensesCount || 0);
                 showMessage('ok', `✅ Cliente eliminado. Licencias eliminadas: ${count}`);
-                await loadCustomers(currentPage);
+                if (selectedCustomerId === id) {
+                    closeCustomerPanel();
+                }
+                await loadCustomers();
             } catch (e) {
                 showMessage('err', 'No se pudo conectar con el servidor');
             }
         }
 
-        function prevPage() {
-            if (currentPage <= 1) return;
-            loadCustomers(currentPage - 1);
+        function getDisplayName(customer) {
+            return String(customer?.contacto_nombre || customer?.nombre_negocio || 'Cliente').trim();
         }
 
-        function nextPage() {
-            loadCustomers(currentPage + 1);
+        function getCustomerLicenseSummaryFromList(licenses) {
+            const active = licenses.some((license) => getLicenseState(license).className === 'active');
+            if (active) return { label: 'Licencia activa', className: 'active' };
+            if (licenses.length) return { label: 'Licencia inactiva', className: 'inactive' };
+            return { label: 'Sin licencia', className: 'none' };
+        }
+
+        function getLicenseState(license) {
+            const raw = String(license?.estado || '').trim().toUpperCase();
+            const expired = raw === 'ACTIVA' && license?.fecha_fin && new Date(license.fecha_fin).getTime() < Date.now();
+
+            if (raw === 'ACTIVA' && !expired) return { label: 'Activa', className: 'active' };
+            if (raw === 'PENDIENTE') return { label: 'Pendiente', className: 'neutral' };
+            if (raw === 'BLOQUEADA') return { label: 'Bloqueada', className: 'neutral' };
+            if (raw === 'VENCIDA' || expired) return { label: 'Vencida', className: 'inactive' };
+            if (raw) return { label: raw, className: 'neutral' };
+            return { label: 'Sin estado', className: 'none' };
+        }
+
+        function shortKey(value) {
+            const text = String(value || '').trim();
+            if (!text) return '';
+            if (text.length <= 18) return text;
+            return `${text.slice(0, 10)}...${text.slice(-4)}`;
+        }
+
+        function formatShortDate(value) {
+            if (!value) return '';
+            try {
+                return new Date(value).toLocaleDateString('es-DO');
+            } catch {
+                return String(value);
+            }
         }
 
         function escapeHtml(value) {
@@ -1641,14 +2190,16 @@
             closeAllActionsMenus();
         });
 
-        function goToLicenses(customerId) {
+        function goToLicenses(customerId, action) {
             closeAllActionsMenus();
             if (window.JrAdminActionsDialog && typeof window.JrAdminActionsDialog.close === 'function') {
                 window.JrAdminActionsDialog.close();
             }
             const id = String(customerId || '').trim();
             if (!id) return;
-            window.location.href = `/admin/licenses.html?customer_id=${encodeURIComponent(id)}`;
+            const params = new URLSearchParams({ customer_id: id });
+            if (action) params.set('action', action);
+            window.location.href = `/admin/licenses.html?${params.toString()}`;
         }
 
         function goToSupportToken(businessId) {
@@ -1664,21 +2215,6 @@
 
             const target = `/admin/license-config.html?support_business_id=${encodeURIComponent(id)}&support_username=admin&autogen=1`;
             window.location.href = target;
-        }
-
-        async function logout() {
-            try {
-                await fetch(`${API_URL}/api/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'x-session-id': sessionId,
-                        'Content-Type': 'application/json'
-                    }
-                });
-            } catch (e) {}
-
-            localStorage.removeItem('sessionId');
-            window.location.href = '/';
         }
     </script>
 <script>AdminCommon.initSidebarLayout('customers');</script>
