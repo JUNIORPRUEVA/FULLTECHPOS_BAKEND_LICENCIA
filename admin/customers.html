@@ -1231,28 +1231,6 @@
             gap: 10px;
         }
 
-        .detail-card {
-            padding: 13px;
-            border-radius: 16px;
-            border: 1px solid rgba(226, 232, 240, 0.92);
-            background: #fff;
-            display: grid;
-            gap: 4px;
-        }
-
-        .detail-cardLabel {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: #64748B;
-        }
-
-        .detail-cardValue {
-            font-size: 0.9rem;
-            font-weight: 800;
-            color: #0F172A;
-            word-break: break-word;
-        }
-
         .detail-actions {
             display: flex;
             flex-wrap: wrap;
@@ -1434,6 +1412,363 @@
 
             .workspace-panelTitle strong {
                 font-size: 0.95rem;
+            }
+        }
+
+        /* Drawer profesional para detalle de cliente */
+        body.customer-drawer-open {
+            overflow: hidden;
+        }
+
+        .customers-panel .workspace-panelCard {
+            background: #ffffff;
+            border: 1px solid rgba(219, 227, 239, 0.98);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+        }
+
+        .customers-panel .workspace-panelHeader {
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid #e5ebf3;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+        }
+
+        .customers-panel .workspace-panelBody {
+            padding: 18px 20px 22px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            display: grid;
+            gap: 0;
+        }
+
+        .panel-headerMeta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .panel-headerHint {
+            font-size: 0.82rem;
+            line-height: 1.45;
+            color: #64748B;
+            margin: 0;
+        }
+
+        .panel-block {
+            gap: 14px;
+            padding: 18px 0;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .panel-block:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .panel-sectionTitle {
+            margin: 0;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #72809b;
+        }
+
+        .panel-sectionLead {
+            margin: 0;
+            font-size: 0.86rem;
+            line-height: 1.55;
+            color: #64748B;
+        }
+
+        .panel-hero {
+            display: grid;
+            gap: 14px;
+        }
+
+        .panel-heroHead {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .panel-heroTitleWrap {
+            min-width: 0;
+            display: grid;
+            gap: 4px;
+        }
+
+        .panel-heroTitle {
+            font-size: 1.24rem;
+            font-weight: 900;
+            line-height: 1.1;
+            color: #111827;
+            letter-spacing: -0.04em;
+            word-break: break-word;
+        }
+
+        .panel-heroSubtitle {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #64748B;
+            line-height: 1.45;
+        }
+
+        .panel-badgeRow {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .panel-flatRows {
+            display: grid;
+            gap: 2px;
+        }
+
+        .panel-flatRow {
+            display: grid;
+            grid-template-columns: 116px minmax(0, 1fr);
+            gap: 12px;
+            align-items: center;
+            min-width: 0;
+            padding: 9px 0;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .panel-flatRow:last-child {
+            border-bottom: none;
+        }
+
+        .panel-flatLabel {
+            font-size: 0.72rem;
+            font-weight: 900;
+            color: #8a95ab;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .panel-flatValue {
+            min-width: 0;
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #172033;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .value-copyWrap {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .copy-btn {
+            border: 1px solid #dce5f1;
+            background: #f6f9fc;
+            color: #27406f;
+            border-radius: 10px;
+            min-height: 30px;
+            padding: 0 10px;
+            font-size: 0.72rem;
+            font-weight: 900;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: #edf3ff;
+            border-color: #c7d7f4;
+        }
+
+        .panel-summaryRows {
+            display: grid;
+            gap: 0;
+        }
+
+        .panel-summaryRow {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eef2f7;
+            min-width: 0;
+        }
+
+        .panel-summaryRow:last-child {
+            border-bottom: none;
+        }
+
+        .panel-summaryLabel {
+            font-size: 0.84rem;
+            font-weight: 800;
+            color: #64748B;
+        }
+
+        .panel-summaryValue {
+            font-size: 0.92rem;
+            font-weight: 900;
+            color: #0F172A;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .panel-actionGrid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .panel-actionGrid .btn {
+            width: 100%;
+            min-height: 42px;
+            justify-content: center;
+            text-align: center;
+            padding: 10px 12px;
+            border-radius: 12px;
+        }
+
+        .panel-licenseListFlat {
+            display: grid;
+            gap: 0;
+        }
+
+        .panel-licenseRow {
+            padding: 12px 0;
+            border-bottom: 1px solid #eef2f7;
+            display: grid;
+            gap: 7px;
+            min-width: 0;
+        }
+
+        .panel-licenseRow:last-child {
+            border-bottom: none;
+        }
+
+        .panel-licenseRowTop,
+        .panel-licenseRowBottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+
+        .panel-licenseRowTitle,
+        .panel-licenseRowMeta {
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .panel-licenseRowTitle {
+            font-size: 0.87rem;
+            font-weight: 900;
+            color: #111827;
+        }
+
+        .panel-licenseRowMeta {
+            font-size: 0.77rem;
+            color: #6B7494;
+            font-weight: 700;
+            max-width: 100%;
+        }
+
+        @media (min-width: 861px) {
+            #customerWorkspacePanel.customers-panel {
+                position: fixed;
+                top: calc(var(--u-topbar-h) + 8px);
+                right: 10px;
+                bottom: 10px;
+                width: clamp(520px, 42vw, 620px);
+                max-width: calc(100vw - 90px);
+                z-index: 1400;
+                transform: translateX(104%);
+                transition: transform .18s ease;
+            }
+
+            #customerWorkspacePanel.customers-panel.is-open {
+                transform: translateX(0);
+            }
+
+            .customers-panel .workspace-panelCard {
+                border-radius: 20px;
+                height: 100%;
+                min-height: 100%;
+                overflow: hidden;
+            }
+
+            #customerPanelOverlay.workspace-overlay {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.46);
+                z-index: 1390;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity .16s ease;
+            }
+
+            #customerPanelOverlay.workspace-overlay.is-open {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
+
+        @media (max-width: 860px) {
+            #customerWorkspacePanel.customers-panel {
+                position: fixed;
+                inset: 0;
+                width: 100%;
+                max-width: 100%;
+                z-index: 1400;
+                transform: translateX(104%);
+                transition: transform .18s ease;
+            }
+
+            #customerWorkspacePanel.customers-panel.is-open {
+                transform: translateX(0);
+            }
+
+            .customers-panel .workspace-panelCard {
+                border-radius: 0;
+                height: 100%;
+                min-height: 100%;
+            }
+
+            .customers-panel .workspace-panelBody {
+                padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
+            }
+
+            .panel-flatRow {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+
+            .panel-summaryGrid,
+            .panel-actionGrid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel-summaryRow {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+
+            .panel-licenseRowTop,
+            .panel-licenseRowBottom,
+            .panel-heroHead {
+                align-items: flex-start;
             }
         }
     </style>
@@ -1934,11 +2269,13 @@
         }
 
         function openCustomerPanelSurface() {
+            document.body.classList.add('customer-drawer-open');
             document.getElementById('customerWorkspacePanel')?.classList.add('is-open');
             document.getElementById('customerPanelOverlay')?.classList.add('is-open');
         }
 
         function closeCustomerPanel() {
+            document.body.classList.remove('customer-drawer-open');
             document.getElementById('customerWorkspacePanel')?.classList.remove('is-open');
             document.getElementById('customerPanelOverlay')?.classList.remove('is-open');
             currentPanelMode = 'empty';
@@ -1976,47 +2313,67 @@
             const businessName = String(customer?.nombre_negocio || '').trim();
             const businessId = String(customer?.business_id || '').trim();
             const summary = getCustomerLicenseSummaryFromList(licenses);
+            const activeCount = licenses.filter((license) => getLicenseState(license).className === 'active').length;
+            const lastLicense = licenses[0] || null;
+            const lastLicenseLabel = lastLicense
+                ? [lastLicense.project_code || '', lastLicense.tipo ? String(lastLicense.tipo).toUpperCase() : '']
+                    .filter(Boolean)
+                    .join(' • ') || `ID ${lastLicense.id || ''}`
+                : 'Sin licencias';
+            const customerIdValue = String(customer?.id || 'Sin ID');
 
             setCustomerPanelHeader(displayName || 'Detalle del cliente', businessName && businessName !== displayName ? businessName : 'Resumen operativo del cliente y sus licencias.');
 
             document.getElementById('customerPanelBody').innerHTML = `
-                <div class="panel-block">
-                    <div class="detail-hero">
-                        <div class="detail-heroHead">
-                            <div class="detail-heroTitle">
-                                <strong>${escapeHtml(displayName)}</strong>
-                                <span>${escapeHtml(businessName || customer?.contacto_email || 'Sin negocio registrado')}</span>
-                            </div>
-                            <span class="customer-panelStatus ${summary.className}">${escapeHtml(summary.label)}</span>
+                <section class="panel-block panel-hero">
+                    <div class="panel-heroHead">
+                        <div class="panel-heroTitleWrap">
+                            <div class="panel-heroTitle">${escapeHtml(displayName)}</div>
+                            <div class="panel-heroSubtitle">${escapeHtml(businessName || customer?.contacto_email || 'Sin negocio registrado')}</div>
                         </div>
-                        <div class="detail-stats">
-                            <div class="detail-stat">
-                                <div class="detail-statLabel">Licencias</div>
-                                <div class="detail-statValue">${licenses.length}</div>
-                            </div>
-                            <div class="detail-stat">
-                                <div class="detail-statLabel">Business ID</div>
-                                <div class="detail-statValue">${escapeHtml(businessId || 'Sin asignar')}</div>
-                            </div>
-                        </div>
+                        <span class="customer-panelStatus ${summary.className}">${escapeHtml(summary.label)}</span>
                     </div>
-                </div>
-
-                <div class="panel-block">
-                    <strong class="panel-blockTitle">Ficha rápida</strong>
-                    <div class="detail-gridCards">
-                        ${detailCard('Teléfono', customer?.contacto_telefono || 'No registrado')}
-                        ${detailCard('Email', customer?.contacto_email || 'No registrado')}
-                        ${detailCard('Rol', customer?.rol_negocio || 'No definido')}
-                        ${detailCard('Cliente ID', customer?.id || 'Sin ID')}
-                        ${detailCard('Registrado', formatDate(customer?.created_at) || 'Sin fecha')}
-                        ${detailCard('Negocio', businessName || 'No registrado')}
+                    <div class="panel-badgeRow">
+                        <span class="panel-headerHint">Cliente ${escapeHtml(customerIdValue)}</span>
+                        ${businessId ? `<span class="panel-headerHint">Business ID asignado</span>` : `<span class="panel-headerHint">Sin Business ID</span>`}
                     </div>
-                </div>
+                </section>
 
-                <div class="panel-block">
-                    <strong class="panel-blockTitle">Acciones</strong>
-                    <div class="detail-actions">
+                <section class="panel-block">
+                    <h3 class="panel-sectionTitle">Datos del cliente</h3>
+                    <div class="panel-flatRows">
+                        ${detailRow('Negocio', businessName || 'No registrado')}
+                        ${detailRow('Teléfono', customer?.contacto_telefono || 'No registrado')}
+                        ${detailRow('Email', customer?.contacto_email || 'No registrado')}
+                        ${detailRow('Rol', customer?.rol_negocio || 'No definido')}
+                        ${detailRow('Fecha registro', formatDate(customer?.created_at) || 'Sin fecha')}
+                        ${detailRowCopy('Client ID', customerIdValue)}
+                    </div>
+                </section>
+
+                <section class="panel-block">
+                    <h3 class="panel-sectionTitle">Resumen de licencia</h3>
+                    <div class="panel-summaryRows">
+                        ${summaryRow('Licencias totales', String(licenses.length))}
+                        ${summaryRow('Licencias activas', String(activeCount))}
+                        ${summaryRowCopy('Business ID', businessId || 'Sin asignar')}
+                        ${summaryRow('Última licencia', lastLicenseLabel)}
+                    </div>
+                </section>
+
+                <section class="panel-block">
+                    <h3 class="panel-sectionTitle">Ficha rápida</h3>
+                    <div class="panel-flatRows">
+                        ${detailRow('Contacto', displayName || 'Sin nombre')}
+                        ${detailRow('Negocio', businessName || 'No registrado')}
+                        ${detailRow('Estado', summary.label)}
+                        ${detailRow('Última clave', lastLicense?.license_key ? shortKey(lastLicense.license_key) : 'Sin licencias')}
+                    </div>
+                </section>
+
+                <section class="panel-block">
+                    <h3 class="panel-sectionTitle">Acciones</h3>
+                    <div class="panel-actionGrid">
                         <button type="button" class="btn btn-primary" onclick="goToLicenses('${escapeAttr(customer?.id || '')}', 'create')">Crear licencia</button>
                         <button type="button" class="btn btn-ghost" onclick="goToLicenses('${escapeAttr(customer?.id || '')}')">Ver licencias</button>
                         <button type="button" class="btn btn-ghost" onclick="setBusinessIdPrompt('${escapeAttr(customer?.id || '')}', '${escapeAttr(displayName)}', '${escapeAttr(businessId)}')">Asignar Business ID</button>
@@ -2024,47 +2381,95 @@
                         <button type="button" class="btn btn-muted" onclick="window.location.href='/admin/customer-detail.html?id=${encodeURIComponent(customer?.id || '')}'">Vista completa</button>
                         <button type="button" class="btn btn-danger" onclick="deleteCustomer('${escapeAttr(customer?.id || '')}', '${escapeAttr(displayName)}')">Eliminar</button>
                     </div>
-                </div>
+                </section>
 
-                <div class="panel-block">
-                    <strong class="panel-blockTitle">Licencias recientes</strong>
+                <section class="panel-block">
+                    <h3 class="panel-sectionTitle">Licencias recientes</h3>
                     ${renderPanelLicenses(licenses)}
+                </section>
+            `;
+        }
+
+        function detailRow(label, value) {
+            return `
+                <div class="panel-flatRow">
+                    <div class="panel-flatLabel">${escapeHtml(label)}</div>
+                    <div class="panel-flatValue" title="${escapeHtml(value)}">${escapeHtml(value)}</div>
                 </div>
             `;
         }
 
-        function detailCard(label, value) {
+        function detailRowCopy(label, value) {
+            const safeValue = String(value || '');
             return `
-                <div class="detail-card">
-                    <div class="detail-cardLabel">${escapeHtml(label)}</div>
-                    <div class="detail-cardValue">${escapeHtml(value)}</div>
+                <div class="panel-flatRow">
+                    <div class="panel-flatLabel">${escapeHtml(label)}</div>
+                    <div class="value-copyWrap">
+                        <div class="panel-flatValue" title="${escapeHtml(safeValue)}">${escapeHtml(safeValue)}</div>
+                        <button type="button" class="copy-btn" onclick="copyTextValue('${escapeAttr(safeValue)}', '${escapeAttr(label)}')">Copiar</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function summaryRow(label, value) {
+            return `
+                <div class="panel-summaryRow">
+                    <div class="panel-summaryLabel">${escapeHtml(label)}</div>
+                    <div class="panel-summaryValue" title="${escapeHtml(value)}">${escapeHtml(value)}</div>
+                </div>
+            `;
+        }
+
+        function summaryRowCopy(label, value) {
+            const safeValue = String(value || '');
+            return `
+                <div class="panel-summaryRow">
+                    <div class="panel-summaryLabel">${escapeHtml(label)}</div>
+                    <div class="value-copyWrap">
+                        <div class="panel-summaryValue" title="${escapeHtml(safeValue)}">${escapeHtml(safeValue)}</div>
+                        ${safeValue && safeValue !== 'Sin asignar' ? `<button type="button" class="copy-btn" onclick="copyTextValue('${escapeAttr(safeValue)}', '${escapeAttr(label)}')">Copiar</button>` : ''}
+                    </div>
                 </div>
             `;
         }
 
         function renderPanelLicenses(licenses) {
             if (!licenses.length) {
-                return '<div class="workspace-empty" style="min-height:220px;"><div class="workspace-emptyInner"><strong>Sin licencias registradas</strong><p class="panel-emptyHint">Puedes crear una nueva licencia desde este mismo panel.</p></div></div>';
+                return '<div class="workspace-empty" style="min-height:120px;"><div class="workspace-emptyInner"><strong>Sin licencias registradas</strong><p class="panel-emptyHint">Puedes crear una nueva licencia desde este mismo panel.</p></div></div>';
             }
 
             return `
-                <div class="panel-licenseList">
+                <div class="panel-licenseListFlat">
                     ${licenses.slice(0, 8).map((license) => {
                         const state = getLicenseState(license);
                         const title = [license?.project_code ? `Proyecto: ${license.project_code}` : '', license?.tipo ? `Tipo: ${String(license.tipo).toUpperCase()}` : ''].filter(Boolean).join(' • ') || 'Licencia';
                         const meta = [license?.license_key ? `Key: ${shortKey(license.license_key)}` : '', license?.fecha_fin ? `Vence: ${formatShortDate(license.fecha_fin)}` : '', license?.id ? `ID: ${license.id}` : ''].filter(Boolean);
                         return `
-                            <div class="panel-licenseItem">
-                                <div class="panel-licenseTop">
-                                    <span class="panel-licenseTitle">${escapeHtml(title)}</span>
+                            <div class="panel-licenseRow">
+                                <div class="panel-licenseRowTop">
+                                    <span class="panel-licenseRowTitle" title="${escapeHtml(title)}">${escapeHtml(title)}</span>
                                     <span class="customer-panelStatus ${state.className}">${escapeHtml(state.label)}</span>
                                 </div>
-                                <div class="panel-licenseMeta">${meta.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div>
+                                <div class="panel-licenseRowBottom">
+                                  <span class="panel-licenseRowMeta" title="${escapeHtml(meta.join(' | '))}">${meta.map((item) => escapeHtml(item)).join(' • ')}</span>
+                                </div>
                             </div>
                         `;
                     }).join('')}
                 </div>
             `;
+        }
+
+        async function copyTextValue(value, label) {
+            const text = String(value || '').trim();
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                showMessage('ok', `${label || 'Valor'} copiado.`);
+            } catch (_) {
+                showMessage('err', 'No se pudo copiar el valor.');
+            }
         }
 
         function toggleSearch() {

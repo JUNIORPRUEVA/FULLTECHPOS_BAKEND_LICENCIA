@@ -111,39 +111,65 @@
             color: #A16207;
         }
 
-        .hero {
-            border: 1px solid rgba(226, 232, 240, 0.84);
-            border-radius: 14px;
+        .detail-shell {
+            max-width: 980px;
+            margin: 0 auto;
             background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.94);
+            border-radius: 24px;
+            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+        }
+
+        .hero {
+            border: none;
+            border-radius: 0;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
             box-shadow: none;
-            padding: 16px;
+            padding: 22px 20px 18px;
         }
 
         .hero-head {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
         .hero-titleWrap {
             display: grid;
-            gap: 5px;
+            gap: 6px;
             min-width: 0;
         }
 
         .hero-title {
-            font-size: clamp(1.22rem, 2.4vw, 1.58rem);
+            font-size: clamp(1.36rem, 2.6vw, 1.86rem);
             font-weight: 900;
-            letter-spacing: -0.4px;
+            letter-spacing: -0.05em;
             color: #0F172A;
+            line-height: 1.08;
         }
 
         .hero-subtitle {
-            font-size: 0.86rem;
-            font-weight: 800;
-            color: #475569;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #64748B;
+            line-height: 1.45;
+        }
+
+        .hero-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .hero-hint {
+            font-size: 0.82rem;
+            color: #64748B;
+            font-weight: 700;
         }
 
         .btn {
@@ -190,12 +216,14 @@
         }
 
         .section {
-            margin-top: 12px;
-            border: 1px solid rgba(226, 232, 240, 0.84);
-            border-radius: 14px;
-            background: #ffffff;
+            margin-top: 0;
+            border: none;
+            border-radius: 0;
+            background: transparent;
             box-shadow: none;
-            overflow: hidden;
+            overflow: visible;
+            padding: 18px 20px;
+            border-top: 1px solid rgba(226, 232, 240, 0.84);
         }
 
         .section-head {
@@ -203,60 +231,135 @@
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 14px 16px 10px;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            padding: 0 0 12px;
+            border-bottom: none;
             flex-wrap: wrap;
         }
 
         .section-title {
-            font-size: 1rem;
+            font-size: 0.78rem;
             font-weight: 900;
-            color: #0F172A;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #72809b;
         }
 
         .section-subtitle {
-            font-size: 0.78rem;
+            font-size: 0.84rem;
             font-weight: 700;
             color: #64748B;
         }
 
-        .hero .info-grid {
-            margin-top: 12px;
-            border: 1px solid rgba(226, 232, 240, 0.84);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 0;
         }
 
         .info-row {
-            padding: 12px 16px;
+            padding: 10px 0;
             border-bottom: 1px solid rgba(226, 232, 240, 0.76);
             min-width: 0;
+            display: grid;
+            grid-template-columns: 138px minmax(0, 1fr);
+            gap: 12px;
+            align-items: center;
         }
 
-        .info-row:nth-child(odd) {
-            border-right: 1px solid rgba(226, 232, 240, 0.76);
+        .info-row:last-child {
+            border-bottom: none;
         }
 
         .info-label {
-            font-size: 0.75rem;
+            font-size: 0.73rem;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #64748B;
-            margin-bottom: 6px;
+            letter-spacing: 0.06em;
+            color: #7b879d;
+            margin-bottom: 0;
         }
 
         .info-value {
-            font-size: 0.88rem;
+            min-width: 0;
+            font-size: 0.9rem;
             font-weight: 800;
             color: #0F172A;
-            word-break: break-word;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .info-valueWrap {
+            min-width: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .copy-btn {
+            border: 1px solid #d7dfeb;
+            background: #f7faff;
+            color: #35508d;
+            border-radius: 10px;
+            min-height: 30px;
+            padding: 0 10px;
+            font-size: 0.72rem;
+            font-weight: 900;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: #edf3ff;
+            border-color: #c4d3f2;
+        }
+
+        .summary-rows {
+            display: grid;
+            gap: 0;
+        }
+
+        .summary-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.76);
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-size: 0.84rem;
+            font-weight: 800;
+            color: #64748B;
+        }
+
+        .summary-value {
+            min-width: 0;
+            max-width: 100%;
+            font-size: 0.92rem;
+            font-weight: 900;
+            color: #0F172A;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .action-grid .btn {
+            width: 100%;
+            min-height: 42px;
+            text-align: center;
+            padding: 10px 12px;
         }
 
         .license-list {
@@ -427,6 +530,20 @@
             font-weight: 800;
         }
 
+        .license-list {
+            gap: 0;
+        }
+
+        .license-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.76);
+        }
+
+        .license-mainBtn:hover .license-title,
+        .license-mainBtn:hover .license-meta {
+            color: #1D4ED8;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -448,16 +565,22 @@
                 padding-top: 4px;
             }
 
-            .hero {
-                padding: 14px;
+            .detail-shell {
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
             }
 
-            .info-grid {
+            .hero,
+            .section {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            .info-row,
+            .summary-row {
                 grid-template-columns: 1fr;
-            }
-
-            .info-row:nth-child(odd) {
-                border-right: none;
+                gap: 5px;
             }
 
             .section-head {
@@ -468,9 +591,12 @@
                 width: 100%;
             }
 
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+
             .license-item {
                 grid-template-columns: 1fr auto;
-                padding: 10px 12px;
             }
 
             .slim-menu {
@@ -506,32 +632,63 @@
 
                 <div id="msg" class="msg"></div>
 
-                <section class="hero" id="heroSection">
-                    <div class="hero-head">
-                        <div class="hero-titleWrap">
-                            <div class="hero-title" id="customerName">Cargando cliente...</div>
-                            <div class="hero-subtitle hidden" id="customerSubtitle"></div>
+                <div class="detail-shell">
+                    <section class="hero" id="heroSection">
+                        <div class="hero-head">
+                            <div class="hero-titleWrap">
+                                <div class="hero-title" id="customerName">Cargando cliente...</div>
+                                <div class="hero-subtitle hidden" id="customerSubtitle"></div>
+                            </div>
+                            <span class="status-chip none" id="customerHeroStatus">Sin licencia</span>
                         </div>
-                    </div>
-                    <div class="info-grid" id="customerInfoGrid">
-                        <div class="info-row">
-                            <div class="info-label">Cargando</div>
-                            <div class="info-value">Un momento...</div>
+                        <div class="hero-meta">
+                            <span class="hero-hint" id="customerHeroHint">Preparando ficha del cliente...</span>
                         </div>
-                    </div>
-                </section>
+                    </section>
 
-                <section class="section">
-                    <div class="section-head">
-                        <div>
-                            <div class="section-title">Licencias</div>
-                            <div class="section-subtitle" id="licensesSubtitle">Cargando licencias...</div>
+                    <section class="section">
+                        <div class="section-head">
+                            <div class="section-title">Datos del cliente</div>
                         </div>
-                    </div>
-                    <div class="license-list" id="licensesList">
-                        <div class="empty-state">Cargando licencias...</div>
-                    </div>
-                </section>
+                        <div class="info-grid" id="customerInfoGrid">
+                            <div class="info-row">
+                                <div class="info-label">Cargando</div>
+                                <div class="info-value">Un momento...</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="section">
+                        <div class="section-head">
+                            <div class="section-title">Resumen de licencia</div>
+                        </div>
+                        <div class="summary-rows" id="customerSummaryRows"></div>
+                    </section>
+
+                    <section class="section">
+                        <div class="section-head">
+                            <div class="section-title">Acciones</div>
+                        </div>
+                        <div class="action-grid">
+                            <button type="button" class="btn btn-primary" onclick="goToCreateLicense()">Crear licencia</button>
+                            <button type="button" class="btn btn-muted" onclick="goToManageLicenses()">Ver licencias</button>
+                            <button type="button" class="btn btn-muted" onclick="setBusinessIdPrompt()">Asignar Business ID</button>
+                            <button type="button" class="btn btn-muted" onclick="goToSupportToken(lastCustomer && lastCustomer.business_id)">Token reset</button>
+                        </div>
+                    </section>
+
+                    <section class="section">
+                        <div class="section-head">
+                            <div>
+                                <div class="section-title">Licencias recientes</div>
+                                <div class="section-subtitle" id="licensesSubtitle">Cargando licencias...</div>
+                            </div>
+                        </div>
+                        <div class="license-list" id="licensesList">
+                            <div class="empty-state">Cargando licencias...</div>
+                        </div>
+                    </section>
+                </div>
             </section>
         </main>
     </div>
@@ -636,7 +793,18 @@
             const subtitleEl = document.getElementById('customerSubtitle');
             const gridEl = document.getElementById('customerInfoGrid');
             const summaryEl = document.getElementById('customerLicenseSummary');
+            const heroStatusEl = document.getElementById('customerHeroStatus');
+            const heroHintEl = document.getElementById('customerHeroHint');
+            const summaryRowsEl = document.getElementById('customerSummaryRows');
             const licenseSummary = getCustomerLicenseSummary();
+            const activeCount = lastLicenses.filter((license) => getLicenseState(license).className === 'active').length;
+            const businessId = String(customer?.business_id || '').trim();
+            const lastLicense = lastLicenses[0] || null;
+            const lastLicenseLabel = lastLicense
+                ? [lastLicense.project_code || '', lastLicense.tipo ? String(lastLicense.tipo).toUpperCase() : '']
+                    .filter(Boolean)
+                    .join(' • ') || `ID ${lastLicense.id || ''}`
+                : 'Sin licencias';
 
             titleEl.textContent = displayName;
 
@@ -650,6 +818,13 @@
 
             summaryEl.textContent = licenseSummary.label;
             summaryEl.className = `status-chip ${licenseSummary.className}`;
+            if (heroStatusEl) {
+                heroStatusEl.textContent = licenseSummary.label;
+                heroStatusEl.className = `status-chip ${licenseSummary.className}`;
+            }
+            if (heroHintEl) {
+                heroHintEl.textContent = businessId ? `Business ID: ${businessId}` : `Cliente ID: ${customer?.id || 'Sin ID'}`;
+            }
 
             const infoRows = [
                 { label: 'Nombre del cliente', value: displayName },
@@ -665,9 +840,42 @@
             gridEl.innerHTML = infoRows.map((row) => `
                 <div class="info-row">
                     <div class="info-label">${escapeHtml(row.label)}</div>
-                    <div class="info-value">${escapeHtml(row.value)}</div>
+                    ${String(row.label).includes('ID')
+                        ? `<div class="info-valueWrap"><div class="info-value" title="${escapeHtml(row.value)}">${escapeHtml(row.value)}</div><button type="button" class="copy-btn" onclick="copyTextValue('${escapeAttr(row.value)}', '${escapeAttr(row.label)}')">Copiar</button></div>`
+                        : `<div class="info-value" title="${escapeHtml(row.value)}">${escapeHtml(row.value)}</div>`}
                 </div>
             `).join('');
+
+            if (summaryRowsEl) {
+                summaryRowsEl.innerHTML = [
+                    summaryRow('Licencias totales', String(lastLicenses.length)),
+                    summaryRow('Licencias activas', String(activeCount)),
+                    summaryRowCopy('Business ID', businessId || 'Sin asignar'),
+                    summaryRow('Última licencia', lastLicenseLabel)
+                ].join('');
+            }
+        }
+
+        function summaryRow(label, value) {
+            return `
+                <div class="summary-row">
+                    <div class="summary-label">${escapeHtml(label)}</div>
+                    <div class="summary-value" title="${escapeHtml(value)}">${escapeHtml(value)}</div>
+                </div>
+            `;
+        }
+
+        function summaryRowCopy(label, value) {
+            const safeValue = String(value || '');
+            return `
+                <div class="summary-row">
+                    <div class="summary-label">${escapeHtml(label)}</div>
+                    <div class="info-valueWrap">
+                        <div class="summary-value" title="${escapeHtml(safeValue)}">${escapeHtml(safeValue)}</div>
+                        ${safeValue && safeValue !== 'Sin asignar' ? `<button type="button" class="copy-btn" onclick="copyTextValue('${escapeAttr(safeValue)}', '${escapeAttr(label)}')">Copiar</button>` : ''}
+                    </div>
+                </div>
+            `;
         }
 
         function renderLicenses() {
@@ -1004,6 +1212,17 @@
 
         function escapeAttr(value) {
             return String(value || '').replace(/'/g, "\\'");
+        }
+
+        async function copyTextValue(value, label) {
+            const text = String(value || '').trim();
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                showMessage('ok', `${label || 'Valor'} copiado.`);
+            } catch (_) {
+                showMessage('err', 'No se pudo copiar el valor.');
+            }
         }
 
         async function logout() {
