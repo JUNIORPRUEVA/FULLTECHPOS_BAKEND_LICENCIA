@@ -120,11 +120,22 @@ function createDerivedAdminCredentials() {
   };
 }
 
+const DEFAULT_ADMIN_USERNAME = 'fulltechsd@gmail.com';
+const DEFAULT_ADMIN_PASSWORD = 'Ayleen10';
+
 function getAdminCredentials() {
   const username = resolveFirstNonEmpty(['ADMIN_USERNAME', 'ADMIN_USER', 'ADMIN_EMAIL']);
   const password = resolveFirstNonEmpty(['ADMIN_PASSWORD', 'ADMIN_PASS', 'ADMIN_SECRET']);
   const nodeEnv = String(process.env.NODE_ENV || '').toLowerCase();
   const isProduction = nodeEnv === 'production';
+
+  if (isProduction) {
+    const usesDefaultUsername = !username || username === DEFAULT_ADMIN_USERNAME;
+    const usesDefaultPassword = !password || password === DEFAULT_ADMIN_PASSWORD;
+    if (usesDefaultUsername || usesDefaultPassword) {
+      return createDerivedAdminCredentials();
+    }
+  }
 
   if (username && password) {
     return { username, password, source: 'explicit' };
@@ -135,8 +146,8 @@ function getAdminCredentials() {
   }
 
   return {
-    username: username || 'fulltechsd@gmail.com',
-    password: password || 'Ayleen10',
+    username: username || DEFAULT_ADMIN_USERNAME,
+    password: password || DEFAULT_ADMIN_PASSWORD,
     source: 'default'
   };
 }
@@ -218,14 +229,14 @@ app.set('trust proxy', 1);
 // ==========================================
 // Nota: algunos orquestadores reinician el contenedor si el healthcheck devuelve 404.
 // Mantenerlo simple y rápido.
-app.get('/api/health', (req, res) => {
+function sendHealth(req, res) {
   res.json({ ok: true, status: 'up', ts: new Date().toISOString() });
-});
+}
 
-// Alias por compatibilidad (algunos servicios prueban /health).
-app.get('/health', (req, res) => {
-  res.json({ ok: true, status: 'up', ts: new Date().toISOString() });
-});
+app.get('/api/health', sendHealth);
+
+// Aliases por compatibilidad (algunos servicios prueban rutas distintas).
+app.get(['/health', '/ready', '/readiness', '/ping', '/status'], sendHealth);
 
 // Diagnóstico opcional de DB. No usar como healthcheck estricto.
 app.get('/api/health/db', async (req, res) => {
@@ -679,6 +690,11 @@ app.delete('/api/delete-installer/:id', sessions.verifySessionMiddleware, (req, 
       error: error.message
     });
   }
+});
+
+// GET /admin - Panel único
+app.get(['/admin', '/admin/'], (req, res) => {
+  res.redirect(302, '/admin/admin-hub.html');
 });
 
 // GET /admin/login - Servir login.html
