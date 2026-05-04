@@ -1348,6 +1348,57 @@
                 padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
             }
         }
+
+        @media (min-width: 861px) {
+            .customers-workspace.workspace-shell {
+                grid-template-columns: minmax(0, 1fr) minmax(460px, 42vw);
+                gap: 14px;
+            }
+
+            .customers-listCard,
+            .customers-panel .workspace-panelCard {
+                border-radius: 14px;
+                border-color: #dde4ef;
+                box-shadow: none;
+            }
+
+            .customers-listHeader {
+                padding: 14px 16px 12px;
+                background: #f9fbff;
+            }
+
+            .customers-listMeta {
+                font-size: 0.76rem;
+                color: #7d8ca5;
+            }
+
+            .customer-item {
+                gap: 6px;
+                padding: 6px 8px;
+                border-bottom-color: #e6edf6;
+            }
+
+            .customer-mainBtn {
+                border-radius: 10px;
+                padding: 8px 9px;
+            }
+
+            .customer-linePrimary {
+                font-size: 0.87rem;
+            }
+
+            .workspace-panelHeader {
+                padding: 14px 16px 12px;
+            }
+
+            .workspace-panelBody {
+                padding: 14px 16px 16px;
+            }
+
+            .workspace-panelTitle strong {
+                font-size: 0.95rem;
+            }
+        }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">

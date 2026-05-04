@@ -1270,6 +1270,76 @@
                 border-radius: 26px 26px 0 0;
             }
         }
+
+        @media (min-width: 861px) {
+            .licenses-workspace.workspace-shell {
+                grid-template-columns: minmax(0, 1fr) minmax(460px, 42vw);
+                gap: 14px;
+            }
+
+            .licenses-listCard,
+            .workspace-panelCard,
+            .license-modalCard {
+                border-radius: 14px;
+                border-color: #dde4ef;
+                box-shadow: none;
+            }
+
+            .licenses-listCard {
+                overflow: hidden;
+            }
+
+            .licenses-listCard .section {
+                border-radius: 0;
+                border: 0;
+                box-shadow: none;
+                padding: 12px 14px;
+            }
+
+            .license-listSummary {
+                padding: 10px 12px;
+                border-radius: 10px;
+                background: #f8fbff;
+                border-color: #e6edf6;
+            }
+
+            .license-line {
+                border-radius: 10px;
+                border-color: #e5edf6;
+                padding: 10px 10px;
+                box-shadow: none;
+            }
+
+            .license-line:hover {
+                transform: none;
+                background: #f9fbff;
+            }
+
+            .license-line.active {
+                border-color: #bfd4fd;
+                background: #eef4ff;
+            }
+
+            .license-mainRow {
+                gap: 10px;
+            }
+
+            .license-detailHero,
+            .license-card,
+            .activation-card {
+                border-radius: 12px;
+                box-shadow: none;
+                border-color: #dde4ef;
+            }
+
+            .workspace-panelHeader {
+                padding: 14px 16px 12px;
+            }
+
+            .workspace-panelBody {
+                padding: 14px 16px 16px;
+            }
+        }
     </style>
     <link rel="stylesheet" href="../assets/css/jr-admin.css">
     <link rel="stylesheet" href="../assets/css/jr-admin-actions-dialog.css">

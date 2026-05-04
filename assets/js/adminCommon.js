@@ -183,7 +183,7 @@
 
     const linksHTML = SIDEBAR_ITEMS.map((item) => {
       const cls = item.key === activeKey ? ' class="active"' : '';
-      return `<li><a href="${item.href}"${cls}><span class="icon" aria-hidden="true">${item.icon}</span><span>${item.label}</span></a></li>`;
+      return `<li><a href="${item.href}"${cls} title="${item.label}" aria-label="${item.label}"><span class="icon" aria-hidden="true">${item.icon}</span><span class="nav-label">${item.label}</span></a></li>`;
     }).join('');
 
     const sidebarHTML = `
@@ -199,7 +199,7 @@
   </div>
   <ul class="sidebar-nav">${linksHTML}</ul>
   <div class="sidebar-footer">
-    <button class="logout-btn" type="button" onclick="AdminCommon.logout()">Cerrar sesión</button>
+    <button class="logout-btn" type="button" title="Cerrar sesión" aria-label="Cerrar sesión" onclick="AdminCommon.logout()">Cerrar sesión</button>
   </div>
 </aside>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="AdminCommon.closeSidebar()"></div>`;
