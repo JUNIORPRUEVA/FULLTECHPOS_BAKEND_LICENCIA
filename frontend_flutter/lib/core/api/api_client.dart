@@ -1,0 +1,185 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
+import '../auth/session_manager.dart';
+import 'api_exception.dart';
+
+class ApiClient {
+  final SessionManager _sessionManager;
+
+  ApiClient({required SessionManager sessionManager})
+      : _sessionManager = sessionManager;
+
+  Map<String, String> _headers({bool auth = true}) {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if (auth) {
+      final sessionId = _sessionManager.sessionId;
+      if (sessionId != null) {
+        headers['x-session-id'] = sessionId;
+      }
+    }
+    return headers;
+  }
+
+  Uri _uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
+
+  Future<Map<String, dynamic>> get(String path) async {
+    if (AppConfig.isDebug) {
+      // ignore: avoid_print
+      print('[API] GET $path');
+    }
+    try {
+      final response = await http
+          .get(_uri(path), headers: _headers())
+          .timeout(AppConfig.requestTimeout);
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error de conexión: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> post(
+    String path,
+    Map<String, dynamic> body, {
+    bool auth = true,
+  }) async {
+    if (AppConfig.isDebug) {
+      // ignore: avoid_print
+      print('[API] POST $path');
+    }
+    try {
+      final response = await http
+          .post(
+            _uri(path),
+            headers: _headers(auth: auth),
+            body: jsonEncode(body),
+          )
+          .timeout(AppConfig.requestTimeout);
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error de conexión: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> postNoAuth(
+    String path,
+    Map<String, dynamic> body,
+  ) =>
+      post(path, body, auth: false);
+
+  Future<Map<String, dynamic>> put(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    if (AppConfig.isDebug) {
+      // ignore: avoid_print
+      print('[API] PUT $path');
+    }
+    try {
+      final response = await http
+          .put(
+            _uri(path),
+            headers: _headers(),
+            body: jsonEncode(body),
+          )
+          .timeout(AppConfig.requestTimeout);
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error de conexión: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> patch(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    if (AppConfig.isDebug) {
+      // ignore: avoid_print
+      print('[API] PATCH $path');
+    }
+    try {
+      final response = await http
+          .patch(
+            _uri(path),
+            headers: _headers(),
+            body: jsonEncode(body),
+          )
+          .timeout(AppConfig.requestTimeout);
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error de conexión: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> delete(String path) async {
+    if (AppConfig.isDebug) {
+      // ignore: avoid_print
+      print('[API] DELETE $path');
+    }
+    try {
+      final response = await http
+          .delete(_uri(path), headers: _headers())
+          .timeout(AppConfig.requestTimeout);
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error de conexión: $e');
+    }
+  }
+
+  Map<String, dynamic> _handleResponse(http.Response response) {
+    Map<String, dynamic> data = {};
+    try {
+      if (response.body.isNotEmpty) {
+        data = jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (_) {
+      data = {'message': response.body};
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return data;
+    }
+
+    final message = data['message'] as String? ??
+        data['error'] as String? ??
+        _statusMessage(response.statusCode);
+
+    throw ApiException(
+      message,
+      statusCode: response.statusCode,
+      data: data,
+    );
+  }
+
+  String _statusMessage(int code) {
+    switch (code) {
+      case 400:
+        return 'Solicitud inválida';
+      case 401:
+        return 'No autorizado. Por favor inicia sesión';
+      case 403:
+        return 'Acceso denegado';
+      case 404:
+        return 'Recurso no encontrado';
+      case 409:
+        return 'Conflicto: el recurso ya existe';
+      case 500:
+        return 'Error interno del servidor';
+      default:
+        return 'Error HTTP $code';
+    }
+  }
+}

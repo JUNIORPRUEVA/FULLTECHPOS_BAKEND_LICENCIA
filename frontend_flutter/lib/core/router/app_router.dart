@@ -1,0 +1,128 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../features/auth/pages/login_page.dart';
+import '../../features/customers/pages/customers_page.dart';
+import '../../features/dashboard/pages/dashboard_page.dart';
+import '../../features/licenses/pages/licenses_page.dart';
+import '../../features/cloud_admin/pages/cloud_resource_page.dart';
+import '../auth/auth_service.dart';
+import '../layout/admin_shell.dart';
+import '../widgets/loading_view.dart';
+
+class AppRouter {
+  AppRouter._();
+
+  static GoRouter build(AuthService authService) {
+    return GoRouter(
+      initialLocation: '/login',
+      refreshListenable: authService,
+      redirect: (context, state) {
+        final path = state.uri.path;
+
+        if (!authService.isInitialized) {
+          return path == '/splash' ? null : '/splash';
+        }
+
+        final isLogin = path == '/login';
+        final isSplash = path == '/splash';
+
+        if (!authService.isLoggedIn) {
+          return isLogin ? null : '/login';
+        }
+
+        if (isLogin || isSplash) return '/admin/panel';
+        return null;
+      },
+      routes: [
+        GoRoute(
+          path: '/splash',
+          builder: (context, state) =>
+              const Scaffold(body: LoadingView(message: 'Validando sesión...')),
+        ),
+        GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+        ShellRoute(
+          builder: (context, state, child) => AdminShell(
+            currentRoute: state.uri.path,
+            pageTitle: _titleForRoute(state.uri.path),
+            child: child,
+          ),
+          routes: [
+            GoRoute(
+              path: '/admin/panel',
+              builder: (context, state) => const DashboardPage(),
+            ),
+            GoRoute(
+              path: '/admin/clientes',
+              builder: (context, state) => const CustomersPage(),
+            ),
+            GoRoute(
+              path: '/admin/licencias',
+              builder: (context, state) => const LicensesPage(),
+            ),
+            GoRoute(
+              path: '/admin/productos',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: productResourceConfig),
+            ),
+            GoRoute(
+              path: '/admin/planes',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: planResourceConfig),
+            ),
+            GoRoute(
+              path: '/admin/suscripciones',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: subscriptionResourceConfig),
+            ),
+            GoRoute(
+              path: '/admin/pagos',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: paymentResourceConfig),
+            ),
+            GoRoute(
+              path: '/admin/auditoria',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: auditResourceConfig),
+            ),
+            GoRoute(
+              path: '/admin/usuarios',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: userResourceConfig),
+            ),
+            GoRoute(
+              path: '/admin/configuracion-tienda',
+              builder: (context, state) => const CloudStoreSettingsPage(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  static String _titleForRoute(String route) {
+    switch (route) {
+      case '/admin/panel':
+        return 'Panel';
+      case '/admin/clientes':
+        return 'Clientes';
+      case '/admin/licencias':
+        return 'Licencias';
+      case '/admin/productos':
+        return 'Productos';
+      case '/admin/planes':
+        return 'Planes';
+      case '/admin/suscripciones':
+        return 'Suscripciones';
+      case '/admin/pagos':
+        return 'Pagos';
+      case '/admin/auditoria':
+        return 'Registros de auditoría';
+      case '/admin/usuarios':
+        return 'Usuarios del sistema';
+      case '/admin/configuracion-tienda':
+        return 'Configuración tienda';
+      default:
+        return 'Appyra Admin';
+    }
+  }
+}
