@@ -5,6 +5,7 @@ import '../../features/customers/pages/customers_page.dart';
 import '../../features/dashboard/pages/dashboard_page.dart';
 import '../../features/licenses/pages/licenses_page.dart';
 import '../../features/cloud_admin/pages/cloud_resource_page.dart';
+import '../../features/meta_ads/pages/meta_ads_campaigns_page.dart';
 import '../auth/auth_service.dart';
 import '../layout/admin_shell.dart';
 import '../widgets/loading_view.dart';
@@ -74,6 +75,10 @@ class AppRouter {
                   const CloudResourcePage(config: projectResourceConfig),
             ),
             GoRoute(
+              path: '/admin/publicidad-campanas',
+              builder: (context, state) => const MetaAdsCampaignsPage(),
+            ),
+            GoRoute(
               path: '/admin/productos',
               builder: (context, state) =>
                   const CloudResourcePage(config: productResourceConfig),
@@ -127,6 +132,8 @@ class AppRouter {
         return 'Activaciones';
       case '/admin/proyectos':
         return 'Proyectos';
+      case '/admin/publicidad-campanas':
+        return 'Publicidad / Campanas';
       case '/admin/productos':
         return 'Productos';
       case '/admin/planes':

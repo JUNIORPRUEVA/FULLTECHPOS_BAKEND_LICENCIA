@@ -32,6 +32,25 @@ Variables de entorno:
 - `DATABASE_URL` (recomendado)
 - `PGSSLMODE` (opcional): `disable` o `require`
 
+### Meta orgánico vs Meta Ads (separado)
+
+Publicaciones orgánicas (Facebook/Instagram):
+- `META_ACCESS_TOKEN`
+- `META_FACEBOOK_PAGE_ID`
+- `META_INSTAGRAM_BUSINESS_ID`
+
+Campañas Meta Ads (separado):
+- `META_ADS_ACCESS_TOKEN`
+- `META_AD_ACCOUNT_ID`
+- `META_WHATSAPP_PHONE_NUMBER_ID`
+- `META_WHATSAPP_BUSINESS_ACCOUNT_ID`
+- `META_ADS_APP_ID`
+- `META_ADS_APP_SECRET`
+
+Regla de uso:
+- Orgánico usa `META_ACCESS_TOKEN`.
+- Campañas usan `META_ADS_ACCESS_TOKEN` (prioridad), con fallback a `META_ACCESS_TOKEN` solo si el de Ads no está configurado.
+
 Flujo típico en una DB nueva (EasyPanel / servidor):
 1) Configura `DATABASE_URL` en el servicio backend.
 2) Despliega el contenedor/app.

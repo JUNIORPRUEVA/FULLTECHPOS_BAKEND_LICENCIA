@@ -49,6 +49,11 @@ const List<AppSidebarItem> sidebarItems = [
     route: '/admin/proyectos',
   ),
   AppSidebarItem(
+    label: 'Publicidad / Campanas',
+    icon: Icons.campaign_outlined,
+    route: '/admin/publicidad-campanas',
+  ),
+  AppSidebarItem(
     label: 'Productos',
     icon: Icons.inventory_2_outlined,
     route: '/admin/productos',
