@@ -26,6 +26,46 @@ class ResourceFilterOption {
   const ResourceFilterOption(this.label, this.value);
 }
 
+enum ResourceActionMethod { post, put, patch, delete }
+
+enum ResourceFormFieldType { text, number, multiline, boolean, select }
+
+class ResourceFormField {
+  final String key;
+  final String label;
+  final ResourceFormFieldType type;
+  final bool required;
+  final List<ResourceFilterOption> options;
+  final Object? defaultValue;
+
+  const ResourceFormField({
+    required this.key,
+    required this.label,
+    this.type = ResourceFormFieldType.text,
+    this.required = false,
+    this.options = const [],
+    this.defaultValue,
+  });
+}
+
+class ResourceAction {
+  final String label;
+  final IconData icon;
+  final ResourceActionMethod method;
+  final String path;
+  final List<ResourceFormField> fields;
+  final bool destructive;
+
+  const ResourceAction({
+    required this.label,
+    required this.icon,
+    required this.method,
+    required this.path,
+    this.fields = const [],
+    this.destructive = false,
+  });
+}
+
 class CloudResourceConfig {
   final String title;
   final IconData icon;
@@ -36,6 +76,8 @@ class CloudResourceConfig {
   final List<String> searchKeys;
   final String? filterParam;
   final List<ResourceFilterOption> filterOptions;
+  final ResourceAction? createAction;
+  final List<ResourceAction> rowActions;
 
   const CloudResourceConfig({
     required this.title,
@@ -47,6 +89,8 @@ class CloudResourceConfig {
     required this.searchKeys,
     this.filterParam,
     this.filterOptions = const [],
+    this.createAction,
+    this.rowActions = const [],
   });
 }
 
@@ -91,6 +135,56 @@ class CloudAdminService {
     final settings = data['settings'];
     if (settings is Map<String, dynamic>) return settings;
     return null;
+  }
+
+  Future<Map<String, dynamic>?> getLicenseConfig() async {
+    final data = await _client.get('/api/admin/license-config');
+    final config = data['config'];
+    if (config is Map<String, dynamic>) return config;
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> updateLicenseConfig(
+    Map<String, dynamic> body,
+  ) async {
+    final data = await _client.put('/api/admin/license-config', body);
+    final config = data['config'];
+    if (config is Map<String, dynamic>) return config;
+    return null;
+  }
+
+  Future<void> runAction(
+    ResourceAction action,
+    Map<String, dynamic>? row,
+    Map<String, dynamic> body,
+  ) async {
+    final path = _resolvePath(action.path, row);
+    switch (action.method) {
+      case ResourceActionMethod.post:
+        await _client.post(path, body);
+        break;
+      case ResourceActionMethod.put:
+        await _client.put(path, body);
+        break;
+      case ResourceActionMethod.patch:
+        await _client.patch(path, body);
+        break;
+      case ResourceActionMethod.delete:
+        await _client.delete(path);
+        break;
+    }
+  }
+
+  String _resolvePath(String path, Map<String, dynamic>? row) {
+    if (row == null) return path;
+    var out = path;
+    for (final entry in row.entries) {
+      out = out.replaceAll(
+        ':${entry.key}',
+        Uri.encodeComponent('${entry.value}'),
+      );
+    }
+    return out;
   }
 }
 
@@ -150,6 +244,31 @@ class _CloudResourcePageState extends State<CloudResourcePage> {
     }).toList();
   }
 
+  Future<void> _runAction(
+    ResourceAction action, {
+    Map<String, dynamic>? row,
+  }) async {
+    final body = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => _ResourceActionDialog(action: action, row: row),
+    );
+    if (body == null) return;
+
+    try {
+      await _service.runAction(action, row, body);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${action.label} completado')));
+      _refresh();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $error')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,6 +309,9 @@ class _CloudResourcePageState extends State<CloudResourcePage> {
                         });
                       },
                       onRefresh: _refresh,
+                      onCreate: widget.config.createAction == null
+                          ? null
+                          : () => _runAction(widget.config.createAction!),
                     ),
                     _CountBar(count: rows.length, label: widget.config.title),
                     Expanded(
@@ -217,6 +339,9 @@ class _CloudResourcePageState extends State<CloudResourcePage> {
                                         title: widget.config.title,
                                         row: row,
                                         fields: widget.config.detailFields,
+                                        actions: widget.config.rowActions,
+                                        onAction: (action) =>
+                                            _runAction(action, row: row),
                                         onClose: () => Navigator.pop(context),
                                       ),
                                     ),
@@ -233,6 +358,8 @@ class _CloudResourcePageState extends State<CloudResourcePage> {
                   title: widget.config.title,
                   row: _selected!,
                   fields: widget.config.detailFields,
+                  actions: widget.config.rowActions,
+                  onAction: (action) => _runAction(action, row: _selected!),
                   onClose: () => setState(() => _selected = null),
                 ),
             ],
@@ -248,6 +375,171 @@ class CloudStoreSettingsPage extends StatefulWidget {
 
   @override
   State<CloudStoreSettingsPage> createState() => _CloudStoreSettingsPageState();
+}
+
+class CloudLicenseConfigPage extends StatefulWidget {
+  const CloudLicenseConfigPage({super.key});
+
+  @override
+  State<CloudLicenseConfigPage> createState() => _CloudLicenseConfigPageState();
+}
+
+class _CloudLicenseConfigPageState extends State<CloudLicenseConfigPage> {
+  late final CloudAdminService _service;
+  late Future<Map<String, dynamic>?> _future;
+  final _demoDaysCtrl = TextEditingController();
+  final _demoDevicesCtrl = TextEditingController();
+  final _fullDaysCtrl = TextEditingController();
+  final _fullDevicesCtrl = TextEditingController();
+  bool _loadedControllers = false;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = CloudAdminService(
+      sessionManager: context.read<SessionManager>(),
+    );
+    _future = _service.getLicenseConfig();
+  }
+
+  @override
+  void dispose() {
+    _demoDaysCtrl.dispose();
+    _demoDevicesCtrl.dispose();
+    _fullDaysCtrl.dispose();
+    _fullDevicesCtrl.dispose();
+    super.dispose();
+  }
+
+  void _hydrate(Map<String, dynamic>? config) {
+    if (_loadedControllers || config == null) return;
+    _demoDaysCtrl.text = _plainValue(config['demo_dias_validez']);
+    _demoDevicesCtrl.text = _plainValue(config['demo_max_dispositivos']);
+    _fullDaysCtrl.text = _plainValue(config['full_dias_validez']);
+    _fullDevicesCtrl.text = _plainValue(config['full_max_dispositivos']);
+    _loadedControllers = true;
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await _service.updateLicenseConfig({
+        'demo_dias_validez': int.tryParse(_demoDaysCtrl.text.trim()),
+        'demo_max_dispositivos': int.tryParse(_demoDevicesCtrl.text.trim()),
+        'full_dias_validez': int.tryParse(_fullDaysCtrl.text.trim()),
+        'full_max_dispositivos': int.tryParse(_fullDevicesCtrl.text.trim()),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Configuración de licencias guardada')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $error')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: FutureBuilder<Map<String, dynamic>?>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const LoadingView(message: 'Cargando configuración...');
+          }
+          if (snapshot.hasError) {
+            return ErrorView(
+              message: snapshot.error.toString(),
+              onRetry: () {
+                setState(() {
+                  _loadedControllers = false;
+                  _future = _service.getLicenseConfig();
+                });
+              },
+            );
+          }
+          _hydrate(snapshot.data);
+
+          return ListView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            children: [
+              Container(
+                constraints: const BoxConstraints(maxWidth: 720),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Valores predeterminados de licencias',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _SettingsField(
+                        label: 'Días demo',
+                        controller: _demoDaysCtrl,
+                        keyboardType: TextInputType.number,
+                      ),
+                      _SettingsField(
+                        label: 'Dispositivos demo',
+                        controller: _demoDevicesCtrl,
+                        keyboardType: TextInputType.number,
+                      ),
+                      _SettingsField(
+                        label: 'Días full',
+                        controller: _fullDaysCtrl,
+                        keyboardType: TextInputType.number,
+                      ),
+                      _SettingsField(
+                        label: 'Dispositivos full',
+                        controller: _fullDevicesCtrl,
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.icon(
+                          onPressed: _saving ? null : _save,
+                          icon: _saving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.save_outlined, size: 18),
+                          label: Text(_saving ? 'Guardando...' : 'Guardar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _CloudStoreSettingsPageState extends State<CloudStoreSettingsPage> {
@@ -415,6 +707,7 @@ class _Toolbar extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onFilterChanged;
   final VoidCallback onRefresh;
+  final VoidCallback? onCreate;
 
   const _Toolbar({
     required this.searchCtrl,
@@ -424,6 +717,7 @@ class _Toolbar extends StatelessWidget {
     required this.onSearchChanged,
     required this.onFilterChanged,
     required this.onRefresh,
+    this.onCreate,
   });
 
   @override
@@ -489,6 +783,14 @@ class _Toolbar extends StatelessWidget {
                   )
                   .toList(),
               icon: const Icon(Icons.filter_list_rounded, size: 18),
+            ),
+          ],
+          if (onCreate != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            IconButton.filled(
+              icon: const Icon(Icons.add_rounded, size: 18),
+              onPressed: onCreate,
+              tooltip: 'Crear',
             ),
           ],
           IconButton(
@@ -674,12 +976,16 @@ class _DetailPanel extends StatelessWidget {
   final String title;
   final Map<String, dynamic> row;
   final List<ResourceField> fields;
+  final List<ResourceAction> actions;
+  final ValueChanged<ResourceAction>? onAction;
   final VoidCallback onClose;
 
   const _DetailPanel({
     required this.title,
     required this.row,
     required this.fields,
+    this.actions = const [],
+    this.onAction,
     required this.onClose,
   });
 
@@ -722,10 +1028,34 @@ class _DetailPanel extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: fields.length,
+              itemCount: fields.length + (actions.isEmpty ? 0 : 1),
               separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, index) {
-                final field = fields[index];
+                if (index == 0 && actions.isNotEmpty) {
+                  return Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: actions.map((action) {
+                      final color = action.destructive
+                          ? AppColors.error
+                          : AppColors.primary;
+                      return OutlinedButton.icon(
+                        onPressed: onAction == null
+                            ? null
+                            : () => onAction!(action),
+                        icon: Icon(action.icon, size: 16, color: color),
+                        label: Text(action.label),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: color,
+                          side: BorderSide(color: color.withValues(alpha: .45)),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }
+
+                final fieldIndex = actions.isEmpty ? index : index - 1;
+                final field = fields[fieldIndex];
                 final value = _formatValue(row[field.key]);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,15 +1087,184 @@ class _DetailPanel extends StatelessWidget {
   }
 }
 
+class _ResourceActionDialog extends StatefulWidget {
+  final ResourceAction action;
+  final Map<String, dynamic>? row;
+
+  const _ResourceActionDialog({required this.action, this.row});
+
+  @override
+  State<_ResourceActionDialog> createState() => _ResourceActionDialogState();
+}
+
+class _ResourceActionDialogState extends State<_ResourceActionDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final Map<String, TextEditingController> _controllers = {};
+  final Map<String, bool> _boolValues = {};
+  final Map<String, String?> _selectValues = {};
+
+  @override
+  void initState() {
+    super.initState();
+    for (final field in widget.action.fields) {
+      final initial = widget.row?[field.key] ?? field.defaultValue;
+      switch (field.type) {
+        case ResourceFormFieldType.boolean:
+          _boolValues[field.key] =
+              initial == true || initial.toString() == 'true';
+          break;
+        case ResourceFormFieldType.select:
+          _selectValues[field.key] = initial?.toString();
+          break;
+        case ResourceFormFieldType.text:
+        case ResourceFormFieldType.number:
+        case ResourceFormFieldType.multiline:
+          _controllers[field.key] = TextEditingController(
+            text: _plainValue(initial),
+          );
+          break;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    final body = <String, dynamic>{};
+    for (final field in widget.action.fields) {
+      switch (field.type) {
+        case ResourceFormFieldType.boolean:
+          body[field.key] = _boolValues[field.key] ?? false;
+          break;
+        case ResourceFormFieldType.select:
+          final value = _selectValues[field.key];
+          if (value != null && value.isNotEmpty) body[field.key] = value;
+          break;
+        case ResourceFormFieldType.number:
+          final raw = _controllers[field.key]?.text.trim() ?? '';
+          if (raw.isNotEmpty) body[field.key] = num.tryParse(raw) ?? raw;
+          break;
+        case ResourceFormFieldType.text:
+        case ResourceFormFieldType.multiline:
+          final raw = _controllers[field.key]?.text.trim() ?? '';
+          if (raw.isNotEmpty) body[field.key] = raw;
+          break;
+      }
+    }
+    Navigator.pop(context, body);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFields = widget.action.fields.isNotEmpty;
+    return AlertDialog(
+      title: Text(widget.action.label),
+      content: SizedBox(
+        width: 420,
+        child: hasFields
+            ? Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: widget.action.fields.map(_buildField).toList(),
+                  ),
+                ),
+              )
+            : Text(
+                widget.action.destructive
+                    ? 'Esta acción no se puede deshacer.'
+                    : 'Confirma para continuar.',
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          style: widget.action.destructive
+              ? FilledButton.styleFrom(backgroundColor: AppColors.error)
+              : null,
+          child: const Text('Confirmar'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildField(ResourceFormField field) {
+    switch (field.type) {
+      case ResourceFormFieldType.boolean:
+        return CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(field.label),
+          value: _boolValues[field.key] ?? false,
+          onChanged: (value) => setState(() {
+            _boolValues[field.key] = value ?? false;
+          }),
+        );
+      case ResourceFormFieldType.select:
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: DropdownButtonFormField<String>(
+            initialValue: _selectValues[field.key],
+            decoration: InputDecoration(labelText: field.label),
+            validator: field.required
+                ? (value) => value == null || value.isEmpty ? 'Requerido' : null
+                : null,
+            items: field.options
+                .where((option) => option.value != null)
+                .map(
+                  (option) => DropdownMenuItem<String>(
+                    value: option.value,
+                    child: Text(option.label),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => _selectValues[field.key] = value,
+          ),
+        );
+      case ResourceFormFieldType.text:
+      case ResourceFormFieldType.number:
+      case ResourceFormFieldType.multiline:
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: TextFormField(
+            controller: _controllers[field.key],
+            maxLines: field.type == ResourceFormFieldType.multiline ? 4 : 1,
+            keyboardType: field.type == ResourceFormFieldType.number
+                ? TextInputType.number
+                : TextInputType.text,
+            decoration: InputDecoration(labelText: field.label),
+            validator: field.required
+                ? (value) =>
+                      value == null || value.trim().isEmpty ? 'Requerido' : null
+                : null,
+          ),
+        );
+    }
+  }
+}
+
 class _SettingsField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final int maxLines;
+  final TextInputType? keyboardType;
 
   const _SettingsField({
     required this.label,
     required this.controller,
     this.maxLines = 1,
+    this.keyboardType,
   });
 
   @override
@@ -775,6 +1274,7 @@ class _SettingsField extends StatelessWidget {
       child: TextField(
         controller: controller,
         maxLines: maxLines,
+        keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(
@@ -784,6 +1284,12 @@ class _SettingsField extends StatelessWidget {
       ),
     );
   }
+}
+
+String _plainValue(Object? value) {
+  if (value == null) return '';
+  final text = value.toString().trim();
+  return text == '—' ? '' : text;
 }
 
 String _formatValue(Object? value) {
@@ -822,6 +1328,116 @@ const productResourceConfig = CloudResourceConfig(
     ResourceFilterOption('Borradores', 'draft'),
     ResourceFilterOption('Archivados', 'archived'),
   ],
+  createAction: ResourceAction(
+    label: 'Crear producto',
+    icon: Icons.add_rounded,
+    method: ResourceActionMethod.post,
+    path: '/api/admin/products',
+    fields: [
+      ResourceFormField(key: 'slug', label: 'Slug', required: true),
+      ResourceFormField(key: 'name', label: 'Nombre', required: true),
+      ResourceFormField(key: 'summary', label: 'Resumen'),
+      ResourceFormField(
+        key: 'description',
+        label: 'Descripción',
+        type: ResourceFormFieldType.multiline,
+      ),
+      ResourceFormField(key: 'price_text', label: 'Precio texto'),
+      ResourceFormField(
+        key: 'price_amount',
+        label: 'Precio monto',
+        type: ResourceFormFieldType.number,
+      ),
+      ResourceFormField(key: 'currency', label: 'Moneda', defaultValue: 'DOP'),
+      ResourceFormField(
+        key: 'status',
+        label: 'Estado',
+        type: ResourceFormFieldType.select,
+        defaultValue: 'draft',
+        options: [
+          ResourceFilterOption('Borrador', 'draft'),
+          ResourceFilterOption('Publicado', 'published'),
+          ResourceFilterOption('Archivado', 'archived'),
+        ],
+      ),
+      ResourceFormField(
+        key: 'featured',
+        label: 'Destacado',
+        type: ResourceFormFieldType.boolean,
+      ),
+    ],
+  ),
+  rowActions: [
+    ResourceAction(
+      label: 'Editar',
+      icon: Icons.edit_outlined,
+      method: ResourceActionMethod.put,
+      path: '/api/admin/products/:id',
+      fields: [
+        ResourceFormField(key: 'slug', label: 'Slug'),
+        ResourceFormField(key: 'name', label: 'Nombre'),
+        ResourceFormField(key: 'summary', label: 'Resumen'),
+        ResourceFormField(
+          key: 'description',
+          label: 'Descripción',
+          type: ResourceFormFieldType.multiline,
+        ),
+        ResourceFormField(key: 'price_text', label: 'Precio texto'),
+        ResourceFormField(
+          key: 'price_amount',
+          label: 'Precio monto',
+          type: ResourceFormFieldType.number,
+        ),
+        ResourceFormField(key: 'currency', label: 'Moneda'),
+        ResourceFormField(
+          key: 'featured',
+          label: 'Destacado',
+          type: ResourceFormFieldType.boolean,
+        ),
+      ],
+    ),
+    ResourceAction(
+      label: 'Cambiar estado',
+      icon: Icons.swap_horiz_rounded,
+      method: ResourceActionMethod.put,
+      path: '/api/admin/products/:id/status',
+      fields: [
+        ResourceFormField(
+          key: 'status',
+          label: 'Estado',
+          type: ResourceFormFieldType.select,
+          required: true,
+          options: [
+            ResourceFilterOption('Borrador', 'draft'),
+            ResourceFilterOption('Publicado', 'published'),
+            ResourceFilterOption('Archivado', 'archived'),
+          ],
+        ),
+      ],
+    ),
+    ResourceAction(
+      label: 'Agregar video',
+      icon: Icons.video_call_outlined,
+      method: ResourceActionMethod.post,
+      path: '/api/admin/products/:id/media/video-link',
+      fields: [
+        ResourceFormField(key: 'url', label: 'URL del video', required: true),
+        ResourceFormField(
+          key: 'sort_order',
+          label: 'Orden',
+          type: ResourceFormFieldType.number,
+          defaultValue: 0,
+        ),
+      ],
+    ),
+    ResourceAction(
+      label: 'Eliminar',
+      icon: Icons.delete_outline_rounded,
+      method: ResourceActionMethod.delete,
+      path: '/api/admin/products/:id',
+      destructive: true,
+    ),
+  ],
   searchKeys: ['name', 'slug', 'summary', 'status'],
   fields: [
     ResourceField('name', 'Producto'),
@@ -858,6 +1474,124 @@ const planResourceConfig = CloudResourceConfig(
     ResourceFilterOption('Todos', null),
     ResourceFilterOption('Activos', 'true'),
     ResourceFilterOption('Inactivos', 'false'),
+  ],
+  createAction: ResourceAction(
+    label: 'Crear plan',
+    icon: Icons.add_rounded,
+    method: ResourceActionMethod.post,
+    path: '/api/admin/product-plans',
+    fields: [
+      ResourceFormField(key: 'code', label: 'Código', required: true),
+      ResourceFormField(key: 'name', label: 'Nombre', required: true),
+      ResourceFormField(key: 'product_id', label: 'Producto ID'),
+      ResourceFormField(key: 'project_id', label: 'Proyecto ID'),
+      ResourceFormField(
+        key: 'billing_period',
+        label: 'Periodo',
+        type: ResourceFormFieldType.select,
+        required: true,
+        options: [
+          ResourceFilterOption('Prueba', 'trial'),
+          ResourceFilterOption('Mensual', 'monthly'),
+          ResourceFilterOption('Anual', 'annual'),
+          ResourceFilterOption('De por vida', 'lifetime'),
+        ],
+      ),
+      ResourceFormField(
+        key: 'price_amount',
+        label: 'Precio',
+        type: ResourceFormFieldType.number,
+        required: true,
+      ),
+      ResourceFormField(key: 'currency', label: 'Moneda', defaultValue: 'DOP'),
+      ResourceFormField(
+        key: 'device_limit',
+        label: 'Límite dispositivos',
+        type: ResourceFormFieldType.number,
+      ),
+      ResourceFormField(
+        key: 'company_limit',
+        label: 'Límite compañías',
+        type: ResourceFormFieldType.number,
+      ),
+      ResourceFormField(
+        key: 'default_grace_days',
+        label: 'Días gracia',
+        type: ResourceFormFieldType.number,
+      ),
+      ResourceFormField(
+        key: 'trial_days',
+        label: 'Días prueba',
+        type: ResourceFormFieldType.number,
+      ),
+      ResourceFormField(
+        key: 'is_active',
+        label: 'Activo',
+        type: ResourceFormFieldType.boolean,
+        defaultValue: true,
+      ),
+    ],
+  ),
+  rowActions: [
+    ResourceAction(
+      label: 'Editar',
+      icon: Icons.edit_outlined,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/product-plans/:id',
+      fields: [
+        ResourceFormField(key: 'code', label: 'Código'),
+        ResourceFormField(key: 'name', label: 'Nombre'),
+        ResourceFormField(
+          key: 'billing_period',
+          label: 'Periodo',
+          type: ResourceFormFieldType.select,
+          options: [
+            ResourceFilterOption('Prueba', 'trial'),
+            ResourceFilterOption('Mensual', 'monthly'),
+            ResourceFilterOption('Anual', 'annual'),
+            ResourceFilterOption('De por vida', 'lifetime'),
+          ],
+        ),
+        ResourceFormField(
+          key: 'price_amount',
+          label: 'Precio',
+          type: ResourceFormFieldType.number,
+        ),
+        ResourceFormField(key: 'currency', label: 'Moneda'),
+        ResourceFormField(
+          key: 'device_limit',
+          label: 'Límite dispositivos',
+          type: ResourceFormFieldType.number,
+        ),
+        ResourceFormField(
+          key: 'default_grace_days',
+          label: 'Días gracia',
+          type: ResourceFormFieldType.number,
+        ),
+        ResourceFormField(
+          key: 'trial_days',
+          label: 'Días prueba',
+          type: ResourceFormFieldType.number,
+        ),
+        ResourceFormField(
+          key: 'is_active',
+          label: 'Activo',
+          type: ResourceFormFieldType.boolean,
+        ),
+      ],
+    ),
+    ResourceAction(
+      label: 'Habilitar',
+      icon: Icons.check_circle_outline_rounded,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/product-plans/:id/enable',
+    ),
+    ResourceAction(
+      label: 'Deshabilitar',
+      icon: Icons.pause_circle_outline_rounded,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/product-plans/:id/disable',
+    ),
   ],
   searchKeys: ['name', 'code', 'product_name', 'project_name'],
   fields: [
@@ -899,6 +1633,99 @@ const subscriptionResourceConfig = CloudResourceConfig(
     ResourceFilterOption('Suspendidas', 'suspended'),
     ResourceFilterOption('Canceladas', 'cancelled'),
   ],
+  createAction: ResourceAction(
+    label: 'Crear suscripción',
+    icon: Icons.add_rounded,
+    method: ResourceActionMethod.post,
+    path: '/api/admin/subscriptions',
+    fields: [
+      ResourceFormField(
+        key: 'company_id',
+        label: 'Compañía ID',
+        required: true,
+      ),
+      ResourceFormField(key: 'plan_id', label: 'Plan ID', required: true),
+      ResourceFormField(key: 'product_id', label: 'Producto ID'),
+      ResourceFormField(key: 'project_id', label: 'Proyecto ID'),
+      ResourceFormField(
+        key: 'status',
+        label: 'Estado',
+        type: ResourceFormFieldType.select,
+        options: [
+          ResourceFilterOption('Prueba', 'trial'),
+          ResourceFilterOption('Activa', 'active'),
+          ResourceFilterOption('Pago pendiente', 'past_due'),
+          ResourceFilterOption('Suspendida', 'suspended'),
+          ResourceFilterOption('Cancelada', 'cancelled'),
+          ResourceFilterOption('Expirada', 'expired'),
+          ResourceFilterOption('De por vida', 'lifetime'),
+        ],
+      ),
+      ResourceFormField(key: 'start_date', label: 'Inicio ISO'),
+      ResourceFormField(key: 'end_date', label: 'Fin ISO'),
+      ResourceFormField(
+        key: 'notes',
+        label: 'Notas',
+        type: ResourceFormFieldType.multiline,
+      ),
+    ],
+  ),
+  rowActions: [
+    ResourceAction(
+      label: 'Cambiar estado',
+      icon: Icons.swap_horiz_rounded,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/subscriptions/:id/status',
+      fields: [
+        ResourceFormField(
+          key: 'status',
+          label: 'Estado',
+          type: ResourceFormFieldType.select,
+          required: true,
+          options: [
+            ResourceFilterOption('Activa', 'active'),
+            ResourceFilterOption('Pago pendiente', 'past_due'),
+            ResourceFilterOption('Suspendida', 'suspended'),
+            ResourceFilterOption('Cancelada', 'cancelled'),
+            ResourceFilterOption('Expirada', 'expired'),
+            ResourceFilterOption('De por vida', 'lifetime'),
+          ],
+        ),
+        ResourceFormField(
+          key: 'notes',
+          label: 'Notas',
+          type: ResourceFormFieldType.multiline,
+        ),
+      ],
+    ),
+    ResourceAction(
+      label: 'Extender',
+      icon: Icons.more_time_rounded,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/subscriptions/:id/extend',
+      fields: [
+        ResourceFormField(
+          key: 'days',
+          label: 'Días a extender',
+          type: ResourceFormFieldType.number,
+          required: true,
+        ),
+      ],
+    ),
+    ResourceAction(
+      label: 'Suspender',
+      icon: Icons.pause_circle_outline_rounded,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/subscriptions/:id/suspend',
+    ),
+    ResourceAction(
+      label: 'Cancelar',
+      icon: Icons.cancel_outlined,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/subscriptions/:id/cancel',
+      destructive: true,
+    ),
+  ],
   searchKeys: ['company_name', 'plan_name', 'product_name', 'status'],
   fields: [
     ResourceField('company_name', 'Compañía'),
@@ -936,6 +1763,60 @@ const paymentResourceConfig = CloudResourceConfig(
     ResourceFilterOption('Fallidos', 'failed'),
     ResourceFilterOption('Reembolsados', 'refunded'),
   ],
+  createAction: ResourceAction(
+    label: 'Registrar pago',
+    icon: Icons.add_card_rounded,
+    method: ResourceActionMethod.post,
+    path: '/api/admin/payments',
+    fields: [
+      ResourceFormField(
+        key: 'subscription_id',
+        label: 'Suscripción ID',
+        required: true,
+      ),
+      ResourceFormField(
+        key: 'amount',
+        label: 'Monto',
+        type: ResourceFormFieldType.number,
+        required: true,
+      ),
+      ResourceFormField(key: 'currency', label: 'Moneda', defaultValue: 'DOP'),
+      ResourceFormField(
+        key: 'payment_method',
+        label: 'Método',
+        type: ResourceFormFieldType.select,
+        defaultValue: 'manual',
+        options: [
+          ResourceFilterOption('Manual', 'manual'),
+          ResourceFilterOption('Efectivo', 'cash'),
+          ResourceFilterOption('Transferencia', 'transfer'),
+          ResourceFilterOption('Tarjeta', 'card'),
+          ResourceFilterOption('PayPal', 'paypal'),
+          ResourceFilterOption('Otro', 'other'),
+        ],
+      ),
+      ResourceFormField(
+        key: 'status',
+        label: 'Estado',
+        type: ResourceFormFieldType.select,
+        defaultValue: 'paid',
+        options: [
+          ResourceFilterOption('Pagado', 'paid'),
+          ResourceFilterOption('Pendiente', 'pending'),
+          ResourceFilterOption('Fallido', 'failed'),
+          ResourceFilterOption('Reembolsado', 'refunded'),
+          ResourceFilterOption('Cancelado', 'cancelled'),
+        ],
+      ),
+      ResourceFormField(key: 'reference', label: 'Referencia'),
+      ResourceFormField(key: 'license_id', label: 'Licencia ID'),
+      ResourceFormField(
+        key: 'notes',
+        label: 'Notas',
+        type: ResourceFormFieldType.multiline,
+      ),
+    ],
+  ),
   searchKeys: ['company_name', 'product_name', 'reference', 'status'],
   fields: [
     ResourceField('company_name', 'Compañía'),
@@ -986,6 +1867,84 @@ const auditResourceConfig = CloudResourceConfig(
   ],
 );
 
+const activationResourceConfig = CloudResourceConfig(
+  title: 'Activaciones',
+  icon: Icons.devices_other_outlined,
+  endpoint: '/api/admin/activations',
+  listKey: 'activations',
+  filterParam: 'estado',
+  filterOptions: [
+    ResourceFilterOption('Todas', null),
+    ResourceFilterOption('Activas', 'ACTIVA'),
+    ResourceFilterOption('Revocadas', 'REVOCADA'),
+  ],
+  searchKeys: ['license_key', 'device_id', 'estado', 'customer_name'],
+  fields: [
+    ResourceField('license_key', 'Licencia'),
+    ResourceField('device_id', 'Dispositivo'),
+    ResourceField('estado', 'Estado', badge: true),
+    ResourceField('created_at', 'Creada'),
+    ResourceField('last_seen_at', 'Último uso'),
+  ],
+  detailFields: [
+    ResourceField('id', 'ID'),
+    ResourceField('license_id', 'Licencia ID'),
+    ResourceField('license_key', 'Licencia'),
+    ResourceField('device_id', 'Dispositivo'),
+    ResourceField('device_name', 'Nombre dispositivo'),
+    ResourceField('estado', 'Estado'),
+    ResourceField('created_at', 'Creada'),
+    ResourceField('last_seen_at', 'Último uso'),
+    ResourceField('revoked_at', 'Revocada'),
+  ],
+  rowActions: [
+    ResourceAction(
+      label: 'Revocar',
+      icon: Icons.block_rounded,
+      method: ResourceActionMethod.patch,
+      path: '/api/admin/activations/:id/revocar',
+      destructive: true,
+    ),
+  ],
+);
+
+const projectResourceConfig = CloudResourceConfig(
+  title: 'Proyectos',
+  icon: Icons.folder_copy_outlined,
+  endpoint: '/api/admin/projects',
+  listKey: 'projects',
+  searchKeys: ['code', 'name', 'description'],
+  fields: [
+    ResourceField('code', 'Código'),
+    ResourceField('name', 'Nombre'),
+    ResourceField('description', 'Descripción'),
+    ResourceField('created_at', 'Creado'),
+  ],
+  detailFields: [
+    ResourceField('id', 'ID'),
+    ResourceField('code', 'Código'),
+    ResourceField('name', 'Nombre'),
+    ResourceField('description', 'Descripción'),
+    ResourceField('created_at', 'Creado'),
+    ResourceField('updated_at', 'Actualizado'),
+  ],
+  createAction: ResourceAction(
+    label: 'Crear proyecto',
+    icon: Icons.create_new_folder_outlined,
+    method: ResourceActionMethod.post,
+    path: '/api/admin/projects',
+    fields: [
+      ResourceFormField(key: 'code', label: 'Código', required: true),
+      ResourceFormField(key: 'name', label: 'Nombre', required: true),
+      ResourceFormField(
+        key: 'description',
+        label: 'Descripción',
+        type: ResourceFormFieldType.multiline,
+      ),
+    ],
+  ),
+);
+
 const userResourceConfig = CloudResourceConfig(
   title: 'Usuarios del sistema',
   icon: Icons.admin_panel_settings_outlined,
@@ -997,6 +1956,51 @@ const userResourceConfig = CloudResourceConfig(
     ResourceFilterOption('Activos', 'active'),
     ResourceFilterOption('Invitados', 'invited'),
     ResourceFilterOption('Suspendidos', 'suspended'),
+  ],
+  createAction: ResourceAction(
+    label: 'Crear usuario',
+    icon: Icons.person_add_alt_rounded,
+    method: ResourceActionMethod.post,
+    path: '/api/admin/platform-users',
+    fields: [
+      ResourceFormField(key: 'email', label: 'Email', required: true),
+      ResourceFormField(key: 'display_name', label: 'Nombre'),
+      ResourceFormField(key: 'phone', label: 'Teléfono'),
+      ResourceFormField(
+        key: 'user_type',
+        label: 'Tipo',
+        type: ResourceFormFieldType.select,
+        defaultValue: 'admin',
+        options: [
+          ResourceFilterOption('Admin', 'admin'),
+          ResourceFilterOption('Operador', 'operator'),
+          ResourceFilterOption('Soporte', 'support'),
+        ],
+      ),
+      ResourceFormField(
+        key: 'status',
+        label: 'Estado',
+        type: ResourceFormFieldType.select,
+        defaultValue: 'active',
+        options: [
+          ResourceFilterOption('Activo', 'active'),
+          ResourceFilterOption('Invitado', 'invited'),
+          ResourceFilterOption('Suspendido', 'suspended'),
+        ],
+      ),
+    ],
+  ),
+  rowActions: [
+    ResourceAction(
+      label: 'Asignar rol',
+      icon: Icons.verified_user_outlined,
+      method: ResourceActionMethod.post,
+      path: '/api/admin/platform-users/:id/roles',
+      fields: [
+        ResourceFormField(key: 'role_id', label: 'Rol ID', required: true),
+        ResourceFormField(key: 'company_id', label: 'Compañía ID'),
+      ],
+    ),
   ],
   searchKeys: ['email', 'full_name', 'user_type', 'status'],
   fields: [

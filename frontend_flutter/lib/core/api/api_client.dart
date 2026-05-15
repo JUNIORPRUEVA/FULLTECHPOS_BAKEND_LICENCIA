@@ -8,7 +8,7 @@ class ApiClient {
   final SessionManager _sessionManager;
 
   ApiClient({required SessionManager sessionManager})
-      : _sessionManager = sessionManager;
+    : _sessionManager = sessionManager;
 
   Map<String, String> _headers({bool auth = true}) {
     final headers = <String, String>{
@@ -27,13 +27,14 @@ class ApiClient {
   Uri _uri(String path) => Uri.parse('${AppConfig.baseUrl}$path');
 
   Future<Map<String, dynamic>> get(String path) async {
+    final uri = _uri(path);
     if (AppConfig.isDebug) {
       // ignore: avoid_print
-      print('[API] GET $path');
+      print('[API] GET $uri');
     }
     try {
       final response = await http
-          .get(_uri(path), headers: _headers())
+          .get(uri, headers: _headers())
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
     } on ApiException {
@@ -48,14 +49,15 @@ class ApiClient {
     Map<String, dynamic> body, {
     bool auth = true,
   }) async {
+    final uri = _uri(path);
     if (AppConfig.isDebug) {
       // ignore: avoid_print
-      print('[API] POST $path');
+      print('[API] POST $uri');
     }
     try {
       final response = await http
           .post(
-            _uri(path),
+            uri,
             headers: _headers(auth: auth),
             body: jsonEncode(body),
           )
@@ -71,24 +73,20 @@ class ApiClient {
   Future<Map<String, dynamic>> postNoAuth(
     String path,
     Map<String, dynamic> body,
-  ) =>
-      post(path, body, auth: false);
+  ) => post(path, body, auth: false);
 
   Future<Map<String, dynamic>> put(
     String path,
     Map<String, dynamic> body,
   ) async {
+    final uri = _uri(path);
     if (AppConfig.isDebug) {
       // ignore: avoid_print
-      print('[API] PUT $path');
+      print('[API] PUT $uri');
     }
     try {
       final response = await http
-          .put(
-            _uri(path),
-            headers: _headers(),
-            body: jsonEncode(body),
-          )
+          .put(uri, headers: _headers(), body: jsonEncode(body))
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
     } on ApiException {
@@ -102,17 +100,14 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
+    final uri = _uri(path);
     if (AppConfig.isDebug) {
       // ignore: avoid_print
-      print('[API] PATCH $path');
+      print('[API] PATCH $uri');
     }
     try {
       final response = await http
-          .patch(
-            _uri(path),
-            headers: _headers(),
-            body: jsonEncode(body),
-          )
+          .patch(uri, headers: _headers(), body: jsonEncode(body))
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
     } on ApiException {
@@ -123,13 +118,14 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> delete(String path) async {
+    final uri = _uri(path);
     if (AppConfig.isDebug) {
       // ignore: avoid_print
-      print('[API] DELETE $path');
+      print('[API] DELETE $uri');
     }
     try {
       final response = await http
-          .delete(_uri(path), headers: _headers())
+          .delete(uri, headers: _headers())
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
     } on ApiException {
@@ -153,15 +149,12 @@ class ApiClient {
       return data;
     }
 
-    final message = data['message'] as String? ??
+    final message =
+        data['message'] as String? ??
         data['error'] as String? ??
         _statusMessage(response.statusCode);
 
-    throw ApiException(
-      message,
-      statusCode: response.statusCode,
-      data: data,
-    );
+    throw ApiException(message, statusCode: response.statusCode, data: data);
   }
 
   String _statusMessage(int code) {

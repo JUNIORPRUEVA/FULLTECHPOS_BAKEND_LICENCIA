@@ -60,6 +60,20 @@ class AppRouter {
               builder: (context, state) => const LicensesPage(),
             ),
             GoRoute(
+              path: '/admin/configuracion-licencias',
+              builder: (context, state) => const CloudLicenseConfigPage(),
+            ),
+            GoRoute(
+              path: '/admin/activaciones',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: activationResourceConfig),
+            ),
+            GoRoute(
+              path: '/admin/proyectos',
+              builder: (context, state) =>
+                  const CloudResourcePage(config: projectResourceConfig),
+            ),
+            GoRoute(
               path: '/admin/productos',
               builder: (context, state) =>
                   const CloudResourcePage(config: productResourceConfig),
@@ -107,6 +121,12 @@ class AppRouter {
         return 'Clientes';
       case '/admin/licencias':
         return 'Licencias';
+      case '/admin/configuracion-licencias':
+        return 'Configuración licencias';
+      case '/admin/activaciones':
+        return 'Activaciones';
+      case '/admin/proyectos':
+        return 'Proyectos';
       case '/admin/productos':
         return 'Productos';
       case '/admin/planes':

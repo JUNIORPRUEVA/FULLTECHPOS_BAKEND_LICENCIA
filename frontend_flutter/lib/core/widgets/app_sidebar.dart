@@ -34,6 +34,21 @@ const List<AppSidebarItem> sidebarItems = [
     route: '/admin/licencias',
   ),
   AppSidebarItem(
+    label: 'Configuración licencias',
+    icon: Icons.tune_rounded,
+    route: '/admin/configuracion-licencias',
+  ),
+  AppSidebarItem(
+    label: 'Activaciones',
+    icon: Icons.devices_other_outlined,
+    route: '/admin/activaciones',
+  ),
+  AppSidebarItem(
+    label: 'Proyectos',
+    icon: Icons.folder_copy_outlined,
+    route: '/admin/proyectos',
+  ),
+  AppSidebarItem(
     label: 'Productos',
     icon: Icons.inventory_2_outlined,
     route: '/admin/productos',
@@ -74,11 +89,7 @@ class AppSidebar extends StatelessWidget {
   final String currentRoute;
   final VoidCallback? onItemTap;
 
-  const AppSidebar({
-    super.key,
-    required this.currentRoute,
-    this.onItemTap,
-  });
+  const AppSidebar({super.key, required this.currentRoute, this.onItemTap});
 
   @override
   Widget build(BuildContext context) {
@@ -93,9 +104,7 @@ class AppSidebar extends StatelessWidget {
             height: AppSpacing.appBarHeight,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Color(0xFF334155)),
-              ),
+              border: Border(bottom: BorderSide(color: Color(0xFF334155))),
             ),
             child: Row(
               children: [
@@ -137,9 +146,7 @@ class AppSidebar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFF334155)),
-              ),
+              border: Border(top: BorderSide(color: Color(0xFF334155))),
             ),
             child: Row(
               children: [
@@ -167,7 +174,8 @@ class AppSidebar extends StatelessWidget {
                       builder: (ctx) => AlertDialog(
                         title: const Text('Cerrar sesión'),
                         content: const Text(
-                            '¿Estás seguro que deseas cerrar sesión?'),
+                          '¿Estás seguro que deseas cerrar sesión?',
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, false),
@@ -226,8 +234,8 @@ class _SidebarTileState extends State<_SidebarTile> {
     final bg = widget.isActive
         ? AppColors.sidebarActive
         : _hovered
-            ? AppColors.sidebarHover
-            : Colors.transparent;
+        ? AppColors.sidebarHover
+        : Colors.transparent;
     final fg = widget.isActive
         ? AppColors.sidebarActiveText
         : AppColors.sidebarText;

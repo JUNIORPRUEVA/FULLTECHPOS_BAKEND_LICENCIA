@@ -12,9 +12,11 @@ class AppConfig {
     defaultValue: '',
   );
 
-  static const String _localBaseUrl = 'http://127.0.0.1:3000';
-  static const String _stagingBaseUrl = 'https://staging.appyra.com';
-  static const String _productionBaseUrl = '';
+  static const String _cloudBaseUrl =
+      'https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host';
+  static const String _localBaseUrl = _cloudBaseUrl;
+  static const String _stagingBaseUrl = _cloudBaseUrl;
+  static const String _productionBaseUrl = _cloudBaseUrl;
 
   static AppEnvironment get environment {
     switch (environmentName.toLowerCase().trim()) {
