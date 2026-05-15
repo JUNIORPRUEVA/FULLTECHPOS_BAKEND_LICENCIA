@@ -22,9 +22,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _service = DashboardService(
-      sessionManager: context.read<SessionManager>(),
-    );
+    _service = DashboardService(sessionManager: context.read<SessionManager>());
     _future = _service.getDashboard();
   }
 
@@ -112,8 +110,8 @@ class _DashboardContent extends StatelessWidget {
               final columns = constraints.maxWidth > 800
                   ? 4
                   : constraints.maxWidth > 500
-                      ? 2
-                      : 1;
+                  ? 2
+                  : 1;
               return _StatsGrid(
                 columns: columns,
                 stats: stats,
@@ -122,7 +120,72 @@ class _DashboardContent extends StatelessWidget {
             },
           ),
           const SizedBox(height: AppSpacing.lg),
-          // Subscription breakdown
+          _SectionTitle(title: 'Licencias'),
+          const SizedBox(height: AppSpacing.sm),
+          _MetricBreakdown(
+            rows: [
+              _MetricRow(
+                'Total licencias',
+                stats.totalLicenses,
+                AppColors.textPrimary,
+              ),
+              _MetricRow('Activas', stats.activeLicenses, AppColors.success),
+              _MetricRow(
+                'Pendientes',
+                stats.pendingLicenses,
+                AppColors.warning,
+              ),
+              _MetricRow('Vencidas', stats.expiredLicenses, AppColors.error),
+              _MetricRow('Bloqueadas', stats.blockedLicenses, AppColors.error),
+              _MetricRow('Demo', stats.demoLicenses, AppColors.primary),
+              _MetricRow('Full', stats.fullLicenses, AppColors.success),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _SectionTitle(title: 'Productos y proyectos'),
+          const SizedBox(height: AppSpacing.sm),
+          _MetricBreakdown(
+            rows: [
+              _MetricRow(
+                'Productos app',
+                stats.totalProducts,
+                AppColors.textPrimary,
+              ),
+              _MetricRow(
+                'Publicados',
+                stats.publishedProducts,
+                AppColors.success,
+              ),
+              _MetricRow('Borradores', stats.draftProducts, AppColors.warning),
+              _MetricRow('Archivados', stats.archivedProducts, AppColors.error),
+              _MetricRow('Planes', stats.totalPlans, AppColors.primary),
+              _MetricRow(
+                'Planes activos',
+                stats.activePlans,
+                AppColors.success,
+              ),
+              _MetricRow('Proyectos', stats.totalProjects, AppColors.primary),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _SectionTitle(title: 'Activaciones'),
+          const SizedBox(height: AppSpacing.sm),
+          _MetricBreakdown(
+            rows: [
+              _MetricRow(
+                'Total activaciones',
+                stats.totalActivations,
+                AppColors.textPrimary,
+              ),
+              _MetricRow('Activas', stats.activeActivations, AppColors.success),
+              _MetricRow(
+                'Revocadas',
+                stats.revokedActivations,
+                AppColors.error,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _SectionTitle(title: 'Estado de suscripciones'),
           const SizedBox(height: AppSpacing.sm),
           _SubscriptionBreakdown(stats: stats),
@@ -169,22 +232,52 @@ class _StatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = [
       _StatCardData(
-        title: 'Total empresas',
-        value: stats.totalCompanies.toString(),
-        icon: Icons.business_outlined,
+        title: 'Clientes',
+        value: stats.totalCustomers.toString(),
+        icon: Icons.people_outline_rounded,
         color: AppColors.primary,
       ),
       _StatCardData(
-        title: 'Suscripciones activas',
-        value: stats.activeSubscriptions.toString(),
+        title: 'Licencias',
+        value: stats.totalLicenses.toString(),
+        icon: Icons.vpn_key_outlined,
+        color: AppColors.success,
+      ),
+      _StatCardData(
+        title: 'Licencias activas',
+        value: stats.activeLicenses.toString(),
         icon: Icons.check_circle_outline_rounded,
         color: AppColors.success,
       ),
       _StatCardData(
-        title: 'Suscripciones vencidas',
-        value: stats.expiredSubscriptions.toString(),
-        icon: Icons.cancel_outlined,
-        color: AppColors.error,
+        title: 'Productos app',
+        value: stats.totalProducts.toString(),
+        icon: Icons.inventory_2_outlined,
+        color: AppColors.primary,
+      ),
+      _StatCardData(
+        title: 'Planes',
+        value: stats.totalPlans.toString(),
+        icon: Icons.layers_outlined,
+        color: AppColors.primary,
+      ),
+      _StatCardData(
+        title: 'Proyectos',
+        value: stats.totalProjects.toString(),
+        icon: Icons.folder_copy_outlined,
+        color: AppColors.primary,
+      ),
+      _StatCardData(
+        title: 'Activaciones',
+        value: stats.totalActivations.toString(),
+        icon: Icons.devices_other_outlined,
+        color: AppColors.warning,
+      ),
+      _StatCardData(
+        title: 'Suscripciones',
+        value: stats.totalSubscriptions.toString(),
+        icon: Icons.subscriptions_outlined,
+        color: AppColors.success,
       ),
       _StatCardData(
         title: 'Pagos pendientes',
@@ -279,6 +372,78 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+class _MetricRow {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _MetricRow(this.label, this.value, this.color);
+}
+
+class _MetricBreakdown extends StatelessWidget {
+  final List<_MetricRow> rows;
+
+  const _MetricBreakdown({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: rows.asMap().entries.map((entry) {
+          final i = entry.key;
+          final row = entry.value;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: row.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        row.label,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      row.value.toString(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: row.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (i < rows.length - 1) const Divider(height: 1),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 class _SubscriptionBreakdown extends StatelessWidget {
   final DashboardStats stats;
   const _SubscriptionBreakdown({required this.stats});
@@ -340,8 +505,7 @@ class _SubscriptionBreakdown extends StatelessWidget {
                   ],
                 ),
               ),
-              if (i < rows.length - 1)
-                const Divider(height: 1),
+              if (i < rows.length - 1) const Divider(height: 1),
             ],
           );
         }).toList(),
@@ -363,13 +527,13 @@ class _FinancialSummary extends StatelessWidget {
         'Recaudado este mes',
         stats.paymentsCollectedThisMonth > 0
             ? currencyFmt.format(stats.paymentsCollectedThisMonth)
-            : 'No disponible'
+            : 'No disponible',
       ),
       (
         'Estimado mensual',
         stats.monthlyRevenueEstimate > 0
             ? currencyFmt.format(stats.monthlyRevenueEstimate)
-            : 'No disponible'
+            : 'No disponible',
       ),
     ];
 
