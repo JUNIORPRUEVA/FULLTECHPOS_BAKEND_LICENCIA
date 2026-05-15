@@ -8,21 +8,31 @@
             "name": "frontend_flutter",
             "cwd": "frontend_flutter",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define=API_BASE_URL=https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host"
+            ]
         },
         {
             "name": "frontend_flutter (profile mode)",
             "cwd": "frontend_flutter",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "toolArgs": [
+                "--dart-define=API_BASE_URL=https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host"
+            ]
         },
         {
             "name": "frontend_flutter (release mode)",
             "cwd": "frontend_flutter",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "flutterMode": "release",
+            "toolArgs": [
+                "--dart-define=APP_ENV=production",
+                "--dart-define=API_BASE_URL=https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host"
+            ]
         }
     ]
 }

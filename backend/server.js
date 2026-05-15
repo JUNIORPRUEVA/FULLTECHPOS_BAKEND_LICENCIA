@@ -130,9 +130,9 @@ function getAdminCredentials() {
   const isProduction = nodeEnv === 'production';
 
   if (isProduction) {
-    const usesDefaultUsername = !username || username === DEFAULT_ADMIN_USERNAME;
+    const missingUsername = !username;
     const usesDefaultPassword = !password || password === DEFAULT_ADMIN_PASSWORD;
-    if (usesDefaultUsername || usesDefaultPassword) {
+    if (missingUsername || usesDefaultPassword) {
       return createDerivedAdminCredentials();
     }
   }
@@ -163,10 +163,12 @@ function getAdminCredentials() {
   const blockingWarnings = [];
   const advisoryWarnings = [];
 
-  if (!adminCredentials.username || adminCredentials.source === 'default' || adminCredentials.username === 'fulltechsd@gmail.com') {
-    blockingWarnings.push('ADMIN_USERNAME is using the default value — set a strong custom value in production');
+  if (!adminCredentials.username || adminCredentials.source === 'default') {
+    blockingWarnings.push('ADMIN_USERNAME is not explicitly configured - set it in production');
+  } else if (isProduction && adminCredentials.username === DEFAULT_ADMIN_USERNAME) {
+    advisoryWarnings.push('ADMIN_USERNAME uses the default email; this is allowed only because ADMIN_PASSWORD is explicit and non-default');
   }
-  if (!adminCredentials.password || adminCredentials.source === 'default' || adminCredentials.password === 'Ayleen10') {
+  if (!adminCredentials.password || adminCredentials.source === 'default' || adminCredentials.password === DEFAULT_ADMIN_PASSWORD) {
     blockingWarnings.push('ADMIN_PASSWORD is using the default value — set a strong password in production');
   }
   if (!process.env.DATABASE_URL) {
