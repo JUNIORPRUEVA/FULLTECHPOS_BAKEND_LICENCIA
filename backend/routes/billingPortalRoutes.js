@@ -16,4 +16,8 @@ router.get('/license', sessions.verifySessionMiddleware, (req, res, next) => {
   Promise.resolve(controller.getLicense(req, res, next)).catch(next);
 });
 
+router.get('/subscription/status', (req, res, next) => {
+  Promise.resolve(controller.getSubscriptionStatus(req, res, next)).catch(next);
+});
+
 module.exports = router;

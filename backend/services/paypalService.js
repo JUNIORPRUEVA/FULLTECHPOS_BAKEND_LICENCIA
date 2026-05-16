@@ -63,9 +63,99 @@ function normalizeDescription(value) {
   return description.slice(0, 127);
 }
 
+function normalizeFullCreditInstallationId(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{7,80}$/.test(raw)) return null;
+  return raw;
+}
+
+function fullCreditEmailForInstallation(installationId) {
+  const safe = installationId.replace(/[^a-z0-9]/g, '').slice(0, 64);
+  return `fullcredit+${safe}@local.fullcredit.app`;
+}
+
+async function ensureFullCreditUser(payload, req, client) {
+  const installationId = normalizeFullCreditInstallationId(
+    payload?.installation_id || payload?.device_id || req?.headers?.['x-fullcredit-installation-id']
+  );
+  if (!installationId) return null;
+
+  const email = fullCreditEmailForInstallation(installationId);
+  const displayName = String(payload?.business_name || payload?.company_name || 'FULLCREDIT local').trim().slice(0, 120);
+  const res = await client.query(
+    `INSERT INTO platform_users (email, display_name, status, user_type)
+     VALUES ($1,$2,'inactive','client_owner')
+     ON CONFLICT (email) DO UPDATE
+     SET display_name = COALESCE(NULLIF(EXCLUDED.display_name, ''), platform_users.display_name),
+         updated_at = now()
+     RETURNING id`,
+    [email, displayName]
+  );
+  return res.rows[0]?.id || null;
+}
+
+const fullCreditPlans = {
+  basic: {
+    code: 'basic',
+    name: 'Plan Básico FULLCREDIT',
+    price: 10,
+    devices: 1,
+    users: '1'
+  },
+  pro: {
+    code: 'pro',
+    name: 'Plan Pro FULLCREDIT',
+    price: 20,
+    devices: 1,
+    users: 'ilimitados'
+  }
+};
+
+async function resolveFullCreditPlan(payload, client) {
+  const code = String(payload?.plan || payload?.plan_code || '').trim().toLowerCase();
+  const config = fullCreditPlans[code];
+  if (!config) return null;
+
+  const requestedPrice = Number(payload?.price ?? payload?.precio ?? config.price);
+  if (!Number.isFinite(requestedPrice) || requestedPrice !== config.price) {
+    throw httpError(400, 'PLAN_PRICE_MISMATCH', 'El precio enviado no coincide con el plan FULLCREDIT');
+  }
+
+  const res = await client.query(
+    `INSERT INTO saas_planes (nombre, tipo, precio, moneda, activo, metadata)
+     VALUES ($1,'mensual',$2,'USD',true,$3)
+     ON CONFLICT (lower(nombre), tipo) DO UPDATE
+     SET precio = EXCLUDED.precio,
+         moneda = EXCLUDED.moneda,
+         activo = true,
+         metadata = saas_planes.metadata || EXCLUDED.metadata,
+         updated_at = now()
+     RETURNING *`,
+    [
+      config.name,
+      config.price,
+      {
+        app: 'FULLCREDIT',
+        plan_code: config.code,
+        devices: config.devices,
+        users: config.users,
+        benefits: [
+          `${config.devices} dispositivo`,
+          config.users === '1' ? '1 usuario' : 'Usuarios ilimitados',
+          'Renovación automática mensual'
+        ]
+      }
+    ]
+  );
+  return res.rows[0] || null;
+}
+
 async function resolvePlatformUserId(payload, req, client) {
   const explicit = payload?.user_id || payload?.usuario_id || req?.headers?.['x-user-id'];
   if (explicit) return normalizeUuid(explicit, 'user_id');
+
+  const fullCreditUserId = await ensureFullCreditUser(payload, req, client);
+  if (fullCreditUserId) return fullCreditUserId;
 
   const username = String(req?.adminUser || req?.user?.email || '').trim().toLowerCase();
   if (username) {
@@ -969,8 +1059,6 @@ async function getPaymentStatus(payload = {}, { req } = {}) {
 }
 
 async function createUserSaasSubscription(payload, { req } = {}) {
-  const planId = normalizeUuid(payload.plan_id, 'plan_id');
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -979,7 +1067,11 @@ async function createUserSaasSubscription(payload, { req } = {}) {
     const userRes = await client.query('SELECT id, email, full_name FROM platform_users WHERE id = $1 FOR UPDATE', [userId]);
     if (!userRes.rows[0]) throw httpError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
 
-    let plan = await getSaasPlanById(planId, { client, forUpdate: true });
+    let plan = await resolveFullCreditPlan(payload, client);
+    if (!plan) {
+      const planId = normalizeUuid(payload.plan_id, 'plan_id');
+      plan = await getSaasPlanById(planId, { client, forUpdate: true });
+    }
     if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
     if (!plan.activo) throw httpError(400, 'PLAN_INACTIVE', 'El plan no está activo');
     if (!['mensual', 'anual'].includes(plan.tipo)) {

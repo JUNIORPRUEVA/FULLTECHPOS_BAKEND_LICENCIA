@@ -35,6 +35,34 @@ async function resolveUserId(req, client) {
   throw httpError(401, 'No se pudo identificar el usuario de la sesión');
 }
 
+function normalizeFullCreditInstallationId(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{7,80}$/.test(raw)) return null;
+  return raw;
+}
+
+function fullCreditEmailForInstallation(installationId) {
+  const safe = installationId.replace(/[^a-z0-9]/g, '').slice(0, 64);
+  return `fullcredit+${safe}@local.fullcredit.app`;
+}
+
+async function resolvePublicSubscriptionUserId(req, client) {
+  const explicit = req.query.user_id || req.headers['x-user-id'];
+  if (explicit) {
+    if (!isUuid(explicit)) throw httpError(400, 'user_id inválido');
+    return String(explicit).trim();
+  }
+
+  const installationId = normalizeFullCreditInstallationId(req.query.installation_id || req.headers['x-fullcredit-installation-id']);
+  if (!installationId) return null;
+
+  const res = await client.query(
+    `SELECT id FROM platform_users WHERE lower(email) = $1 LIMIT 1`,
+    [fullCreditEmailForInstallation(installationId)]
+  );
+  return res.rows[0]?.id || null;
+}
+
 function planBenefits(plan) {
   const benefits = [];
   const devices = Number(plan.metadata?.devices || plan.metadata?.dispositivos || 1);
@@ -161,8 +189,74 @@ async function getLicense(req, res, next) {
   }
 }
 
+async function getSubscriptionStatus(req, res, next) {
+  const client = await pool.connect();
+  try {
+    const userId = await resolvePublicSubscriptionUserId(req, client);
+    if (!userId) {
+      return res.json({ ok: true, active: false, status: 'inactive', plan: null, subscription: null, license: null });
+    }
+
+    const result = await client.query(
+      `SELECT ss.id, ss.estado, ss.paypal_subscription_id, ss.proximo_pago,
+              sp.nombre AS plan_name, sp.precio AS plan_price, sp.moneda AS plan_currency,
+              sp.metadata AS plan_metadata,
+              sl.id AS license_id, sl.estado AS license_status, sl.license_key, sl.fecha_expiracion
+       FROM saas_suscripciones ss
+       INNER JOIN saas_planes sp ON sp.id = ss.plan_id
+       LEFT JOIN LATERAL (
+         SELECT * FROM saas_licencias
+         WHERE suscripcion_id = ss.id
+         ORDER BY created_at DESC
+         LIMIT 1
+       ) sl ON true
+       WHERE ss.user_id = $1
+       ORDER BY ss.created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+    const row = result.rows[0] || null;
+    if (!row) {
+      return res.json({ ok: true, active: false, status: 'inactive', plan: null, subscription: null, license: null });
+    }
+
+    const active = row.estado === 'activa' && (!row.license_status || row.license_status === 'activa');
+    return res.json({
+      ok: true,
+      active,
+      status: active ? 'active' : row.estado,
+      plan: {
+        code: row.plan_metadata?.plan_code || null,
+        name: row.plan_name,
+        price: Number(row.plan_price || 0),
+        currency: row.plan_currency
+      },
+      subscription: {
+        id: row.id,
+        paypal_subscription_id: row.paypal_subscription_id,
+        status: row.estado,
+        next_payment_at: row.proximo_pago
+      },
+      license: row.license_id ? {
+        id: row.license_id,
+        status: row.license_status,
+        license_key: row.license_key,
+        expires_at: row.fecha_expiracion
+      } : null
+    });
+  } catch (error) {
+    if (isMissingSchemaError(error)) {
+      return res.json({ ok: true, active: false, status: 'inactive', plan: null, subscription: null, license: null });
+    }
+    return next(error);
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   listPlans,
   listSubscriptions,
-  getLicense
+  getLicense,
+  getSubscriptionStatus
 };
