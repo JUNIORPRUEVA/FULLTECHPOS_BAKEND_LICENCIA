@@ -1592,6 +1592,12 @@ const planResourceConfig = CloudResourceConfig(
       method: ResourceActionMethod.patch,
       path: '/api/admin/product-plans/:id/disable',
     ),
+    ResourceAction(
+      label: 'Sincronizar PayPal',
+      icon: Icons.sync_rounded,
+      method: ResourceActionMethod.post,
+      path: '/api/admin/product-plans/:id/sync-paypal',
+    ),
   ],
   searchKeys: ['name', 'code', 'product_name', 'project_name'],
   fields: [

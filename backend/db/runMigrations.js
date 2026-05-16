@@ -78,7 +78,10 @@ async function run() {
     '033_add_saas_license_payment_controls.sql',
     '034_update_activation_saas_fields.sql',
     '035_add_paypal_saas_integration.sql',
-    '036_create_user_saas_billing_schema.sql'
+    '036_create_user_saas_billing_schema.sql',
+    '037_relax_paypal_orders_for_direct_checkout.sql',
+    '038_add_user_to_paypal_orders.sql',
+    '039_allow_pending_saas_subscriptions.sql'
   ]);
 
   const selectedFiles = licenseOnly

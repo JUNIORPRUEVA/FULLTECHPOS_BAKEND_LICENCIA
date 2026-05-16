@@ -1,5 +1,6 @@
 const productPlansModel = require('../models/productPlansModel');
 const auditLogService = require('../services/auditLogService');
+const paypalService = require('../services/paypalService');
 
 function asUuid(value) {
   const raw = String(value || '').trim();
@@ -114,11 +115,35 @@ async function disablePlan(req, res) {
   return setEnabled(req, res, false);
 }
 
+async function syncPlanToPayPal(req, res) {
+  try {
+    const id = asUuid(req.params.id);
+    if (!id) return res.status(400).json({ ok: false, message: 'id inválido' });
+    const plan = await paypalService.syncPlanToPayPal(id, { req });
+    return res.json({ ok: true, plan, paypal_plan_id: plan.paypal_plan_id });
+  } catch (error) {
+    const status = error.statusCode || 400;
+    return res.status(status).json({ ok: false, message: String(error?.message || error) });
+  }
+}
+
+async function syncRecurringPlansToPayPal(req, res) {
+  try {
+    const result = await paypalService.syncRecurringPlansToPayPal({ req });
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    const status = error.statusCode || 400;
+    return res.status(status).json({ ok: false, message: String(error?.message || error) });
+  }
+}
+
 module.exports = {
   listPlans,
   getPlan,
   createPlan,
   updatePlan,
   enablePlan,
-  disablePlan
+  disablePlan,
+  syncPlanToPayPal,
+  syncRecurringPlansToPayPal
 };

@@ -3,12 +3,13 @@ const { pool } = require('../db/pool');
 async function createOrder(input, { client = pool } = {}) {
   const res = await client.query(
     `INSERT INTO paypal_orders (
-      order_type, company_id, customer_id, plan_id, product_id, project_id,
-      amount, currency, status, request_payload
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      order_type, user_id, company_id, customer_id, plan_id, product_id, project_id,
+      amount, currency, status, description, request_payload
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     RETURNING *`,
     [
       input.order_type || 'ONE_TIME',
+      input.user_id || null,
       input.company_id,
       input.customer_id || null,
       input.plan_id,
@@ -17,6 +18,7 @@ async function createOrder(input, { client = pool } = {}) {
       input.amount,
       input.currency || 'USD',
       input.status || 'CREATED',
+      input.description || null,
       input.request_payload || {}
     ]
   );

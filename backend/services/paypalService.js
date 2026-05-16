@@ -57,6 +57,12 @@ function normalizeCurrency(value, fallback = 'USD') {
   return currency || fallback;
 }
 
+function normalizeDescription(value) {
+  const description = String(value || '').trim();
+  if (!description) throw httpError(400, 'DESCRIPTION_REQUIRED', 'descripcion es requerida');
+  return description.slice(0, 127);
+}
+
 function getReturnUrl(payload) {
   return String(payload?.return_url || process.env.PAYPAL_RETURN_URL || process.env.PUBLIC_APP_URL || '').trim() || 'https://example.com/paypal/success';
 }
@@ -214,12 +220,215 @@ async function createPayPalProductAndPlan(plan, { client }) {
   }, { client });
 }
 
+function saasBillingPeriod(planType) {
+  if (planType === 'mensual') return 'MONTH';
+  if (planType === 'anual') return 'YEAR';
+  throw httpError(400, 'PLAN_NOT_RECURRING', 'Solo planes mensuales o anuales usan suscripción automática');
+}
+
+async function getSaasPlanById(planId, { client, forUpdate = false } = {}) {
+  const res = await client.query(
+    `SELECT * FROM saas_planes WHERE id = $1${forUpdate ? ' FOR UPDATE' : ''}`,
+    [planId]
+  );
+  return res.rows[0] || null;
+}
+
+async function createPayPalProductAndSaasPlan(plan, { client }) {
+  if (plan.paypal_plan_id) return plan;
+  const intervalUnit = saasBillingPeriod(plan.tipo);
+
+  let paypalProductId = plan.paypal_product_id;
+  if (!paypalProductId) {
+    const product = await paypalRequest('POST', '/v1/catalogs/products', {
+      name: process.env.PAYPAL_BRAND_NAME || 'FULLTECH POS SaaS',
+      description: `Producto SaaS para ${plan.nombre}`,
+      type: 'SERVICE',
+      category: 'SOFTWARE'
+    });
+    paypalProductId = product.id;
+  }
+
+  const paypalPlan = await paypalRequest('POST', '/v1/billing/plans', {
+    product_id: paypalProductId,
+    name: plan.nombre,
+    description: `${plan.nombre} (${plan.tipo})`,
+    status: 'ACTIVE',
+    billing_cycles: [
+      {
+        frequency: { interval_unit: intervalUnit, interval_count: 1 },
+        tenure_type: 'REGULAR',
+        sequence: 1,
+        total_cycles: 0,
+        pricing_scheme: {
+          fixed_price: {
+            value: moneyValue(plan.precio),
+            currency_code: normalizeCurrency(plan.moneda)
+          }
+        }
+      }
+    ],
+    payment_preferences: {
+      auto_bill_outstanding: true,
+      setup_fee_failure_action: 'CONTINUE',
+      payment_failure_threshold: 1
+    }
+  });
+
+  const updated = await client.query(
+    `UPDATE saas_planes
+     SET paypal_product_id = $2,
+         paypal_plan_id = $3,
+         updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [plan.id, paypalProductId, paypalPlan.id]
+  );
+  return updated.rows[0];
+}
+
+async function syncPlanToPayPal(planId, { req } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const plan = await productPlansModel.getById(planId, { client });
+    if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
+    if (!['monthly', 'annual'].includes(plan.billing_period)) {
+      throw httpError(400, 'PAYPAL_PLAN_UNSUPPORTED', 'Solo planes mensuales o anuales se sincronizan con PayPal');
+    }
+
+    const syncedPlan = await createPayPalProductAndPlan(plan, { client });
+
+    await auditLogService.log({
+      product_id: syncedPlan.product_id,
+      project_id: syncedPlan.project_id,
+      target_type: 'plan',
+      target_id: syncedPlan.id,
+      action: 'paypal.plan_sync',
+      after_data: {
+        paypal_product_id: syncedPlan.paypal_product_id,
+        paypal_plan_id: syncedPlan.paypal_plan_id,
+        billing_period: syncedPlan.billing_period,
+        price_amount: syncedPlan.price_amount,
+        currency: syncedPlan.currency
+      }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return syncedPlan;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function syncRecurringPlansToPayPal({ req } = {}) {
+  const { plans } = await productPlansModel.list({ is_active: true, limit: 500, offset: 0 });
+  const recurringPlans = plans.filter((plan) => ['monthly', 'annual'].includes(plan.billing_period));
+  const synced = [];
+  const skipped = [];
+
+  for (const plan of recurringPlans) {
+    try {
+      const syncedPlan = await syncPlanToPayPal(plan.id, { req });
+      synced.push(syncedPlan);
+    } catch (error) {
+      skipped.push({ id: plan.id, name: plan.name, reason: error.message || String(error) });
+    }
+  }
+
+  return { synced, skipped, total: recurringPlans.length };
+}
+
 function approvalUrlFromLinks(links = []) {
   const approval = links.find((link) => link.rel === 'approve' || link.rel === 'payer-action');
   return approval?.href || null;
 }
 
+async function createDirectOrder(payload, { req } = {}) {
+  const userId = normalizeUuid(payload?.user_id, 'user_id');
+  const amount = payload?.amount ?? payload?.monto;
+  const description = normalizeDescription(payload?.description ?? payload?.descripcion);
+  const currency = normalizeCurrency(payload?.currency ?? payload?.moneda, 'USD');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const localOrder = await paypalModel.createOrder({
+      order_type: 'ONE_TIME',
+      user_id: userId,
+      amount: moneyValue(amount),
+      currency,
+      status: 'pendiente',
+      description,
+      request_payload: payload
+    }, { client });
+
+    const paypalOrder = await paypalRequest('POST', '/v2/checkout/orders', {
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          reference_id: localOrder.id,
+          custom_id: localOrder.id,
+          description,
+          amount: {
+            currency_code: currency,
+            value: moneyValue(amount)
+          }
+        }
+      ],
+      application_context: {
+        brand_name: process.env.PAYPAL_BRAND_NAME || 'FULLTECH POS',
+        landing_page: 'NO_PREFERENCE',
+        user_action: 'PAY_NOW',
+        return_url: getReturnUrl(payload),
+        cancel_url: getCancelUrl(payload)
+      }
+    });
+
+    const approvalUrl = approvalUrlFromLinks(paypalOrder.links || []);
+    const order = await paypalModel.updateOrderById(localOrder.id, {
+      paypal_order_id: paypalOrder.id,
+      status: 'pendiente',
+      approval_url: approvalUrl,
+      paypal_payload: paypalOrder
+    }, { client });
+
+    await auditLogService.log({
+      target_type: 'payment',
+      target_id: order.id,
+      action: 'paypal.order_create',
+      after_data: {
+        paypal_order_id: paypalOrder.id,
+        status: 'pendiente',
+        amount: order.amount,
+        currency: order.currency
+      }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return {
+      paypal_order_id: paypalOrder.id,
+      approval_url: approvalUrl,
+      estado: 'pendiente',
+      status: 'pendiente'
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function createOrder(payload, { req } = {}) {
+  if (!payload?.plan_id && (payload?.amount != null || payload?.monto != null)) {
+    return createDirectOrder(payload, { req });
+  }
+
   const companyId = normalizeUuid(payload.company_id, 'company_id');
   const customerId = optionalUuid(payload.customer_id);
   const planId = normalizeUuid(payload.plan_id, 'plan_id');
@@ -244,6 +453,8 @@ async function createOrder(payload, { req } = {}) {
       project_id: plan.project_id,
       amount: plan.price_amount,
       currency: normalizeCurrency(plan.currency),
+      status: 'pendiente',
+      description: `${plan.name} - licencia permanente`,
       request_payload: payload
     }, { client });
 
@@ -272,7 +483,7 @@ async function createOrder(payload, { req } = {}) {
     const approvalUrl = approvalUrlFromLinks(paypalOrder.links || []);
     await paypalModel.updateOrderById(localOrder.id, {
       paypal_order_id: paypalOrder.id,
-      status: paypalOrder.status || 'CREATED',
+      status: 'pendiente',
       approval_url: approvalUrl,
       paypal_payload: paypalOrder
     }, { client });
@@ -288,7 +499,7 @@ async function createOrder(payload, { req } = {}) {
     }, { client, req });
 
     await client.query('COMMIT');
-    return { paypal_order_id: paypalOrder.id, approval_url: approvalUrl, status: paypalOrder.status };
+    return { paypal_order_id: paypalOrder.id, approval_url: approvalUrl, estado: 'pendiente', status: 'pendiente' };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -375,31 +586,418 @@ async function completeOneTimeOrder(paypalOrderId, paypalPayload, { req } = {}) 
   }
 }
 
+async function createPermanentSaasLicense({ userId, order, paypalPayload, client }) {
+  const existingPayment = await client.query(
+    `SELECT p.*, l.id AS existing_license_id
+     FROM saas_pagos p
+     LEFT JOIN saas_licencias l ON l.id = p.licencia_id
+     WHERE p.paypal_order_id = $1
+     LIMIT 1`,
+    [order.paypal_order_id]
+  );
+  if (existingPayment.rows[0]?.existing_license_id) {
+    return { payment: existingPayment.rows[0], license_id: existingPayment.rows[0].existing_license_id, idempotent: true };
+  }
+
+  const userRes = await client.query('SELECT id FROM platform_users WHERE id = $1 FOR UPDATE', [userId]);
+  if (!userRes.rows[0]) throw httpError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
+
+  const capture = paypalPayload.purchase_units?.[0]?.payments?.captures?.[0] || {};
+  const paidAt = capture.create_time ? new Date(capture.create_time) : new Date();
+  const amount = Number(capture.amount?.value || order.amount);
+  const currency = capture.amount?.currency_code || order.currency || 'USD';
+
+  let license = null;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const licenseKey = generateLicenseKey('FULL');
+    try {
+      const licenseRes = await client.query(
+        `INSERT INTO saas_licencias (
+           user_id, tipo, estado, fecha_activacion, fecha_expiracion, license_key, metadata
+         ) VALUES ($1,'permanente','activa',$2,NULL,$3,$4)
+         RETURNING *`,
+        [
+          userId,
+          paidAt,
+          licenseKey,
+          {
+            source: 'paypal_capture',
+            paypal_order_id: order.paypal_order_id,
+            description: order.description || null
+          }
+        ]
+      );
+      license = licenseRes.rows[0];
+      break;
+    } catch (error) {
+      if (error?.code === '23505') continue;
+      throw error;
+    }
+  }
+  if (!license) throw httpError(500, 'LICENSE_KEY_GENERATION_FAILED', 'No se pudo generar la licencia permanente');
+
+  const paymentRes = await client.query(
+    `INSERT INTO saas_pagos (
+       user_id, licencia_id, tipo, paypal_order_id, paypal_payment_id,
+       monto, moneda, estado, fecha_pago, paypal_payload, metadata
+     ) VALUES ($1,$2,'paypal',$3,$4,$5,$6,'completado',$7,$8,$9)
+     ON CONFLICT (paypal_order_id) DO UPDATE
+     SET licencia_id = EXCLUDED.licencia_id,
+         paypal_payment_id = EXCLUDED.paypal_payment_id,
+         monto = EXCLUDED.monto,
+         moneda = EXCLUDED.moneda,
+         estado = 'completado',
+         fecha_pago = EXCLUDED.fecha_pago,
+         paypal_payload = EXCLUDED.paypal_payload,
+         updated_at = now()
+     RETURNING *`,
+    [
+      userId,
+      license.id,
+      order.paypal_order_id,
+      capture.id || null,
+      amount,
+      currency,
+      paidAt,
+      paypalPayload,
+      { description: order.description || null }
+    ]
+  );
+
+  await client.query(
+    `UPDATE platform_users
+     SET status = 'active', updated_at = now()
+     WHERE id = $1`,
+    [userId]
+  );
+
+  return { payment: paymentRes.rows[0], license, idempotent: false };
+}
+
+async function completeDirectOrder(paypalOrderId, paypalPayload, { req } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const order = await paypalModel.getOrderByPayPalId(paypalOrderId, { client, forUpdate: true });
+    if (!order) throw httpError(404, 'ORDER_NOT_FOUND', 'Orden PayPal no encontrada localmente');
+
+    if (order.status === 'completado') {
+      await client.query('COMMIT');
+      return { order, idempotent: true };
+    }
+
+    const userId = order.user_id || order.request_payload?.user_id;
+    if (!userId) throw httpError(400, 'USER_ID_REQUIRED', 'La orden no tiene user_id para activar el usuario');
+
+    const result = await createPermanentSaasLicense({ userId, order, paypalPayload, client });
+    const updatedOrder = await paypalModel.updateOrderById(order.id, {
+      status: 'completado',
+      paypal_payload: paypalPayload,
+      captured_at: new Date()
+    }, { client });
+
+    await auditLogService.log({
+      target_type: 'payment',
+      target_id: result.payment?.id || order.id,
+      action: 'paypal.order_capture_completed',
+      after_data: {
+        paypal_order_id: paypalOrderId,
+        payment_id: result.payment?.paypal_payment_id || null,
+        license_id: result.license?.id || result.license_id || null,
+        user_id: userId
+      }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return { order: updatedOrder, ...result };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function markDirectOrderFailed(paypalOrderId, paypalPayload, reason, { req } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const order = await paypalModel.getOrderByPayPalId(paypalOrderId, { client, forUpdate: true });
+    if (!order) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    await paypalModel.updateOrderById(order.id, {
+      status: 'fallido',
+      paypal_payload: paypalPayload || { error: reason }
+    }, { client });
+
+    const userId = order.user_id || order.request_payload?.user_id || null;
+    if (userId) {
+      await client.query(
+        `INSERT INTO saas_pagos (
+           user_id, tipo, paypal_order_id, monto, moneda, estado, paypal_payload, metadata
+         ) VALUES ($1,'paypal',$2,$3,$4,'fallido',$5,$6)
+         ON CONFLICT (paypal_order_id) DO UPDATE
+         SET estado = 'fallido',
+             paypal_payload = EXCLUDED.paypal_payload,
+             metadata = EXCLUDED.metadata,
+             updated_at = now()`,
+        [
+          userId,
+          order.paypal_order_id,
+          order.amount,
+          order.currency || 'USD',
+          paypalPayload || {},
+          { reason: String(reason || 'PayPal capture failed').slice(0, 500) }
+        ]
+      );
+    }
+
+    await auditLogService.log({
+      target_type: 'payment',
+      target_id: order.id,
+      action: 'paypal.order_capture_failed',
+      after_data: { paypal_order_id: paypalOrderId, reason }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return order;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function captureOrder(payload, { req } = {}) {
   const paypalOrderId = String(payload?.paypal_order_id || payload?.order_id || '').trim();
   if (!paypalOrderId) throw httpError(400, 'PAYPAL_ORDER_REQUIRED', 'paypal_order_id es requerido');
 
   const existing = await paypalModel.getOrderByPayPalId(paypalOrderId);
+  if (existing?.status === 'completado') {
+    return { ok: true, idempotent: true, order: existing };
+  }
   if (existing?.status === 'COMPLETED' && existing.license_id) {
     return { ok: true, idempotent: true, license_id: existing.license_id, subscription_id: existing.subscription_id };
   }
 
-  const captured = await paypalRequest('POST', `/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {});
+  let captured = null;
+  try {
+    captured = await paypalRequest('POST', `/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {});
+  } catch (error) {
+    await markDirectOrderFailed(paypalOrderId, { error: error.message || String(error) }, error.message || error, { req });
+    throw error;
+  }
+
   if (captured.status !== 'COMPLETED') {
+    await markDirectOrderFailed(paypalOrderId, captured, `PayPal status: ${captured.status}`, { req });
     throw httpError(402, 'PAYPAL_ORDER_NOT_COMPLETED', 'PayPal no confirmó el pago');
   }
 
-  const result = await completeOneTimeOrder(paypalOrderId, captured, { req });
+  const result = existing?.plan_id
+    ? await completeOneTimeOrder(paypalOrderId, captured, { req })
+    : await completeDirectOrder(paypalOrderId, captured, { req });
   return {
     ok: true,
     idempotent: result.idempotent,
     license: result.license || null,
     subscription: result.subscription || null,
-    payment: result.payment || null
+    payment: result.payment || null,
+    order: result.order || null,
+    user_activated: Boolean(result.license || result.license_id)
   };
 }
 
+async function createUserSaasSubscription(payload, { req } = {}) {
+  const planId = normalizeUuid(payload.plan_id, 'plan_id');
+  const userId = normalizeUuid(
+    payload.user_id || payload.usuario_id || req?.user?.id || req?.session?.user_id,
+    'user_id'
+  );
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const userRes = await client.query('SELECT id, email, full_name FROM platform_users WHERE id = $1 FOR UPDATE', [userId]);
+    if (!userRes.rows[0]) throw httpError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
+
+    let plan = await getSaasPlanById(planId, { client, forUpdate: true });
+    if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
+    if (!plan.activo) throw httpError(400, 'PLAN_INACTIVE', 'El plan no está activo');
+    if (!['mensual', 'anual'].includes(plan.tipo)) {
+      throw httpError(400, 'PLAN_NOT_RECURRING', 'Solo planes mensuales o anuales usan suscripción automática');
+    }
+
+    plan = await createPayPalProductAndSaasPlan(plan, { client });
+
+    const localSubscriptionRes = await client.query(
+      `INSERT INTO saas_suscripciones (
+         user_id, plan_id, estado, fecha_inicio, metadata
+       ) VALUES ($1,$2,'pendiente',now(),$3)
+       RETURNING *`,
+      [
+        userId,
+        plan.id,
+        {
+          source: 'paypal_create_subscription',
+          paypal_plan_id: plan.paypal_plan_id,
+          request_payload: payload
+        }
+      ]
+    );
+    const localSubscription = localSubscriptionRes.rows[0];
+
+    const paypalSubscription = await paypalRequest('POST', '/v1/billing/subscriptions', {
+      plan_id: plan.paypal_plan_id,
+      custom_id: localSubscription.id,
+      quantity: '1',
+      subscriber: userRes.rows[0].email
+        ? {
+            email_address: userRes.rows[0].email,
+            name: userRes.rows[0].full_name ? { given_name: userRes.rows[0].full_name } : undefined
+          }
+        : undefined,
+      application_context: {
+        brand_name: process.env.PAYPAL_BRAND_NAME || 'FULLTECH POS',
+        user_action: 'SUBSCRIBE_NOW',
+        return_url: getReturnUrl(payload),
+        cancel_url: getCancelUrl(payload)
+      }
+    });
+
+    const updatedSubscriptionRes = await client.query(
+      `UPDATE saas_suscripciones
+       SET paypal_subscription_id = $2,
+           estado = 'pendiente',
+           metadata = metadata || $3::jsonb,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        localSubscription.id,
+        paypalSubscription.id,
+        JSON.stringify({ paypal_subscription: paypalSubscription })
+      ]
+    );
+    const subscription = updatedSubscriptionRes.rows[0];
+
+    await client.query(
+      `INSERT INTO saas_pagos (
+         user_id, suscripcion_id, tipo, paypal_subscription_id,
+         monto, moneda, estado, paypal_payload, metadata
+       ) VALUES ($1,$2,'paypal',$3,$4,$5,'pendiente',$6,$7)`,
+      [
+        userId,
+        subscription.id,
+        paypalSubscription.id,
+        plan.precio,
+        normalizeCurrency(plan.moneda),
+        paypalSubscription,
+        { plan_id: plan.id, paypal_plan_id: plan.paypal_plan_id }
+      ]
+    );
+
+    await auditLogService.log({
+      target_type: 'subscription',
+      target_id: subscription.id,
+      action: 'paypal.saas_subscription_create',
+      after_data: {
+        user_id: userId,
+        plan_id: plan.id,
+        paypal_plan_id: plan.paypal_plan_id,
+        paypal_subscription_id: paypalSubscription.id,
+        estado: subscription.estado
+      }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return {
+      subscription,
+      paypal_subscription_id: paypalSubscription.id,
+      approval_url: approvalUrlFromLinks(paypalSubscription.links || []),
+      estado: 'pendiente',
+      status: paypalSubscription.status || 'APPROVAL_PENDING'
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function findSaasSubscription({ paypalSubscriptionId, customId, client, forUpdate = false }) {
+  const lockSql = forUpdate ? ' FOR UPDATE' : '';
+  if (paypalSubscriptionId) {
+    const res = await client.query(
+      `SELECT ss.*, sp.nombre AS plan_nombre, sp.tipo AS plan_tipo, sp.precio AS plan_precio, sp.moneda AS plan_moneda
+       FROM saas_suscripciones ss
+       INNER JOIN saas_planes sp ON sp.id = ss.plan_id
+       WHERE ss.paypal_subscription_id = $1${lockSql}`,
+      [paypalSubscriptionId]
+    );
+    if (res.rows[0]) return res.rows[0];
+  }
+  if (customId) {
+    const res = await client.query(
+      `SELECT ss.*, sp.nombre AS plan_nombre, sp.tipo AS plan_tipo, sp.precio AS plan_precio, sp.moneda AS plan_moneda
+       FROM saas_suscripciones ss
+       INNER JOIN saas_planes sp ON sp.id = ss.plan_id
+       WHERE ss.id = $1${lockSql}`,
+      [customId]
+    );
+    return res.rows[0] || null;
+  }
+  return null;
+}
+
+async function ensureUserSaasSubscriptionLicense(subscription, { client, paypalSubscriptionId, nextPaymentDate }) {
+  const existing = await client.query(
+    `SELECT * FROM saas_licencias
+     WHERE suscripcion_id = $1 AND tipo = 'suscripcion'
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [subscription.id]
+  );
+  if (existing.rows[0]) return existing.rows[0];
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const licenseKey = generateLicenseKey('FULL');
+    try {
+      const res = await client.query(
+        `INSERT INTO saas_licencias (
+           user_id, plan_id, suscripcion_id, tipo, estado,
+           fecha_activacion, fecha_expiracion, license_key, metadata
+         ) VALUES ($1,$2,$3,'suscripcion','activa',now(),$4,$5,$6)
+         RETURNING *`,
+        [
+          subscription.user_id,
+          subscription.plan_id,
+          subscription.id,
+          nextPaymentDate || null,
+          licenseKey,
+          { source: 'paypal_subscription', paypal_subscription_id: paypalSubscriptionId }
+        ]
+      );
+      return res.rows[0];
+    } catch (error) {
+      if (error?.code === '23505') continue;
+      throw error;
+    }
+  }
+
+  throw httpError(500, 'LICENSE_KEY_GENERATION_FAILED', 'No se pudo generar la licencia de suscripción');
+}
+
 async function createSubscription(payload, { req } = {}) {
+  if (!payload?.company_id || payload?.user_id || payload?.usuario_id) {
+    return createUserSaasSubscription(payload, { req });
+  }
+
   const companyId = normalizeUuid(payload.company_id, 'company_id');
   const customerId = optionalUuid(payload.customer_id);
   const planId = normalizeUuid(payload.plan_id, 'plan_id');
@@ -726,6 +1324,8 @@ module.exports = {
   captureOrder,
   createSubscription,
   cancelSubscription,
+  syncPlanToPayPal,
+  syncRecurringPlansToPayPal,
   processWebhook,
   paypalRequest,
   getAccessToken,
