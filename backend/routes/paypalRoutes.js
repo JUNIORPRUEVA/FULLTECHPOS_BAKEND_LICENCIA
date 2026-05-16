@@ -1,5 +1,6 @@
 const express = require('express');
 const paypalController = require('../controllers/paypalController');
+const isAdmin = require('../middleware/isAdmin');
 
 const router = express.Router();
 
@@ -9,6 +10,10 @@ router.post('/create-order', (req, res, next) => {
 
 router.post('/capture-order', (req, res, next) => {
   Promise.resolve(paypalController.captureOrder(req, res)).catch(next);
+});
+
+router.post('/init', isAdmin, (req, res, next) => {
+  Promise.resolve(paypalController.initialize(req, res)).catch(next);
 });
 
 router.post('/create-subscription', (req, res, next) => {

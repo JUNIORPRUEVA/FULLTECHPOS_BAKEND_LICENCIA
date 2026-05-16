@@ -111,16 +111,7 @@ const fullCreditPlans = {
   }
 };
 
-async function resolveFullCreditPlan(payload, client) {
-  const code = String(payload?.plan || payload?.plan_code || '').trim().toLowerCase();
-  const config = fullCreditPlans[code];
-  if (!config) return null;
-
-  const requestedPrice = Number(payload?.price ?? payload?.precio ?? config.price);
-  if (!Number.isFinite(requestedPrice) || requestedPrice !== config.price) {
-    throw httpError(400, 'PLAN_PRICE_MISMATCH', 'El precio enviado no coincide con el plan FULLCREDIT');
-  }
-
+async function upsertFullCreditLocalPlan(config, { client }) {
   const res = await client.query(
     `INSERT INTO saas_planes (nombre, tipo, precio, moneda, activo, metadata)
      VALUES ($1,'mensual',$2,'USD',true,$3)
@@ -148,6 +139,19 @@ async function resolveFullCreditPlan(payload, client) {
     ]
   );
   return res.rows[0] || null;
+}
+
+async function resolveFullCreditPlan(payload, client) {
+  const code = String(payload?.plan || payload?.plan_code || '').trim().toLowerCase();
+  const config = fullCreditPlans[code];
+  if (!config) return null;
+
+  const requestedPrice = Number(payload?.price ?? payload?.precio ?? config.price);
+  if (!Number.isFinite(requestedPrice) || requestedPrice !== config.price) {
+    throw httpError(400, 'PLAN_PRICE_MISMATCH', 'El precio enviado no coincide con el plan FULLCREDIT');
+  }
+
+  return upsertFullCreditLocalPlan(config, { client });
 }
 
 async function resolvePlatformUserId(payload, req, client) {
@@ -181,9 +185,9 @@ function getCancelUrl(payload) {
 
 async function getAccessToken() {
   const clientId = String(process.env.PAYPAL_CLIENT_ID || '').trim();
-  const secret = String(process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET || '').trim();
+  const secret = String(process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '').trim();
   if (!clientId || !secret) {
-    throw httpError(500, 'PAYPAL_NOT_CONFIGURED', 'PAYPAL_CLIENT_ID y PAYPAL_SECRET son requeridos');
+    throw httpError(500, 'PAYPAL_NOT_CONFIGURED', 'PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET son requeridos');
   }
 
   const response = await requireFetch()(`${paypalBaseUrl()}/v1/oauth2/token`, {
@@ -217,6 +221,169 @@ async function paypalRequest(method, path, body = null) {
     throw httpError(response.status, 'PAYPAL_API_ERROR', data.message || data.name || 'Error en API PayPal');
   }
   return data;
+}
+
+async function createProduct(input = {}) {
+  const product = await paypalRequest('POST', '/v1/catalogs/products', {
+    name: input.name || 'FullCredit Suscripción',
+    description: input.description || 'Sistema de préstamos FULLCREDIT',
+    type: input.type || 'SERVICE',
+    category: input.category || 'SOFTWARE'
+  });
+  if (!product.id) throw httpError(502, 'PAYPAL_PRODUCT_ID_MISSING', 'PayPal no devolvió product_id');
+  console.log('[paypal:init] product_id creado:', product.id);
+  return product;
+}
+
+async function createPlan(productId, price, name, options = {}) {
+  if (!productId) throw httpError(400, 'PAYPAL_PRODUCT_ID_REQUIRED', 'product_id es requerido para crear el plan');
+  const plan = await paypalRequest('POST', '/v1/billing/plans', {
+    product_id: productId,
+    name,
+    description: options.description || name,
+    status: 'ACTIVE',
+    billing_cycles: [
+      {
+        frequency: {
+          interval_unit: options.interval_unit || 'MONTH',
+          interval_count: Number(options.interval_count || 1)
+        },
+        tenure_type: 'REGULAR',
+        sequence: 1,
+        total_cycles: 0,
+        pricing_scheme: {
+          fixed_price: {
+            value: moneyValue(price),
+            currency_code: normalizeCurrency(options.currency || 'USD')
+          }
+        }
+      }
+    ],
+    payment_preferences: {
+      auto_bill_outstanding: true,
+      setup_fee_failure_action: 'CONTINUE',
+      payment_failure_threshold: Number(options.payment_failure_threshold || 3)
+    }
+  });
+  if (!plan.id) throw httpError(502, 'PAYPAL_PLAN_ID_MISSING', 'PayPal no devolvió plan_id');
+  console.log('[paypal:init] plan_id creado:', { name, plan_id: plan.id, product_id: productId });
+  return plan;
+}
+
+async function updateFullCreditPayPalIds(planId, patch, { client }) {
+  const res = await client.query(
+    `UPDATE saas_planes
+     SET paypal_product_id = COALESCE($2, paypal_product_id),
+         paypal_plan_id = COALESCE($3, paypal_plan_id),
+         metadata = metadata || $4::jsonb,
+         updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      planId,
+      patch.paypal_product_id || null,
+      patch.paypal_plan_id || null,
+      JSON.stringify(patch.metadata || {})
+    ]
+  );
+  return res.rows[0] || null;
+}
+
+async function initializePayPal({ req } = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock($1, $2)', [728201, 20260516]);
+
+    const basicPlan = await upsertFullCreditLocalPlan(fullCreditPlans.basic, { client });
+    const proPlan = await upsertFullCreditLocalPlan(fullCreditPlans.pro, { client });
+    let productId = basicPlan.paypal_product_id || proPlan.paypal_product_id || null;
+    let productCreated = false;
+
+    if (!productId) {
+      const product = await createProduct();
+      productId = product.id;
+      productCreated = true;
+    } else {
+      console.log('[paypal:init] product_id existente:', productId);
+    }
+
+    const resultPlans = {};
+    for (const plan of [basicPlan, proPlan]) {
+      const code = plan.metadata?.plan_code;
+      const config = fullCreditPlans[code];
+      if (!config) throw httpError(500, 'FULLCREDIT_PLAN_CONFIG_MISSING', 'Configuración de plan FULLCREDIT inválida');
+
+      let paypalPlanId = plan.paypal_plan_id;
+      let planCreated = false;
+      if (!paypalPlanId) {
+        const paypalPlan = await createPlan(productId, config.price, config.name, {
+          description: `${config.name} - FULLCREDIT`,
+          currency: 'USD',
+          payment_failure_threshold: 3
+        });
+        paypalPlanId = paypalPlan.id;
+        planCreated = true;
+      } else {
+        console.log('[paypal:init] plan_id existente:', { code, plan_id: paypalPlanId });
+      }
+
+      const updatedPlan = await updateFullCreditPayPalIds(plan.id, {
+        paypal_product_id: plan.paypal_product_id || productId,
+        paypal_plan_id: paypalPlanId,
+        metadata: {
+          paypal_initialized_at: new Date().toISOString(),
+          paypal_product_id: plan.paypal_product_id || productId,
+          paypal_plan_id: paypalPlanId
+        }
+      }, { client });
+
+      resultPlans[code] = {
+        local_plan_id: updatedPlan.id,
+        paypal_plan_id: updatedPlan.paypal_plan_id,
+        price: Number(updatedPlan.precio),
+        currency: updatedPlan.moneda,
+        created: planCreated
+      };
+    }
+
+    await auditLogService.log({
+      actor_type: 'system',
+      target_type: 'other',
+      target_id: productId,
+      action: 'paypal.fullcredit_init',
+      after_data: {
+        app: 'FULLCREDIT',
+        product_id: productId,
+        basic_plan_id: resultPlans.basic?.paypal_plan_id || null,
+        pro_plan_id: resultPlans.pro?.paypal_plan_id || null,
+        product_created: productCreated,
+        plans: resultPlans
+      }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return {
+      product_id: productId,
+      basic_plan_id: resultPlans.basic?.paypal_plan_id || null,
+      pro_plan_id: resultPlans.pro?.paypal_plan_id || null,
+      created: {
+        product: productCreated,
+        basic_plan: Boolean(resultPlans.basic?.created),
+        pro_plan: Boolean(resultPlans.pro?.created)
+      },
+      plans: resultPlans
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('[paypal:init] error:', {
+      code: error?.code || 'PAYPAL_INIT_ERROR',
+      message: error?.message || String(error)
+    });
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function ensureCompany(companyId, client) {
@@ -1059,6 +1226,11 @@ async function getPaymentStatus(payload = {}, { req } = {}) {
 }
 
 async function createUserSaasSubscription(payload, { req } = {}) {
+  const fullCreditPlanCode = String(payload?.plan || payload?.plan_code || '').trim().toLowerCase();
+  if (fullCreditPlans[fullCreditPlanCode]) {
+    await initializePayPal({ req });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -1920,6 +2092,9 @@ module.exports = {
   syncPlanToPayPal,
   syncRecurringPlansToPayPal,
   processWebhook,
+  initializePayPal,
+  createProduct,
+  createPlan,
   paypalRequest,
   getAccessToken,
   paypalBaseUrl,
