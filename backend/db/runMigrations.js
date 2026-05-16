@@ -38,7 +38,7 @@ async function getAppliedMigrations(client) {
   return new Set(res.rows.map(r => String(r.filename)));
 }
 
-async function run() {
+async function runMigrations({ endPool = true } = {}) {
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(migrationsDir)
@@ -125,11 +125,12 @@ async function run() {
     console.log('✅ Migraciones completadas');
   } finally {
     client.release();
-    await pool.end();
+    if (endPool) await pool.end();
   }
 }
 
-run().catch(err => {
+if (require.main === module) {
+  runMigrations().catch(err => {
   const code = err && (err.code || err.name) ? String(err.code || err.name) : '';
   const msg = err && err.message ? String(err.message) : '';
   console.error('❌ Error corriendo migraciones:', code ? `[${code}]` : '', msg);
@@ -146,4 +147,9 @@ run().catch(err => {
     }
   }
   process.exit(1);
-});
+  });
+}
+
+module.exports = {
+  runMigrations
+};

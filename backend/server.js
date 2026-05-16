@@ -71,6 +71,7 @@ const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
 const syncRoutes = LICENSE_ONLY ? null : require('./modules/sync/sync.routes');
 const backupRoutes = LICENSE_ONLY ? null : require('./modules/backup/backup.routes');
 const { pool } = require('./db/pool');
+const { runMigrations } = require('./db/runMigrations');
 const { rateLimit } = require('./middleware/rateLimit');
 
 const app = express();
@@ -745,10 +746,23 @@ app.use(function globalErrorHandler(err, req, res, next) {
 // INICIAR SERVIDOR
 // ==========================================
 
-app.listen(ADMIN_PORT, () => {
-  console.log(`\n✅ FULLTECH POS Admin Server ejecutándose en puerto ${ADMIN_PORT}`);
-  console.log(`   Admin Panel: http://localhost:${ADMIN_PORT}/admin/login.html`);
-  console.log(`   API: http://localhost:${ADMIN_PORT}/api`);
-  console.log(`   Landing Pública: http://localhost:${ADMIN_PORT}/\n`);
-  startDailySubscriptionMaintenanceJob();
-});
+async function startServer() {
+  try {
+    if (String(process.env.SKIP_STARTUP_MIGRATIONS || '').trim() !== '1') {
+      await runMigrations({ endPool: false });
+    }
+  } catch (error) {
+    console.error('[startup] No se pudieron aplicar las migraciones:', error?.message || error);
+    process.exit(1);
+  }
+
+  app.listen(ADMIN_PORT, () => {
+    console.log(`\n✅ FULLTECH POS Admin Server ejecutándose en puerto ${ADMIN_PORT}`);
+    console.log(`   Admin Panel: http://localhost:${ADMIN_PORT}/admin/login.html`);
+    console.log(`   API: http://localhost:${ADMIN_PORT}/api`);
+    console.log(`   Landing Pública: http://localhost:${ADMIN_PORT}/\n`);
+    startDailySubscriptionMaintenanceJob();
+  });
+}
+
+startServer();
