@@ -21,7 +21,7 @@ function parsePagination(req) {
 
 async function createLicense(req, res) {
   try {
-    const { customer_id, tipo, dias_validez, max_dispositivos, notas, project_id, project_code, auto_activate, estado } = req.body || {};
+    const { customer_id, tipo, license_type, dias_validez, max_dispositivos, notas, project_id, project_code, auto_activate, estado } = req.body || {};
 
     let project = null;
     if (project_id) {
@@ -55,6 +55,11 @@ async function createLicense(req, res) {
     const tipoUpper = String(tipo || '').toUpperCase();
     if (tipoUpper !== 'DEMO' && tipoUpper !== 'FULL') {
       return res.status(400).json({ ok: false, message: "tipo debe ser 'DEMO' o 'FULL'" });
+    }
+
+    const licenseType = String(license_type || 'SUSCRIPCION').trim().toUpperCase();
+    if (!['PERMANENTE', 'SUSCRIPCION'].includes(licenseType)) {
+      return res.status(400).json({ ok: false, message: "license_type debe ser 'PERMANENTE' o 'SUSCRIPCION'" });
     }
 
     // Obtener configuración de licencias para usar como valores por defecto
@@ -94,6 +99,7 @@ async function createLicense(req, res) {
           customer_id: customer.id,
           license_key: key,
           tipo: tipoUpper,
+          license_type: licenseType,
           dias_validez: Math.floor(dias),
           max_dispositivos: Math.floor(maxDisp),
           notas: notas ? String(notas) : null
@@ -336,6 +342,14 @@ async function updateLicense(req, res) {
         return res.status(400).json({ ok: false, message: "tipo debe ser 'DEMO' o 'FULL'" });
       }
       patch.tipo = tipoUpper;
+    }
+
+    if (body.license_type !== undefined) {
+      const licenseType = String(body.license_type || '').trim().toUpperCase();
+      if (!['PERMANENTE', 'SUSCRIPCION'].includes(licenseType)) {
+        return res.status(400).json({ ok: false, message: "license_type debe ser 'PERMANENTE' o 'SUSCRIPCION'" });
+      }
+      patch.license_type = licenseType;
     }
 
     if (body.dias_validez !== undefined) {

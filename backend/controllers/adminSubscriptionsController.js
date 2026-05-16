@@ -12,7 +12,9 @@ async function listSubscriptions(req, res) {
   try {
     const data = await subscriptionsModel.list({
       company_id: asUuid(req.query.company_id),
-      status: req.query.status ? String(req.query.status).trim().toLowerCase() : undefined,
+      customer_id: asUuid(req.query.customer_id),
+      license_id: asUuid(req.query.license_id),
+      status: req.query.status ? String(req.query.status).trim() : undefined,
       product_id: asUuid(req.query.product_id),
       project_id: asUuid(req.query.project_id),
       plan_id: asUuid(req.query.plan_id),
@@ -52,7 +54,7 @@ async function updateSubscriptionStatus(req, res) {
   try {
     const id = asUuid(req.params.id);
     if (!id) return res.status(400).json({ ok: false, message: 'id inválido' });
-    const status = String(req.body?.status || '').trim().toLowerCase();
+    const status = String(req.body?.status || '').trim();
     const subscription = await subscriptionService.updateStatus(id, status, req.body || {}, { req });
     return res.json({ ok: true, subscription });
   } catch (error) {
@@ -74,12 +76,12 @@ async function extendSubscription(req, res) {
 }
 
 async function cancelSubscription(req, res) {
-  req.body = { ...(req.body || {}), status: 'cancelled' };
+  req.body = { ...(req.body || {}), status: 'CANCELLED' };
   return updateSubscriptionStatus(req, res);
 }
 
 async function suspendSubscription(req, res) {
-  req.body = { ...(req.body || {}), status: 'suspended' };
+  req.body = { ...(req.body || {}), status: 'EXPIRED' };
   return updateSubscriptionStatus(req, res);
 }
 

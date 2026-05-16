@@ -42,30 +42,52 @@ async function ensureLicenseExists(licenseId, client) {
 
 async function applyPaidPaymentEffects({ subscription, payment, plan, client, req }) {
   const now = new Date();
-  const previousEnd = subscription.end_date ? new Date(subscription.end_date) : null;
-  const base = previousEnd && previousEnd.getTime() > now.getTime() ? previousEnd : now;
+  const previousDue = subscription.next_payment_date || subscription.renewal_date || subscription.end_date;
+  const previousDueDate = previousDue ? new Date(previousDue) : null;
+  const base = previousDueDate && previousDueDate.getTime() > now.getTime() ? previousDueDate : now;
   const derived = addBillingPeriod(base, plan);
+  const licenseType = plan.billing_period === 'lifetime' ? 'PERMANENTE' : 'SUSCRIPCION';
 
   const updatedSubscription = await subscriptionsModel.updateById(subscription.id, {
-    status: derived.status === 'lifetime' ? 'lifetime' : 'active',
+    status: 'ACTIVE',
+    amount: payment.amount,
+    next_payment_date: derived.nextPaymentDate,
+    license_type: licenseType,
     end_date: derived.endDate,
     renewal_date: derived.renewalDate,
+    grace_until: null,
     suspended_at: null,
     cancelled_at: subscription.cancelled_at,
     updated_by: payment.recorded_by || null
   }, { client });
 
   let linkedLicense = null;
-  if (payment.license_id && derived.billedDays && derived.billedDays > 0) {
-    linkedLicense = await licensesModel.extendLicenseDays(payment.license_id, derived.billedDays);
-    await client.query(
+  const licenseId = payment.license_id || subscription.license_id;
+  if (licenseId) {
+    const licenseRes = await client.query(
       `UPDATE licenses
        SET company_id = COALESCE(company_id, $2),
            subscription_id = $3,
            product_id = COALESCE($4, product_id),
-           issued_at = COALESCE(issued_at, now())
+           license_type = $5,
+           estado = 'ACTIVA',
+           issued_at = COALESCE(issued_at, now()),
+           fecha_inicio = COALESCE(fecha_inicio, now()),
+           fecha_fin = $6,
+           expires_at = $6
+       WHERE id = $1
+       RETURNING *`,
+      [licenseId, subscription.company_id, subscription.id, subscription.product_id || null, licenseType, derived.endDate]
+    );
+    linkedLicense = licenseRes.rows[0] || null;
+
+    await client.query(
+      `UPDATE company_subscriptions
+       SET license_id = COALESCE(license_id, $2),
+           customer_id = COALESCE(customer_id, $3),
+           updated_at = now()
        WHERE id = $1`,
-      [payment.license_id, subscription.company_id, subscription.id, subscription.product_id || null]
+      [subscription.id, licenseId, linkedLicense?.customer_id || null]
     );
   }
 
@@ -133,6 +155,7 @@ async function registerManualPayment(payload, { req } = {}) {
       reference,
       notes: payload.notes ? String(payload.notes) : null,
       paid_at: status === 'paid' ? asDate(payload.paid_at) || new Date() : null,
+      payment_date: payload.date ? asDate(payload.date) : (payload.payment_date ? asDate(payload.payment_date) : null),
       recorded_by: normalizeUuid(payload.recorded_by),
       gateway_payload: payload.gateway_payload && typeof payload.gateway_payload === 'object' ? payload.gateway_payload : {}
     }, { client });

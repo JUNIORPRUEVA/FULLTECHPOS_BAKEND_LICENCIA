@@ -72,10 +72,10 @@ async function create(input, { client = pool } = {}) {
   const res = await client.query(
     `INSERT INTO subscription_payments (
       company_id, subscription_id, product_id, project_id, license_id, amount,
-      currency, status, payment_method, reference, notes, paid_at, recorded_at,
-      recorded_by, gateway_payload
+      currency, status, payment_method, reference, notes, paid_at, payment_date,
+      recorded_at, recorded_by, gateway_payload
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13, now()),$14,$15
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13, $12, now()),COALESCE($14, now()),$15,$16
     ) RETURNING *`,
     [
       input.company_id,
@@ -90,6 +90,7 @@ async function create(input, { client = pool } = {}) {
       input.reference || null,
       input.notes || null,
       input.paid_at || null,
+      input.payment_date || null,
       input.recorded_at || null,
       input.recorded_by || null,
       input.gateway_payload || {}

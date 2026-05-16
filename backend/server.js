@@ -63,6 +63,7 @@ const storePublicRoutes = require('./routes/storePublicRoutes');
 const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const supportRequestRoutes = require('./routes/supportRequestRoutes');
+const { startDailySubscriptionMaintenanceJob } = require('./services/subscriptionSchedulerService');
 
 // Módulos opcionales (solo cuando se usa el backend completo)
 const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
@@ -744,4 +745,5 @@ app.listen(ADMIN_PORT, () => {
   console.log(`   Admin Panel: http://localhost:${ADMIN_PORT}/admin/login.html`);
   console.log(`   API: http://localhost:${ADMIN_PORT}/api`);
   console.log(`   Landing Pública: http://localhost:${ADMIN_PORT}/\n`);
+  startDailySubscriptionMaintenanceJob();
 });

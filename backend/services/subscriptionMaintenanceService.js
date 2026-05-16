@@ -1,195 +1,237 @@
-/**
- * subscriptionMaintenanceService.js
- * Phase 5 – subscription auto-expire, grace/past_due detection, and license sync.
- *
- * Rules:
- *  - status IN ('active','trial','past_due') AND end_date < NOW()
- *      → grace_until IS NULL OR grace_until < NOW()  ⇒ 'expired'
- *      → grace_until >= NOW()                        ⇒ 'past_due'
- *  - 'suspended' and 'cancelled' are never touched by maintenance.
- *
- * After each subscription status change, linked licenses are updated:
- *  - expired / suspended / cancelled  ⇒ license.estado ACTIVA → VENCIDA
- *  - active / trial / past_due / lifetime ⇒ leave licenses as-is
- *    (reactivation is done manually by admin; maintenance never reactivates)
- *
- * Audit log is written for every subscription change and every license change.
- */
-
 const { pool } = require('../db/pool');
 const auditLogService = require('./auditLogService');
 
-// Statuses that are eligible for automated expiry checks.
-const CHECKABLE_STATUSES = ['active', 'trial', 'past_due'];
+const ACTIVE_STATUS = 'ACTIVE';
+const PENDING_PAYMENT_STATUS = 'PENDING_PAYMENT';
+const GRACE_STATUS = 'GRACE';
+const EXPIRED_STATUS = 'EXPIRED';
+const CANCELLED_STATUS = 'CANCELLED';
 
-// Statuses that block access – licenses must be blocked when sub is in these.
-const BLOCKING_STATUSES = new Set(['expired', 'suspended', 'cancelled']);
+const STATUS_ALIASES = {
+  trial: ACTIVE_STATUS,
+  active: ACTIVE_STATUS,
+  lifetime: ACTIVE_STATUS,
+  past_due: PENDING_PAYMENT_STATUS,
+  suspended: EXPIRED_STATUS,
+  expired: EXPIRED_STATUS,
+  cancelled: CANCELLED_STATUS
+};
 
-/**
- * Find all subscriptions that have passed end_date and whose status is still
- * in CHECKABLE_STATUSES. Returns plain DB rows (no joins needed here).
- */
-async function fetchExpiredCandidates(client) {
+function normalizeStatus(status) {
+  const raw = String(status || '').trim();
+  if (!raw) return ACTIVE_STATUS;
+  const upper = raw.toUpperCase();
+  if ([ACTIVE_STATUS, PENDING_PAYMENT_STATUS, GRACE_STATUS, EXPIRED_STATUS, CANCELLED_STATUS].includes(upper)) {
+    return upper;
+  }
+  return STATUS_ALIASES[raw.toLowerCase()] || ACTIVE_STATUS;
+}
+
+function startOfUtcDay(date) {
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function calculateDaysLate(dueDate, now = new Date()) {
+  if (!dueDate) return 0;
+  const due = new Date(dueDate);
+  if (Number.isNaN(due.getTime())) return 0;
+  return Math.floor((startOfUtcDay(now) - startOfUtcDay(due)) / (24 * 60 * 60 * 1000));
+}
+
+function resolveStatusFromDueDate(subscription, now = new Date()) {
+  const current = normalizeStatus(subscription.status);
+  if (current === CANCELLED_STATUS) return CANCELLED_STATUS;
+  if (String(subscription.license_type || '').toUpperCase() === 'PERMANENTE') return ACTIVE_STATUS;
+
+  const dueDate = subscription.next_payment_date || subscription.renewal_date || subscription.end_date;
+  const daysLate = calculateDaysLate(dueDate, now);
+
+  if (daysLate > 10) return EXPIRED_STATUS;
+  if (daysLate > 5) return GRACE_STATUS;
+  if (daysLate > 0) return PENDING_PAYMENT_STATUS;
+  return ACTIVE_STATUS;
+}
+
+async function fetchSubscriptionsForStatusUpdate(client) {
   const res = await client.query(
-    `SELECT id, company_id, product_id, project_id, status, end_date, grace_until
+    `SELECT id, company_id, customer_id, license_id, product_id, project_id, status,
+            license_type, next_payment_date, renewal_date, end_date
      FROM company_subscriptions
-     WHERE status = ANY($1)
-       AND end_date IS NOT NULL
-       AND end_date < NOW()
-     ORDER BY end_date ASC`,
-    [CHECKABLE_STATUSES]
+     WHERE UPPER(status) <> 'CANCELLED'
+     ORDER BY COALESCE(next_payment_date, renewal_date, end_date, created_at) ASC`
   );
   return res.rows;
 }
 
-/**
- * Update a subscription status directly (lightweight patch – no full re-fetch).
- * Returns the updated row from RETURNING *.
- */
-async function patchSubscriptionStatus(id, status, client) {
+async function patchSubscriptionStatus(subscription, nextStatus, client) {
   const res = await client.query(
     `UPDATE company_subscriptions
-     SET status = $2, updated_at = now()
+     SET status = $2,
+         updated_at = now()
      WHERE id = $1
      RETURNING *`,
-    [id, status]
+    [subscription.id, nextStatus]
   );
   return res.rows[0] || null;
 }
 
-/**
- * Sync licenses linked to a subscription.
- * If the new status blocks access, set ACTIVA licenses to VENCIDA.
- * Never deletes licenses. Never reactivates.
- * Returns the list of license ids that were changed.
- */
-async function syncLinkedLicenses(subscriptionId, newStatus, client) {
-  if (!BLOCKING_STATUSES.has(newStatus)) return [];
+async function syncLinkedLicenses(subscription, nextStatus, client) {
+  const shouldBlock = nextStatus === EXPIRED_STATUS || nextStatus === CANCELLED_STATUS;
+  const shouldActivate = nextStatus === ACTIVE_STATUS;
+  if (!shouldBlock && !shouldActivate) return [];
 
+  const licenseIds = [];
+  if (subscription.license_id) licenseIds.push(subscription.license_id);
+
+  const status = shouldBlock ? 'BLOQUEADA' : 'ACTIVA';
   const res = await client.query(
     `UPDATE licenses
-     SET estado = 'VENCIDA'
-     WHERE subscription_id = $1
-       AND estado = 'ACTIVA'
-     RETURNING id, license_key, company_id, subscription_id`,
-    [subscriptionId]
+     SET estado = $2,
+         license_type = COALESCE(license_type, 'SUSCRIPCION')
+     WHERE (subscription_id = $1 OR id = ANY($3::uuid[]))
+       AND license_type <> 'PERMANENTE'
+       AND estado <> $2
+     RETURNING id, license_key, company_id, customer_id, subscription_id, estado`,
+    [subscription.id, status, licenseIds]
   );
   return res.rows;
 }
 
-/**
- * Core maintenance logic – runs inside a single DB transaction.
- * Returns { expired_count, past_due_count, skipped_count, licenses_blocked_count }
- */
-async function runMaintenanceTransaction(client, options = {}) {
-  const { req } = options;
+async function ensurePermanentLicensesActive(client) {
+  const res = await client.query(
+    `UPDATE licenses
+     SET estado = 'ACTIVA',
+         fecha_fin = NULL,
+         expires_at = NULL
+     WHERE license_type = 'PERMANENTE'
+       AND estado <> 'ACTIVA'
+     RETURNING id, license_key, company_id, customer_id`
+  );
+  return res.rows;
+}
 
-  const candidates = await fetchExpiredCandidates(client);
+async function updateSubscriptionStatus(subscriptionId = null, options = {}) {
+  const client = options.client || await pool.connect();
+  const ownsClient = !options.client;
 
-  let expiredCount = 0;
-  let pastDueCount = 0;
-  let skippedCount = 0;
-  let licensesBlockedCount = 0;
-  const now = new Date();
+  try {
+    if (ownsClient) await client.query('BEGIN');
 
-  for (const sub of candidates) {
-    const gracePassed =
-      sub.grace_until == null || new Date(sub.grace_until).getTime() < now.getTime();
+    const { req } = options;
+    const now = options.now || new Date();
+    const subscriptions = subscriptionId
+      ? (await client.query(
+          `SELECT id, company_id, customer_id, license_id, product_id, project_id, status,
+                  license_type, next_payment_date, renewal_date, end_date
+           FROM company_subscriptions
+           WHERE id = $1`,
+          [subscriptionId]
+        )).rows
+      : await fetchSubscriptionsForStatusUpdate(client);
 
-    const newStatus = gracePassed ? 'expired' : 'past_due';
+    let activeCount = 0;
+    let pendingPaymentCount = 0;
+    let graceCount = 0;
+    let expiredCount = 0;
+    let cancelledCount = 0;
+    let skippedCount = 0;
+    let licensesActivatedCount = 0;
+    let licensesBlockedCount = 0;
 
-    // If the sub is already in the target status, skip (handles past_due → past_due).
-    if (sub.status === newStatus) {
-      skippedCount++;
-      continue;
+    for (const subscription of subscriptions) {
+      const previousStatus = normalizeStatus(subscription.status);
+      const nextStatus = resolveStatusFromDueDate(subscription, now);
+
+      if (nextStatus === ACTIVE_STATUS) activeCount++;
+      else if (nextStatus === PENDING_PAYMENT_STATUS) pendingPaymentCount++;
+      else if (nextStatus === GRACE_STATUS) graceCount++;
+      else if (nextStatus === EXPIRED_STATUS) expiredCount++;
+      else if (nextStatus === CANCELLED_STATUS) cancelledCount++;
+
+      const changed = previousStatus !== nextStatus || subscription.status !== nextStatus;
+      const updated = changed ? await patchSubscriptionStatus(subscription, nextStatus, client) : subscription;
+      if (!updated) {
+        skippedCount++;
+        continue;
+      }
+
+      if (changed) {
+        await auditLogService.log(
+          {
+            company_id: subscription.company_id,
+            product_id: subscription.product_id || null,
+            project_id: subscription.project_id || null,
+            target_type: 'subscription',
+            target_id: subscription.id,
+            action: 'subscription.status_auto_update',
+            before_data: { status: subscription.status, next_payment_date: subscription.next_payment_date },
+            after_data: { status: nextStatus }
+          },
+          { client, req }
+        );
+      }
+
+      const affectedLicenses = await syncLinkedLicenses(updated, nextStatus, client);
+      if (nextStatus === ACTIVE_STATUS) licensesActivatedCount += affectedLicenses.length;
+      if (nextStatus === EXPIRED_STATUS || nextStatus === CANCELLED_STATUS) licensesBlockedCount += affectedLicenses.length;
+
+      for (const license of affectedLicenses) {
+        await auditLogService.log(
+          {
+            company_id: license.company_id || subscription.company_id,
+            target_type: 'license',
+            target_id: license.id,
+            action: 'license.subscription_sync',
+            before_data: { subscription_id: subscription.id },
+            after_data: { estado: license.estado, subscription_status: nextStatus }
+          },
+          { client, req }
+        );
+      }
     }
 
-    const prevStatus = sub.status;
-    const updated = await patchSubscriptionStatus(sub.id, newStatus, client);
-    if (!updated) {
-      skippedCount++;
-      continue;
-    }
+    const permanentLicenses = await ensurePermanentLicensesActive(client);
 
-    // Audit log for the subscription status change.
-    const auditAction =
-      newStatus === 'expired'
-        ? 'subscription.auto_expired'
-        : 'subscription.entered_past_due';
+    const result = {
+      subscriptions_checked: subscriptions.length,
+      active_count: activeCount,
+      pending_payment_count: pendingPaymentCount,
+      grace_count: graceCount,
+      expired_count: expiredCount,
+      cancelled_count: cancelledCount,
+      skipped_count: skippedCount,
+      licenses_activated_count: licensesActivatedCount,
+      licenses_blocked_count: licensesBlockedCount,
+      permanent_licenses_activated_count: permanentLicenses.length
+    };
 
-    await auditLogService.log(
-      {
-        company_id: sub.company_id,
-        product_id: sub.product_id || null,
-        project_id: sub.project_id || null,
-        target_type: 'subscription',
-        target_id: sub.id,
-        action: auditAction,
-        before_data: { status: prevStatus, end_date: sub.end_date, grace_until: sub.grace_until },
-        after_data: { status: newStatus }
-      },
-      { client, req }
-    );
-
-    if (newStatus === 'expired') expiredCount++;
-    else pastDueCount++;
-
-    // Sync licenses
-    const affectedLicenses = await syncLinkedLicenses(sub.id, newStatus, client);
-    licensesBlockedCount += affectedLicenses.length;
-
-    for (const lic of affectedLicenses) {
+    if (!subscriptionId) {
       await auditLogService.log(
         {
-          company_id: lic.company_id || sub.company_id,
-          target_type: 'license',
-          target_id: lic.id,
-          action: 'license.access_changed',
-          before_data: { estado: 'ACTIVA', subscription_id: sub.id },
-          after_data: { estado: 'VENCIDA', reason: auditAction }
+          target_type: 'other',
+          target_id: 'maintenance-run',
+          action: 'maintenance.run',
+          after_data: result
         },
         { client, req }
       );
     }
-  }
 
-  return {
-    candidates_checked: candidates.length,
-    expired_count: expiredCount,
-    past_due_count: pastDueCount,
-    skipped_count: skippedCount,
-    licenses_blocked_count: licensesBlockedCount
-  };
-}
-
-/**
- * Public entry point. Acquires a connection, wraps everything in a transaction.
- */
-async function runMaintenance(options = {}) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await runMaintenanceTransaction(client, options);
-
-    // Write a single summary audit log for the maintenance run itself.
-    await auditLogService.log(
-      {
-        target_type: 'other',
-        target_id: 'maintenance-run',
-        action: 'maintenance.run',
-        after_data: result
-      },
-      { client, req: options.req }
-    );
-
-    await client.query('COMMIT');
+    if (ownsClient) await client.query('COMMIT');
     return result;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
+  } catch (error) {
+    if (ownsClient) await client.query('ROLLBACK');
+    throw error;
   } finally {
-    client.release();
+    if (ownsClient) client.release();
   }
 }
 
-module.exports = { runMaintenance };
+async function runMaintenance(options = {}) {
+  return updateSubscriptionStatus(null, options);
+}
+
+module.exports = {
+  updateSubscriptionStatus,
+  runMaintenance
+};

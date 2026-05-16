@@ -4,7 +4,17 @@ const productPlansModel = require('../models/productPlansModel');
 const subscriptionsModel = require('../models/subscriptionsModel');
 const auditLogService = require('./auditLogService');
 
-const VALID_STATUSES = new Set(['trial', 'active', 'past_due', 'suspended', 'cancelled', 'expired', 'lifetime']);
+const VALID_STATUSES = new Set(['ACTIVE', 'PENDING_PAYMENT', 'GRACE', 'EXPIRED', 'CANCELLED']);
+
+const STATUS_ALIASES = {
+  trial: 'ACTIVE',
+  active: 'ACTIVE',
+  lifetime: 'ACTIVE',
+  past_due: 'PENDING_PAYMENT',
+  suspended: 'EXPIRED',
+  expired: 'EXPIRED',
+  cancelled: 'CANCELLED'
+};
 
 function normalizeUuid(value) {
   const raw = String(value || '').trim();
@@ -20,6 +30,31 @@ function asDate(value, fallback = null) {
   return next;
 }
 
+function normalizeSubscriptionStatus(value, fallback = null) {
+  if (!value) return fallback;
+  const raw = String(value).trim();
+  if (!raw) return fallback;
+  const upper = raw.toUpperCase();
+  if (VALID_STATUSES.has(upper)) return upper;
+  return STATUS_ALIASES[raw.toLowerCase()] || null;
+}
+
+function normalizeOptionalAmount(value, fallback = null) {
+  if (value == null || value === '') return fallback;
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) throw new Error('amount inválido');
+  return amount;
+}
+
+function resolveLicenseType(plan, payload = {}) {
+  const requested = payload.license_type ? String(payload.license_type).trim().toUpperCase() : null;
+  if (requested) {
+    if (!['PERMANENTE', 'SUSCRIPCION'].includes(requested)) throw new Error('license_type inválido');
+    return requested;
+  }
+  return plan.billing_period === 'lifetime' ? 'PERMANENTE' : 'SUSCRIPCION';
+}
+
 function addBillingPeriod(baseDate, plan) {
   const start = new Date(baseDate);
   const end = new Date(start);
@@ -31,14 +66,15 @@ function addBillingPeriod(baseDate, plan) {
   } else if (plan.billing_period === 'annual') {
     end.setUTCFullYear(end.getUTCFullYear() + 1);
   } else if (plan.billing_period === 'lifetime') {
-    return { endDate: null, renewalDate: null, status: 'lifetime', billedDays: null };
+    return { endDate: null, renewalDate: null, nextPaymentDate: null, status: 'ACTIVE', billedDays: null };
   }
 
   const billedDays = Math.max(0, Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
   return {
     endDate: end,
     renewalDate: end,
-    status: plan.billing_period === 'trial' ? 'trial' : 'active',
+    nextPaymentDate: end,
+    status: 'ACTIVE',
     billedDays
   };
 }
@@ -84,18 +120,34 @@ async function createSubscription(payload, { req } = {}) {
     const ownership = resolveOwnership(payload, plan);
     const startDate = asDate(payload.start_date, new Date());
     const derived = addBillingPeriod(startDate, plan);
-    const status = payload.status ? String(payload.status).trim().toLowerCase() : derived.status;
+    const licenseType = resolveLicenseType(plan, payload);
+    const status = normalizeSubscriptionStatus(payload.status, derived.status);
     if (!VALID_STATUSES.has(status)) throw new Error('status inválido');
+
+    const endDate = licenseType === 'PERMANENTE'
+      ? null
+      : (payload.end_date ? asDate(payload.end_date) : derived.endDate);
+    const renewalDate = licenseType === 'PERMANENTE'
+      ? null
+      : (payload.renewal_date ? asDate(payload.renewal_date) : derived.renewalDate);
+    const nextPaymentDate = licenseType === 'PERMANENTE'
+      ? null
+      : (payload.next_payment_date ? asDate(payload.next_payment_date) : derived.nextPaymentDate || renewalDate || endDate);
 
     const created = await subscriptionsModel.create({
       company_id: company.id,
+      customer_id: normalizeUuid(payload.customer_id),
+      license_id: normalizeUuid(payload.license_id),
       product_id: ownership.product_id,
       project_id: ownership.project_id,
       plan_id: plan.id,
+      amount: normalizeOptionalAmount(payload.amount, Number(plan.price_amount || 0)),
+      next_payment_date: nextPaymentDate,
+      license_type: licenseType,
       status,
       start_date: startDate,
-      end_date: payload.end_date ? asDate(payload.end_date) : derived.endDate,
-      renewal_date: payload.renewal_date ? asDate(payload.renewal_date) : derived.renewalDate,
+      end_date: endDate,
+      renewal_date: renewalDate,
       grace_until: payload.grace_until ? asDate(payload.grace_until) : null,
       notes: payload.notes ? String(payload.notes) : null,
       metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {},
@@ -124,7 +176,7 @@ async function createSubscription(payload, { req } = {}) {
 }
 
 async function updateStatus(subscriptionId, status, payload = {}, { req } = {}) {
-  const normalized = String(status || '').trim().toLowerCase();
+  const normalized = normalizeSubscriptionStatus(status);
   if (!VALID_STATUSES.has(normalized)) throw new Error('status inválido');
 
   const client = await pool.connect();
@@ -137,8 +189,8 @@ async function updateStatus(subscriptionId, status, payload = {}, { req } = {}) 
       status: normalized,
       updated_by: normalizeUuid(payload.updated_by) || null
     };
-    if (normalized === 'cancelled') patch.cancelled_at = new Date();
-    if (normalized === 'suspended') patch.suspended_at = new Date();
+    if (normalized === 'CANCELLED') patch.cancelled_at = new Date();
+    if (normalized === 'EXPIRED') patch.suspended_at = payload.suspended_at ? asDate(payload.suspended_at) : current.suspended_at;
     if (payload.notes !== undefined) patch.notes = payload.notes == null ? null : String(payload.notes);
 
     const updated = await subscriptionsModel.updateById(subscriptionId, patch, { client });
@@ -185,9 +237,11 @@ async function extendDates(subscriptionId, payload = {}, { req } = {}) {
     }
 
     const renewalDate = payload.renewal_date ? asDate(payload.renewal_date) : endDate;
+    const nextPaymentDate = payload.next_payment_date ? asDate(payload.next_payment_date) : renewalDate;
     const updated = await subscriptionsModel.updateById(subscriptionId, {
       end_date: endDate,
       renewal_date: renewalDate,
+      next_payment_date: nextPaymentDate,
       grace_until: payload.grace_until ? asDate(payload.grace_until) : current.grace_until,
       updated_by: normalizeUuid(payload.updated_by) || null,
       notes: payload.notes === undefined ? current.notes : payload.notes
@@ -216,6 +270,7 @@ async function extendDates(subscriptionId, payload = {}, { req } = {}) {
 
 module.exports = {
   addBillingPeriod,
+  normalizeSubscriptionStatus,
   createSubscription,
   updateStatus,
   extendDates

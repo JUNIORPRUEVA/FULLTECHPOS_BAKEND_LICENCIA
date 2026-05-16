@@ -42,16 +42,20 @@ async function createLicenseWithKey({
   customer_id,
   license_key,
   tipo,
+  license_type,
   dias_validez,
   max_dispositivos,
   notas
 }) {
+  const normalizedLicenseType = String(license_type || 'SUSCRIPCION').trim().toUpperCase() === 'PERMANENTE'
+    ? 'PERMANENTE'
+    : 'SUSCRIPCION';
   try {
     const result = await pool.query(
-      `INSERT INTO licenses (project_id, customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
-       VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7)
+      `INSERT INTO licenses (project_id, customer_id, license_key, tipo, license_type, dias_validez, max_dispositivos, estado, notas)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDIENTE', $8)
        RETURNING *`,
-      [project_id, customer_id || null, license_key, tipo, dias_validez, max_dispositivos, notas || null]
+      [project_id, customer_id || null, license_key, tipo, normalizedLicenseType, dias_validez, max_dispositivos, notas || null]
     );
     return result.rows[0];
   } catch (e) {
@@ -313,12 +317,18 @@ async function updateLicense(licenseId, patch) {
     const nextMax = patch.max_dispositivos != null ? patch.max_dispositivos : current.max_dispositivos;
     const nextNotas = patch.notas !== undefined ? patch.notas : current.notas;
     const nextEstado = patch.estado != null ? patch.estado : current.estado;
+    const nextLicenseType = patch.license_type != null
+      ? (String(patch.license_type).trim().toUpperCase() === 'PERMANENTE' ? 'PERMANENTE' : 'SUSCRIPCION')
+      : (current.license_type || 'SUSCRIPCION');
 
     let nextFechaInicio = current.fecha_inicio;
     let nextFechaFin = current.fecha_fin;
 
     // Reglas de fechas por cambio de estado
-    if (patch.estado === 'PENDIENTE') {
+    if (nextLicenseType === 'PERMANENTE') {
+      if (patch.estado === 'ACTIVA' && !nextFechaInicio) nextFechaInicio = new Date();
+      nextFechaFin = null;
+    } else if (patch.estado === 'PENDIENTE') {
       nextFechaInicio = null;
       nextFechaFin = null;
     } else if (patch.estado === 'ACTIVA') {
@@ -340,7 +350,9 @@ async function updateLicense(licenseId, patch) {
            estado = $5,
            notas = $6,
            fecha_inicio = $7,
-           fecha_fin = $8
+             fecha_fin = $8,
+             expires_at = $8,
+             license_type = $9
        WHERE id = $1
        RETURNING *`,
       [
@@ -351,7 +363,8 @@ async function updateLicense(licenseId, patch) {
         nextEstado,
         nextNotas,
         nextFechaInicio,
-        nextFechaFin
+        nextFechaFin,
+        nextLicenseType
       ]
     );
 
@@ -384,6 +397,7 @@ async function activateLicenseManually(licenseId) {
 
     let fecha_inicio = license.fecha_inicio;
     let fecha_fin = license.fecha_fin;
+    const licenseType = String(license.license_type || 'SUSCRIPCION').trim().toUpperCase();
 
     const fechaFinMs = fecha_fin ? new Date(fecha_fin).getTime() : NaN;
     const isFechaFinValid = Number.isFinite(fechaFinMs);
@@ -391,14 +405,17 @@ async function activateLicenseManually(licenseId) {
 
     // Activación/Desbloqueo manual debe dejar la licencia utilizable.
     // Si no tiene fechas o ya venció por fecha, rearmar un nuevo período desde ahora.
-    if (!fecha_inicio || !fecha_fin || isExpiredByDate) {
+    if (licenseType === 'PERMANENTE') {
+      if (!fecha_inicio) fecha_inicio = now;
+      fecha_fin = null;
+    } else if (!fecha_inicio || !fecha_fin || isExpiredByDate) {
       fecha_inicio = now;
       fecha_fin = new Date(now.getTime() + days * msPerDay);
     }
 
     const updRes = await client.query(
       `UPDATE licenses
-       SET estado = 'ACTIVA', fecha_inicio = $2, fecha_fin = $3
+      SET estado = 'ACTIVA', fecha_inicio = $2, fecha_fin = $3, expires_at = $3
        WHERE id = $1
        RETURNING *`,
       [licenseId, fecha_inicio, fecha_fin]
@@ -442,6 +459,20 @@ async function extendLicenseDays(licenseId, extraDays) {
     }
 
     const now = new Date();
+    if (String(license.license_type || '').trim().toUpperCase() === 'PERMANENTE') {
+      const updRes = await client.query(
+        `UPDATE licenses
+         SET estado = 'ACTIVA',
+             fecha_fin = NULL,
+             expires_at = NULL
+         WHERE id = $1
+         RETURNING *`,
+        [licenseId]
+      );
+
+      await client.query('COMMIT');
+      return updRes.rows[0] || null;
+    }
 
     // Si aún no se ha iniciado (PENDIENTE sin fecha_inicio), solo aumentamos dias_validez.
     if (!license.fecha_inicio) {
@@ -472,6 +503,7 @@ async function extendLicenseDays(licenseId, extraDays) {
     const updRes = await client.query(
       `UPDATE licenses
        SET fecha_fin = $2,
+           expires_at = $2,
            dias_validez = $3,
            estado = $4
        WHERE id = $1
