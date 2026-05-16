@@ -963,7 +963,24 @@ async function ensureUserSaasSubscriptionLicense(subscription, { client, paypalS
      LIMIT 1`,
     [subscription.id]
   );
-  if (existing.rows[0]) return existing.rows[0];
+  if (existing.rows[0]) {
+    const updated = await client.query(
+      `UPDATE saas_licencias
+       SET estado = 'activa',
+           fecha_activacion = COALESCE(fecha_activacion, now()),
+           fecha_expiracion = COALESCE($2, fecha_expiracion),
+           metadata = metadata || $3::jsonb,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        existing.rows[0].id,
+        nextPaymentDate || null,
+        JSON.stringify({ paypal_subscription_id: paypalSubscriptionId, last_renewal_source: 'paypal_webhook' })
+      ]
+    );
+    return updated.rows[0];
+  }
 
   for (let attempt = 0; attempt < 8; attempt++) {
     const licenseKey = generateLicenseKey('FULL');
@@ -1158,6 +1175,24 @@ function nextBillingDateFromResource(resource) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function paypalSubscriptionIdFromSale(resource) {
+  return resource?.billing_agreement_id || resource?.billing_agreement?.id || resource?.subscription_id || null;
+}
+
+function nextSaasExpiration(subscription, paidAt) {
+  const now = paidAt || new Date();
+  const current = subscription.fecha_expiracion || subscription.proximo_pago || subscription.fecha_fin;
+  const currentDate = current ? new Date(current) : null;
+  const base = currentDate && currentDate.getTime() > now.getTime() ? currentDate : now;
+  const next = new Date(base);
+  if (subscription.plan_tipo === 'anual') {
+    next.setFullYear(next.getFullYear() + 1);
+  } else {
+    next.setMonth(next.getMonth() + 1);
+  }
+  return next;
+}
+
 async function ensureSubscriptionLicense(subscription, plan, client) {
   if (subscription.license_id) return subscription;
   const license = await createLicenseForPlan({
@@ -1181,7 +1216,42 @@ async function handleSubscriptionActivated(event, { client, req }) {
   if (!subscription && resource.custom_id) {
     subscription = await subscriptionsModel.getByIdForUpdate(resource.custom_id, { client });
   }
-  if (!subscription) throw httpError(404, 'LOCAL_SUBSCRIPTION_NOT_FOUND', 'Suscripción local no encontrada');
+  if (!subscription) {
+    const saasSubscription = await findSaasSubscription({
+      paypalSubscriptionId,
+      customId: resource.custom_id,
+      client,
+      forUpdate: true
+    });
+    if (!saasSubscription) throw httpError(404, 'LOCAL_SUBSCRIPTION_NOT_FOUND', 'Suscripción local no encontrada');
+
+    const nextPaymentDate = nextBillingDateFromResource(resource) || saasSubscription.proximo_pago;
+    const updatedRes = await client.query(
+      `UPDATE saas_suscripciones
+       SET estado = 'activa',
+           paypal_subscription_id = $2,
+           proximo_pago = $3,
+           metadata = metadata || $4::jsonb,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        saasSubscription.id,
+        paypalSubscriptionId,
+        nextPaymentDate,
+        JSON.stringify({ paypal_last_event: event.event_type })
+      ]
+    );
+
+    await auditLogService.log({
+      target_type: 'subscription',
+      target_id: updatedRes.rows[0].id,
+      action: 'paypal.saas_subscription_activated',
+      after_data: { paypal_subscription_id: paypalSubscriptionId, proximo_pago: nextPaymentDate }
+    }, { client, req });
+
+    return updatedRes.rows[0];
+  }
 
   const nextPaymentDate = nextBillingDateFromResource(resource) || subscription.next_payment_date;
   const updated = await subscriptionsModel.updateById(subscription.id, {
@@ -1208,11 +1278,79 @@ async function handleSubscriptionActivated(event, { client, req }) {
 
 async function handleSaleCompleted(event, { client, req }) {
   const resource = event.resource || {};
-  const paypalSubscriptionId = resource.billing_agreement_id || resource.billing_agreement?.id || resource.subscription_id;
+  const paypalSubscriptionId = paypalSubscriptionIdFromSale(resource);
   if (!paypalSubscriptionId) throw httpError(400, 'PAYPAL_SUBSCRIPTION_ID_MISSING', 'Evento sin billing_agreement_id');
 
   let subscription = await subscriptionsModel.findByPayPalSubscriptionId(paypalSubscriptionId, { client, forUpdate: true });
-  if (!subscription) throw httpError(404, 'LOCAL_SUBSCRIPTION_NOT_FOUND', 'Suscripción local no encontrada');
+  if (!subscription) {
+    const saasSubscription = await findSaasSubscription({ paypalSubscriptionId, client, forUpdate: true });
+    if (!saasSubscription) throw httpError(404, 'LOCAL_SUBSCRIPTION_NOT_FOUND', 'Suscripción local no encontrada');
+
+    const existingPayment = await client.query(
+      `SELECT * FROM saas_pagos
+       WHERE paypal_payment_id = $1
+       LIMIT 1`,
+      [resource.id]
+    );
+    if (existingPayment.rows[0]) return { payment: existingPayment.rows[0], subscription: saasSubscription, idempotent: true };
+
+    const paidAt = resource.create_time ? new Date(resource.create_time) : new Date();
+    const nextPaymentDate = nextBillingDateFromResource(resource) || nextSaasExpiration(saasSubscription, paidAt);
+    const license = await ensureUserSaasSubscriptionLicense(saasSubscription, {
+      client,
+      paypalSubscriptionId,
+      nextPaymentDate
+    });
+    const amount = Number(resource.amount?.total || resource.amount?.value || saasSubscription.plan_precio || 0);
+    const currency = resource.amount?.currency || resource.amount?.currency_code || saasSubscription.plan_moneda || 'USD';
+
+    const paymentRes = await client.query(
+      `INSERT INTO saas_pagos (
+         user_id, suscripcion_id, licencia_id, tipo, paypal_payment_id,
+         paypal_subscription_id, monto, moneda, estado, fecha_pago, paypal_payload, metadata
+       ) VALUES ($1,$2,$3,'paypal',$4,$5,$6,$7,'completado',$8,$9,$10)
+       RETURNING *`,
+      [
+        saasSubscription.user_id,
+        saasSubscription.id,
+        license.id,
+        resource.id || null,
+        paypalSubscriptionId,
+        amount,
+        currency,
+        paidAt,
+        event,
+        { source: 'paypal_subscription_payment' }
+      ]
+    );
+
+    const updatedSubscriptionRes = await client.query(
+      `UPDATE saas_suscripciones
+       SET estado = 'activa',
+           proximo_pago = COALESCE($2, proximo_pago),
+           metadata = metadata || $3::jsonb,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        saasSubscription.id,
+        nextPaymentDate,
+        JSON.stringify({ paypal_last_event: event.event_type, last_payment_id: resource.id || null })
+      ]
+    );
+
+    await client.query(
+      `UPDATE platform_users SET status = 'active', updated_at = now() WHERE id = $1`,
+      [saasSubscription.user_id]
+    );
+
+    return {
+      payment: paymentRes.rows[0],
+      subscription: updatedSubscriptionRes.rows[0],
+      license,
+      idempotent: false
+    };
+  }
 
   const existingPayment = await paymentsModel.findByReference(subscription.id, resource.id, { client, forUpdate: true });
   if (existingPayment) return { payment: existingPayment, subscription, idempotent: true };
@@ -1248,7 +1386,45 @@ async function handleSubscriptionCancelled(event, { client, req }) {
   const resource = event.resource || {};
   const paypalSubscriptionId = resource.id;
   const subscription = await subscriptionsModel.findByPayPalSubscriptionId(paypalSubscriptionId, { client, forUpdate: true });
-  if (!subscription) throw httpError(404, 'LOCAL_SUBSCRIPTION_NOT_FOUND', 'Suscripción local no encontrada');
+  if (!subscription) {
+    const saasSubscription = await findSaasSubscription({
+      paypalSubscriptionId,
+      customId: resource.custom_id,
+      client,
+      forUpdate: true
+    });
+    if (!saasSubscription) throw httpError(404, 'LOCAL_SUBSCRIPTION_NOT_FOUND', 'Suscripción local no encontrada');
+
+    const updatedRes = await client.query(
+      `UPDATE saas_suscripciones
+       SET estado = 'cancelada',
+           fecha_fin = COALESCE(fecha_fin, now()),
+           metadata = metadata || $2::jsonb,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        saasSubscription.id,
+        JSON.stringify({ paypal_last_event: event.event_type, paypal_cancelled_at: new Date().toISOString() })
+      ]
+    );
+
+    await client.query(
+      `UPDATE saas_licencias
+       SET estado = 'bloqueada', updated_at = now()
+       WHERE suscripcion_id = $1`,
+      [saasSubscription.id]
+    );
+
+    await auditLogService.log({
+      target_type: 'subscription',
+      target_id: updatedRes.rows[0].id,
+      action: 'paypal.saas_subscription_cancelled',
+      after_data: { paypal_subscription_id: paypalSubscriptionId, estado: updatedRes.rows[0].estado }
+    }, { client, req });
+
+    return updatedRes.rows[0];
+  }
 
   const updated = await subscriptionsModel.updateById(subscription.id, {
     status: 'CANCELLED',
@@ -1274,6 +1450,114 @@ async function handleSubscriptionCancelled(event, { client, req }) {
   return updated;
 }
 
+async function handleSaleDenied(event, { client, req }) {
+  const resource = event.resource || {};
+  const paypalSubscriptionId = paypalSubscriptionIdFromSale(resource);
+  if (!paypalSubscriptionId) throw httpError(400, 'PAYPAL_SUBSCRIPTION_ID_MISSING', 'Evento sin billing_agreement_id');
+
+  const amount = Number(resource.amount?.total || resource.amount?.value || 0);
+  const currency = resource.amount?.currency || resource.amount?.currency_code || 'USD';
+  const reason = resource.reason_code || resource.state || resource.status || 'PAYMENT.SALE.DENIED';
+
+  let subscription = await subscriptionsModel.findByPayPalSubscriptionId(paypalSubscriptionId, { client, forUpdate: true });
+  if (!subscription) {
+    const saasSubscription = await findSaasSubscription({ paypalSubscriptionId, client, forUpdate: true });
+    if (!saasSubscription) throw httpError(404, 'LOCAL_SUBSCRIPTION_NOT_FOUND', 'Suscripción local no encontrada');
+
+    const existingPayment = await client.query(
+      `SELECT * FROM saas_pagos
+       WHERE paypal_payment_id = $1
+       LIMIT 1`,
+      [resource.id]
+    );
+    if (existingPayment.rows[0]) return { payment: existingPayment.rows[0], subscription: saasSubscription, idempotent: true };
+
+    const paymentRes = await client.query(
+      `INSERT INTO saas_pagos (
+         user_id, suscripcion_id, tipo, paypal_payment_id,
+         paypal_subscription_id, monto, moneda, estado, paypal_payload, metadata
+       ) VALUES ($1,$2,'paypal',$3,$4,$5,$6,'fallido',$7,$8)
+       RETURNING *`,
+      [
+        saasSubscription.user_id,
+        saasSubscription.id,
+        resource.id || null,
+        paypalSubscriptionId,
+        amount || Number(saasSubscription.plan_precio || 0),
+        currency || saasSubscription.plan_moneda || 'USD',
+        event,
+        { reason }
+      ]
+    );
+
+    const updatedSubscriptionRes = await client.query(
+      `UPDATE saas_suscripciones
+       SET estado = 'vencida',
+         metadata = metadata || $2::jsonb,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        saasSubscription.id,
+        JSON.stringify({ paypal_last_event: event.event_type, last_failed_payment_id: resource.id || null, last_failure_reason: reason })
+      ]
+    );
+
+    await client.query(
+      `UPDATE saas_licencias
+       SET estado = 'bloqueada', updated_at = now()
+       WHERE suscripcion_id = $1`,
+      [saasSubscription.id]
+    );
+
+    await client.query(
+      `UPDATE platform_users
+       SET status = 'suspended', updated_at = now()
+       WHERE id = $1`,
+      [saasSubscription.user_id]
+    );
+
+    return { payment: paymentRes.rows[0], subscription: updatedSubscriptionRes.rows[0], idempotent: false };
+  }
+
+  const existingPayment = await paymentsModel.findByReference(subscription.id, resource.id, { client, forUpdate: true });
+  if (existingPayment) return { payment: existingPayment, subscription, idempotent: true };
+
+  const payment = await paymentsModel.create({
+    company_id: subscription.company_id,
+    subscription_id: subscription.id,
+    product_id: subscription.product_id,
+    project_id: subscription.project_id,
+    license_id: subscription.license_id,
+    amount: amount || Number(subscription.amount || 0),
+    currency,
+    status: 'failed',
+    payment_method: 'paypal',
+    reference: resource.id,
+    notes: `Pago PayPal denegado: ${reason}`,
+    gateway_payload: event,
+    paypal_subscription_id: paypalSubscriptionId,
+    paypal_capture_id: resource.id || null
+  }, { client });
+
+  const updated = await subscriptionsModel.updateById(subscription.id, {
+    status: subscription.status === 'ACTIVE' ? 'GRACE' : 'PENDING_PAYMENT',
+    metadata: { ...(subscription.metadata || {}), paypal_last_event: event.event_type, last_failure_reason: reason }
+  }, { client });
+
+  await auditLogService.log({
+    company_id: subscription.company_id,
+    product_id: subscription.product_id,
+    project_id: subscription.project_id,
+    target_type: 'payment',
+    target_id: payment.id,
+    action: 'paypal.sale_denied',
+    after_data: { paypal_subscription_id: paypalSubscriptionId, reference: resource.id || null, reason }
+  }, { client, req });
+
+  return { payment, subscription: updated, idempotent: false };
+}
+
 async function processWebhook(event, { req } = {}) {
   if (!event?.id || !event?.event_type) throw httpError(400, 'INVALID_WEBHOOK_EVENT', 'Evento PayPal inválido');
   await verifyWebhook(req.headers || {}, event);
@@ -1294,6 +1578,8 @@ async function processWebhook(event, { req } = {}) {
       result = await handleSaleCompleted(event, { client, req });
     } else if (event.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') {
       result = await handleSubscriptionCancelled(event, { client, req });
+    } else if (event.event_type === 'PAYMENT.SALE.DENIED') {
+      result = await handleSaleDenied(event, { client, req });
     }
 
     await paypalModel.markWebhookProcessed(event.id, { status: 'processed' }, { client });
