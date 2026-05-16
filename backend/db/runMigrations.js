@@ -82,7 +82,8 @@ async function runMigrations({ endPool = true } = {}) {
     '037_relax_paypal_orders_for_direct_checkout.sql',
     '038_add_user_to_paypal_orders.sql',
     '039_allow_pending_saas_subscriptions.sql',
-    '040_add_platform_users_full_name_compat.sql'
+    '040_add_platform_users_full_name_compat.sql',
+    '041_seed_fullcredit_project.sql'
   ]);
 
   const selectedFiles = licenseOnly
