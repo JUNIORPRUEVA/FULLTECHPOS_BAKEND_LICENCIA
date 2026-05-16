@@ -282,7 +282,8 @@ async function validateLicense(payload, { req } = {}) {
 
   let finalDecision = resolveFinalStatus({ subscriptionDecision, licenseDecision });
 
-  if (license && input.device_id && (!deviceActivation || deviceActivation.estado !== 'ACTIVA')) {
+  const activationStatus = deviceActivation?.status || (deviceActivation?.estado === 'ACTIVA' ? 'ACTIVE' : null);
+  if (license && input.device_id && activationStatus !== 'ACTIVE') {
     finalDecision = {
       status: 'invalid',
       can_access: false,

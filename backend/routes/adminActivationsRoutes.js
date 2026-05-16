@@ -9,6 +9,21 @@ router.get('/', isAdmin, (req, res, next) => {
   Promise.resolve(adminActivationsController.listActivations(req, res)).catch(next);
 });
 
+// GET /api/admin/activations/:id
+router.get('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminActivationsController.getActivation(req, res)).catch(next);
+});
+
+// POST /api/admin/activations/:id/block
+router.post('/:id/block', isAdmin, (req, res, next) => {
+  Promise.resolve(adminActivationsController.blockActivation(req, res)).catch(next);
+});
+
+// POST /api/admin/activations/:id/revoke
+router.post('/:id/revoke', isAdmin, (req, res, next) => {
+  Promise.resolve(adminActivationsController.revokeActivation(req, res)).catch(next);
+});
+
 // PATCH /api/admin/activations/:id/revocar
 router.patch('/:id/revocar', isAdmin, (req, res, next) => {
   Promise.resolve(adminActivationsController.revokeActivation(req, res)).catch(next);

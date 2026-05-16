@@ -75,7 +75,8 @@ async function run() {
     '030_update_licenses_saas_fields.sql',
     '031_seed_roles_and_permissions.sql',
     '032_seed_default_plans.sql',
-    '033_add_saas_license_payment_controls.sql'
+    '033_add_saas_license_payment_controls.sql',
+    '034_update_activation_saas_fields.sql'
   ]);
 
   const selectedFiles = licenseOnly

@@ -44,13 +44,13 @@ const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
+const activationsRoutes = require('./routes/activationsRoutes');
 const licenseValidationRoutes = require('./routes/licenseValidationRoutes');
 const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
 const adminProductPlansRoutes = require('./routes/adminProductPlansRoutes');
 const adminSubscriptionsRoutes = require('./routes/adminSubscriptionsRoutes');
 const adminPaymentsRoutes = require('./routes/adminPaymentsRoutes');
-const adminAuditLogsRoutes = require('./routes/adminAuditLogsRoutes');
 const adminPlatformUsersRoutes = require('./routes/adminPlatformUsersRoutes');
 const adminRolesRoutes = require('./routes/adminRolesRoutes');
 const adminSaasDashboardRoutes = require('./routes/adminSaasDashboardRoutes');
@@ -58,7 +58,6 @@ const adminMaintenanceRoutes = require('./routes/adminMaintenanceRoutes');
 const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
 const adminSupportResetRoutes = require('./routes/adminSupportResetRoutes');
 const adminSupportMessageConfigRoutes = require('./routes/adminSupportMessageConfigRoutes');
-const adminMetaAdsRoutes = require('./routes/adminMetaAdsRoutes');
 const storePublicRoutes = require('./routes/storePublicRoutes');
 const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
@@ -378,14 +377,12 @@ app.use('/api/admin', adminStoreSettingsRoutes);
 app.use('/api/admin/product-plans', adminProductPlansRoutes);
 app.use('/api/admin/subscriptions', adminSubscriptionsRoutes);
 app.use('/api/admin/payments', adminPaymentsRoutes);
-app.use('/api/admin/audit-logs', adminAuditLogsRoutes);
 app.use('/api/admin/platform-users', adminPlatformUsersRoutes);
 app.use('/api/admin/roles', adminRolesRoutes);
 app.use('/api/admin/saas-dashboard', adminSaasDashboardRoutes);
 app.use('/api/admin/subscriptions', adminMaintenanceRoutes);
 app.use('/api/admin/support-reset', adminSupportResetRoutes);
 app.use('/api/admin/support-message-config', adminSupportMessageConfigRoutes);
-app.use('/api/admin/meta-ads', adminMetaAdsRoutes);
 
 // Recuperación de contraseña para login local FULLPOS (código OTP vía Evolution)
 app.use('/api/password-reset', passwordResetRoutes);
@@ -464,6 +461,7 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 // Rate limit public endpoints: 120 req/min per IP (generous for POS apps,
 // tight enough to block naive brute-force and scraping).
 const licensePublicLimiter = rateLimit({ windowMs: 60_000, max: 120, message: 'Límite de peticiones alcanzado. Espere un momento.' });
+app.use('/api/activations', licensePublicLimiter, activationsRoutes);
 app.use('/api/licenses', licensePublicLimiter, licensesPublicRoutes);
 app.use('/api/v2/licenses', licensePublicLimiter, licenseValidationRoutes);
 

@@ -1,5 +1,6 @@
 const { pool } = require('../db/pool');
 const auditLogService = require('./auditLogService');
+const activationsModel = require('../models/activationsModel');
 
 const ACTIVE_STATUS = 'ACTIVE';
 const PENDING_PAYMENT_STATUS = 'PENDING_PAYMENT';
@@ -76,7 +77,7 @@ async function patchSubscriptionStatus(subscription, nextStatus, client) {
 }
 
 async function syncLinkedLicenses(subscription, nextStatus, client) {
-  const shouldBlock = nextStatus === EXPIRED_STATUS || nextStatus === CANCELLED_STATUS;
+  const shouldBlock = [PENDING_PAYMENT_STATUS, GRACE_STATUS, EXPIRED_STATUS, CANCELLED_STATUS].includes(nextStatus);
   const shouldActivate = nextStatus === ACTIVE_STATUS;
   if (!shouldBlock && !shouldActivate) return [];
 
@@ -137,6 +138,7 @@ async function updateSubscriptionStatus(subscriptionId = null, options = {}) {
     let skippedCount = 0;
     let licensesActivatedCount = 0;
     let licensesBlockedCount = 0;
+    let activationsBlockedCount = 0;
 
     for (const subscription of subscriptions) {
       const previousStatus = normalizeStatus(subscription.status);
@@ -173,9 +175,16 @@ async function updateSubscriptionStatus(subscriptionId = null, options = {}) {
 
       const affectedLicenses = await syncLinkedLicenses(updated, nextStatus, client);
       if (nextStatus === ACTIVE_STATUS) licensesActivatedCount += affectedLicenses.length;
-      if (nextStatus === EXPIRED_STATUS || nextStatus === CANCELLED_STATUS) licensesBlockedCount += affectedLicenses.length;
+      if ([PENDING_PAYMENT_STATUS, GRACE_STATUS, EXPIRED_STATUS, CANCELLED_STATUS].includes(nextStatus)) {
+        licensesBlockedCount += affectedLicenses.length;
+      }
 
       for (const license of affectedLicenses) {
+        if ([PENDING_PAYMENT_STATUS, GRACE_STATUS, EXPIRED_STATUS, CANCELLED_STATUS].includes(nextStatus)) {
+          const blockedActivations = await activationsModel.blockActivationsForLicense(license.id, { client });
+          activationsBlockedCount += blockedActivations.length;
+        }
+
         await auditLogService.log(
           {
             company_id: license.company_id || subscription.company_id,
@@ -202,6 +211,7 @@ async function updateSubscriptionStatus(subscriptionId = null, options = {}) {
       skipped_count: skippedCount,
       licenses_activated_count: licensesActivatedCount,
       licenses_blocked_count: licensesBlockedCount,
+      activations_blocked_count: activationsBlockedCount,
       permanent_licenses_activated_count: permanentLicenses.length
     };
 

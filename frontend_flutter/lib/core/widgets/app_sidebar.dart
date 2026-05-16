@@ -34,11 +34,6 @@ const List<AppSidebarItem> sidebarItems = [
     route: '/admin/licencias',
   ),
   AppSidebarItem(
-    label: 'Configuración licencias',
-    icon: Icons.tune_rounded,
-    route: '/admin/configuracion-licencias',
-  ),
-  AppSidebarItem(
     label: 'Activaciones',
     icon: Icons.devices_other_outlined,
     route: '/admin/activaciones',
@@ -47,11 +42,6 @@ const List<AppSidebarItem> sidebarItems = [
     label: 'Proyectos',
     icon: Icons.folder_copy_outlined,
     route: '/admin/proyectos',
-  ),
-  AppSidebarItem(
-    label: 'Publicidad / Campanas',
-    icon: Icons.campaign_outlined,
-    route: '/admin/publicidad-campanas',
   ),
   AppSidebarItem(
     label: 'Productos',
@@ -73,20 +63,23 @@ const List<AppSidebarItem> sidebarItems = [
     icon: Icons.payments_outlined,
     route: '/admin/pagos',
   ),
+];
+
+const List<AppSidebarItem> settingsSidebarItems = [
   AppSidebarItem(
-    label: 'Registros de auditoría',
-    icon: Icons.manage_search_rounded,
-    route: '/admin/auditoria',
-  ),
-  AppSidebarItem(
-    label: 'Usuarios del sistema',
-    icon: Icons.admin_panel_settings_outlined,
-    route: '/admin/usuarios',
+    label: 'Configuración licencias',
+    icon: Icons.tune_rounded,
+    route: '/admin/configuracion-licencias',
   ),
   AppSidebarItem(
     label: 'Configuración tienda',
     icon: Icons.store_outlined,
     route: '/admin/configuracion-tienda',
+  ),
+  AppSidebarItem(
+    label: 'Usuarios del sistema',
+    icon: Icons.admin_panel_settings_outlined,
+    route: '/admin/usuarios',
   ),
 ];
 
@@ -147,6 +140,7 @@ class AppSidebar extends StatelessWidget {
               }).toList(),
             ),
           ),
+          _SettingsSection(currentRoute: currentRoute, onItemTap: onItemTap),
           // Footer
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -216,15 +210,143 @@ class AppSidebar extends StatelessWidget {
   }
 }
 
+class _SettingsSection extends StatefulWidget {
+  final String currentRoute;
+  final VoidCallback? onItemTap;
+
+  const _SettingsSection({required this.currentRoute, this.onItemTap});
+
+  @override
+  State<_SettingsSection> createState() => _SettingsSectionState();
+}
+
+class _SettingsSectionState extends State<_SettingsSection> {
+  late bool _expanded;
+  bool _hovered = false;
+
+  bool get _hasActiveChild => settingsSidebarItems.any(
+    (item) => widget.currentRoute.startsWith(item.route),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = _hasActiveChild;
+  }
+
+  @override
+  void didUpdateWidget(covariant _SettingsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentRoute != widget.currentRoute && _hasActiveChild) {
+      _expanded = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = _hasActiveChild;
+    final bg = isActive
+        ? AppColors.sidebarActive
+        : _hovered
+        ? AppColors.sidebarHover
+        : Colors.transparent;
+    final fg = isActive ? AppColors.sidebarActiveText : AppColors.sidebarText;
+
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFF334155))),
+      ),
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+      child: Column(
+        children: [
+          MouseRegion(
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 1,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined, size: 16, color: fg),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        'Configuración',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: fg,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(
+                      _expanded
+                          ? Icons.keyboard_arrow_down_rounded
+                          : Icons.keyboard_arrow_right_rounded,
+                      size: 18,
+                      color: fg,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 140),
+            crossFadeState: _expanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: Column(
+              children: settingsSidebarItems.map((item) {
+                final isChildActive = widget.currentRoute.startsWith(
+                  item.route,
+                );
+                return _SidebarTile(
+                  item: item,
+                  isActive: isChildActive,
+                  indent: AppSpacing.lg,
+                  onTap: () {
+                    widget.onItemTap?.call();
+                    context.go(item.route);
+                  },
+                );
+              }).toList(),
+            ),
+            secondChild: const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SidebarTile extends StatefulWidget {
   final AppSidebarItem item;
   final bool isActive;
   final VoidCallback onTap;
+  final double indent;
 
   const _SidebarTile({
     required this.item,
     required this.isActive,
     required this.onTap,
+    this.indent = 0,
   });
 
   @override
@@ -259,7 +381,7 @@ class _SidebarTileState extends State<_SidebarTile> {
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
             vertical: 9,
-          ),
+          ).copyWith(left: AppSpacing.md + widget.indent),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(6),

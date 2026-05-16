@@ -60,12 +60,16 @@ async function validateLicenseAndResolveCompany(licenseKey, deviceId) {
     );
     const activation = actRes.rows[0];
 
-    if (!activation || activation.estado !== 'ACTIVA') {
+    const activationStatus = activation?.status || (activation?.estado === 'ACTIVA' ? 'ACTIVE' : null);
+    if (!activation || activationStatus !== 'ACTIVE') {
       await client.query('ROLLBACK');
       throw httpError(403, 'LICENSE_NOT_ACTIVE', 'Licencia no activa para este dispositivo');
     }
 
-    await client.query('UPDATE license_activations SET last_check_at = now() WHERE id = $1', [activation.id]);
+    await client.query(
+      'UPDATE license_activations SET last_check_at = now(), last_seen_at = now() WHERE id = $1',
+      [activation.id]
+    );
 
     const now = new Date();
 

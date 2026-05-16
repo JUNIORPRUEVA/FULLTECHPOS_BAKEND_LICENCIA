@@ -173,7 +173,6 @@
     { key: 'payments',      label: 'Pagos',                 href: 'payments.html' },
     { key: 'licenses',      label: 'Licencias',             href: 'licenses.html' },
     { key: 'tokens',        label: 'Tokens de acceso',      href: 'license-config.html' },
-    { key: 'audit',         label: 'Registros de auditoría', href: 'audit-logs.html' },
     { key: 'users',         label: 'Usuarios del sistema',  href: 'platform-users.html' },
     { key: 'settings',      label: 'Configuración tienda',  href: 'store-settings.html' },
   ];
@@ -187,7 +186,6 @@
     payments: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h4"></path></svg>',
     licenses: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h6"></path></svg>',
     tokens: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="12" r="3.5"></circle><path d="M11.5 12H21"></path><path d="M17 12v2.5M14 12v2.5"></path></svg>',
-    audit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h11l5 5v11H4z"></path><path d="M15 4v5h5"></path><path d="M8 14h8"></path></svg>',
     users: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 5 6.5V12c0 4.5 3 7.6 7 8.5 4-1 7-4 7-8.5V6.5z"></path><path d="M9 12.8 11 14.8 15 10.8"></path></svg>',
     settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.8 3h2.4l.6 2.2a7 7 0 0 1 1.7.7l2-1.1 1.7 1.7-1.1 2c.3.5.5 1.1.7 1.7L21 11v2l-2.2.6a7 7 0 0 1-.7 1.7l1.1 2-1.7 1.7-2-1.1c-.5.3-1.1.5-1.7.7L13.2 21h-2.4l-.6-2.2a7 7 0 0 1-1.7-.7l-2 1.1-1.7-1.7 1.1-2a7 7 0 0 1-.7-1.7L3 13v-2l2.2-.6c.1-.6.4-1.2.7-1.7l-1.1-2 1.7-1.7 2 1.1c.5-.3 1.1-.5 1.7-.7z"></path><circle cx="12" cy="12" r="2.7"></circle></svg>'
   };

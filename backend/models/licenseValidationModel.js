@@ -35,7 +35,7 @@ async function findLatestLicenseByBusinessId(businessId, { product_id, project_i
     activationJoin = `LEFT JOIN license_activations la
                       ON la.license_id = l.id
                      AND la.device_id = $${params.length}
-                     AND la.estado = 'ACTIVA'`;
+                     AND COALESCE(la.status, CASE WHEN la.estado = 'ACTIVA' THEN 'ACTIVE' ELSE 'REVOKED' END) = 'ACTIVE'`;
   }
 
   const res = await pool.query(
@@ -119,7 +119,8 @@ async function countActiveActivations(licenseId) {
   const res = await pool.query(
     `SELECT COUNT(*)::int AS total
      FROM license_activations
-     WHERE license_id = $1 AND estado = 'ACTIVA'`,
+     WHERE license_id = $1
+       AND COALESCE(status, CASE WHEN estado = 'ACTIVA' THEN 'ACTIVE' ELSE 'REVOKED' END) = 'ACTIVE'`,
     [licenseId]
   );
   return res.rows[0]?.total || 0;

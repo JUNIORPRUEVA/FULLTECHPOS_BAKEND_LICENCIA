@@ -1,4 +1,7 @@
 const { pool } = require('../db/pool');
+const activationsModel = require('./activationsModel');
+
+const ACTIVATION_BLOCKING_LICENSE_STATES = new Set(['BLOQUEADA', 'VENCIDA', 'ELIMINADA']);
 
 function isPgMissingColumnOrTable(e) {
   const code = e && e.code;
@@ -276,28 +279,54 @@ async function getLicenseById(licenseId) {
 }
 
 async function updateLicenseStatus(licenseId, estado) {
-  const res = await pool.query(
-    `UPDATE licenses
-     SET estado = $2
-     WHERE id = $1
-     RETURNING *`,
-    [licenseId, estado]
-  );
-  return res.rows[0] || null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await client.query(
+      `UPDATE licenses
+       SET estado = $2
+       WHERE id = $1
+       RETURNING *`,
+      [licenseId, estado]
+    );
+    const updated = res.rows[0] || null;
+    if (updated && ACTIVATION_BLOCKING_LICENSE_STATES.has(String(estado).toUpperCase())) {
+      await activationsModel.blockActivationsForLicense(licenseId, { client });
+    }
+    await client.query('COMMIT');
+    return updated;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 async function deleteLicense(licenseId) {
   // Soft-delete: mantener registro para auditoría y para que el endpoint
   // /businesses/:business_id/license pueda distinguir una revocación explícita
   // (no debe volver a emitir TRIAL si el admin eliminó la licencia).
-  const res = await pool.query(
-    `UPDATE licenses
-     SET estado = 'ELIMINADA'
-     WHERE id = $1
-     RETURNING *`,
-    [licenseId]
-  );
-  return res.rows[0] || null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await client.query(
+      `UPDATE licenses
+       SET estado = 'ELIMINADA'
+       WHERE id = $1
+       RETURNING *`,
+      [licenseId]
+    );
+    const updated = res.rows[0] || null;
+    if (updated) await activationsModel.blockActivationsForLicense(licenseId, { client });
+    await client.query('COMMIT');
+    return updated;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateLicense(licenseId, patch) {
@@ -367,6 +396,10 @@ async function updateLicense(licenseId, patch) {
         nextLicenseType
       ]
     );
+
+    if (ACTIVATION_BLOCKING_LICENSE_STATES.has(String(nextEstado).toUpperCase())) {
+      await activationsModel.blockActivationsForLicense(licenseId, { client });
+    }
 
     await client.query('COMMIT');
     return updRes.rows[0] || null;
@@ -438,7 +471,7 @@ async function findLicenseByKey(licenseKey, { forUpdate = false } = {}) {
 }
 
 async function markLicenseExpired(licenseId) {
-  await pool.query(`UPDATE licenses SET estado = 'VENCIDA' WHERE id = $1`, [licenseId]);
+  await updateLicenseStatus(licenseId, 'VENCIDA');
 }
 
 async function extendLicenseDays(licenseId, extraDays) {

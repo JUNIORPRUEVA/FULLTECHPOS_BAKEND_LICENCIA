@@ -105,7 +105,6 @@ async function testAdminProtection() {
     '/api/admin/subscriptions?limit=1&offset=0',
     '/api/admin/product-plans?limit=1&offset=0',
     '/api/admin/payments?limit=1&offset=0',
-    '/api/admin/audit-logs?limit=1&offset=0',
     '/api/admin/saas-dashboard',
   ];
   for (const p of endpoints) {
@@ -144,15 +143,6 @@ async function testPayments(sid) {
   assert('GET /api/admin/payments → 200', r.status === 200, `status=${r.status}`);
   const hasPay = Array.isArray(r.json?.payments) || Array.isArray(r.json?.data?.payments);
   assert('payments response has array', hasPay, `body=${r.raw}`);
-}
-
-async function testAuditLogs(sid) {
-  console.log('\n[8] Audit Logs API');
-  const h = { 'x-session-id': sid };
-  const r = await makeRequest('GET', '/api/admin/audit-logs?limit=5&offset=0', { headers: h });
-  assert('GET /api/admin/audit-logs → 200', r.status === 200, `status=${r.status}`);
-  const hasLogs = Array.isArray(r.json?.logs) || Array.isArray(r.json?.data?.logs);
-  assert('audit-logs response has array', hasLogs, `body=${r.raw}`);
 }
 
 async function testSaasDashboard(sid) {
@@ -241,7 +231,6 @@ async function testAdminPages() {
     '/admin/saas-dashboard.html',
     '/admin/subscriptions.html',
     '/admin/payments.html',
-    '/admin/audit-logs.html',
     '/admin/product-plans.html',
     '/admin/platform-users.html',
   ];
@@ -282,7 +271,6 @@ async function testPlatformUsers(sid) {
   await testProductPlans(sid);
   await testSubscriptions(sid);
   await testPayments(sid);
-  await testAuditLogs(sid);
   await testSaasDashboard(sid);
   await testMaintenance(sid);
   await testLegacyAdmin(sid);
