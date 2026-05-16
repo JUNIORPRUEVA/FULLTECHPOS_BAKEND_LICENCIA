@@ -11,6 +11,9 @@ const paymentService = require('./paymentService');
 const { generateLicenseKey } = require('../utils/licenseKey');
 
 function paypalBaseUrl() {
+  const explicitBaseUrl = String(process.env.PAYPAL_BASE_URL || '').trim().replace(/\/+$/, '');
+  if (explicitBaseUrl) return explicitBaseUrl;
+
   const mode = String(process.env.PAYPAL_MODE || process.env.PAYPAL_ENV || 'sandbox').trim().toLowerCase();
   return mode === 'live' || mode === 'production'
     ? 'https://api-m.paypal.com'
@@ -64,9 +67,9 @@ function getCancelUrl(payload) {
 
 async function getAccessToken() {
   const clientId = String(process.env.PAYPAL_CLIENT_ID || '').trim();
-  const secret = String(process.env.PAYPAL_CLIENT_SECRET || '').trim();
+  const secret = String(process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET || '').trim();
   if (!clientId || !secret) {
-    throw httpError(500, 'PAYPAL_NOT_CONFIGURED', 'PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET son requeridos');
+    throw httpError(500, 'PAYPAL_NOT_CONFIGURED', 'PAYPAL_CLIENT_ID y PAYPAL_SECRET son requeridos');
   }
 
   const response = await requireFetch()(`${paypalBaseUrl()}/v1/oauth2/token`, {
@@ -471,6 +474,65 @@ async function createSubscription(payload, { req } = {}) {
   }
 }
 
+async function cancelSubscription(payload, { req } = {}) {
+  const paypalSubscriptionId = String(
+    payload?.paypal_subscription_id || payload?.subscription_id || ''
+  ).trim();
+  if (!paypalSubscriptionId) {
+    throw httpError(400, 'PAYPAL_SUBSCRIPTION_REQUIRED', 'paypal_subscription_id es requerido');
+  }
+
+  const reason = String(payload?.reason || 'Cancelada desde el sistema SaaS').trim();
+  await paypalRequest(
+    'POST',
+    `/v1/billing/subscriptions/${encodeURIComponent(paypalSubscriptionId)}/cancel`,
+    { reason }
+  );
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const subscription = await subscriptionsModel.findByPayPalSubscriptionId(paypalSubscriptionId, {
+      client,
+      forUpdate: true
+    });
+
+    if (!subscription) {
+      await client.query('COMMIT');
+      return { ok: true, paypal_subscription_id: paypalSubscriptionId, local_subscription: null };
+    }
+
+    const updated = await subscriptionsModel.updateById(subscription.id, {
+      status: 'CANCELLED',
+      cancelled_at: new Date(),
+      metadata: { ...(subscription.metadata || {}), paypal_cancel_reason: reason }
+    }, { client });
+
+    if (updated.license_id) {
+      await client.query(`UPDATE licenses SET estado = 'BLOQUEADA' WHERE id = $1`, [updated.license_id]);
+      await activationsModel.blockActivationsForLicense(updated.license_id, { client });
+    }
+
+    await auditLogService.log({
+      company_id: updated.company_id,
+      product_id: updated.product_id,
+      project_id: updated.project_id,
+      target_type: 'subscription',
+      target_id: updated.id,
+      action: 'paypal.subscription_cancel_request',
+      after_data: { paypal_subscription_id: paypalSubscriptionId, status: updated.status, reason }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return { ok: true, paypal_subscription_id: paypalSubscriptionId, subscription: updated };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function verifyWebhook(headers, event) {
   const webhookId = String(process.env.PAYPAL_WEBHOOK_ID || '').trim();
   if (!webhookId) throw httpError(500, 'PAYPAL_WEBHOOK_NOT_CONFIGURED', 'PAYPAL_WEBHOOK_ID es requerido para validar webhooks');
@@ -663,7 +725,10 @@ module.exports = {
   createOrder,
   captureOrder,
   createSubscription,
+  cancelSubscription,
   processWebhook,
   paypalRequest,
+  getAccessToken,
+  paypalBaseUrl,
   httpError
 };
