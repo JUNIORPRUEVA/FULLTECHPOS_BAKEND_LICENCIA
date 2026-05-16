@@ -4,7 +4,8 @@
   "description": "Landing page de FULLTECH POS con panel administrativo de descargas",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "node backend/db/runMigrations.js && node backend/server.js",
+    "start:server": "node backend/server.js",
     "dev": "node backend/server.js",
     "test": "npm run test:payments",
     "test:payments": "node --test tests/paypal-payments.test.js",
