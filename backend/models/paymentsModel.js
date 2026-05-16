@@ -73,9 +73,10 @@ async function create(input, { client = pool } = {}) {
     `INSERT INTO subscription_payments (
       company_id, subscription_id, product_id, project_id, license_id, amount,
       currency, status, payment_method, reference, notes, paid_at, payment_date,
-      recorded_at, recorded_by, gateway_payload
+      recorded_at, recorded_by, gateway_payload, paypal_order_id,
+      paypal_capture_id, paypal_subscription_id
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13, $12, now()),COALESCE($14, now()),$15,$16
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13, $12, now()),COALESCE($14, now()),$15,$16,$17,$18,$19
     ) RETURNING *`,
     [
       input.company_id,
@@ -93,7 +94,10 @@ async function create(input, { client = pool } = {}) {
       input.payment_date || null,
       input.recorded_at || null,
       input.recorded_by || null,
-      input.gateway_payload || {}
+      input.gateway_payload || {},
+      input.paypal_order_id || null,
+      input.paypal_capture_id || null,
+      input.paypal_subscription_id || null
     ]
   );
   return getById(res.rows[0].id, { client });

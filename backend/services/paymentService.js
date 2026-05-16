@@ -191,5 +191,6 @@ async function registerManualPayment(payload, { req } = {}) {
 }
 
 module.exports = {
-  registerManualPayment
+  registerManualPayment,
+  applyPaidPaymentEffects
 };

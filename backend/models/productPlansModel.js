@@ -228,10 +228,24 @@ async function setActive(id, isActive, { client = pool } = {}) {
   return res.rows[0] ? getById(id, { client }) : null;
 }
 
+async function updatePayPalIds(id, patch, { client = pool } = {}) {
+  const res = await client.query(
+    `UPDATE product_plans
+     SET paypal_product_id = COALESCE($2, paypal_product_id),
+         paypal_plan_id = COALESCE($3, paypal_plan_id),
+         updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [id, patch.paypal_product_id || null, patch.paypal_plan_id || null]
+  );
+  return res.rows[0] ? getById(id, { client }) : null;
+}
+
 module.exports = {
   list,
   getById,
   create,
   update,
-  setActive
+  setActive,
+  updatePayPalIds
 };

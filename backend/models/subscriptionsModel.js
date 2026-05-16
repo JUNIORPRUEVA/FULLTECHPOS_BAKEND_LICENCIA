@@ -62,15 +62,34 @@ async function getById(id, { client = pool, forUpdate = false } = {}) {
   return res.rows[0] || null;
 }
 
+async function findByPayPalSubscriptionId(paypalSubscriptionId, { client = pool, forUpdate = false } = {}) {
+  if (!paypalSubscriptionId) return null;
+  if (forUpdate) {
+    const baseRes = await client.query(
+      'SELECT id FROM company_subscriptions WHERE paypal_subscription_id = $1 FOR UPDATE',
+      [paypalSubscriptionId]
+    );
+    if (!baseRes.rows[0]) return null;
+    return getById(baseRes.rows[0].id, { client });
+  }
+
+  const res = await client.query(`${selectBase()} WHERE cs.paypal_subscription_id = $1`, [paypalSubscriptionId]);
+  return res.rows[0] || null;
+}
+
+async function getByIdForUpdate(id, { client = pool } = {}) {
+  return getById(id, { client, forUpdate: true });
+}
+
 async function create(input, { client = pool } = {}) {
   const res = await client.query(
     `INSERT INTO company_subscriptions (
       company_id, customer_id, license_id, product_id, project_id, plan_id,
       amount, next_payment_date, license_type, status, start_date, end_date,
       renewal_date, grace_until, cancelled_at, suspended_at, notes, metadata,
-      created_by, updated_by
+      paypal_subscription_id, created_by, updated_by
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
     ) RETURNING *`,
     [
       input.company_id,
@@ -91,6 +110,7 @@ async function create(input, { client = pool } = {}) {
       input.suspended_at || null,
       input.notes || null,
       input.metadata || {},
+      input.paypal_subscription_id || null,
       input.created_by || null,
       input.updated_by || null
     ]
@@ -122,8 +142,9 @@ async function updateById(id, patch, { client = pool } = {}) {
          suspended_at = $17,
          notes = $18,
          metadata = $19,
-         created_by = $20,
-         updated_by = $21,
+         paypal_subscription_id = $20,
+         created_by = $21,
+         updated_by = $22,
          updated_at = now()
      WHERE id = $1
      RETURNING *`,
@@ -147,6 +168,7 @@ async function updateById(id, patch, { client = pool } = {}) {
       patch.suspended_at === undefined ? current.suspended_at : patch.suspended_at,
       patch.notes === undefined ? current.notes : patch.notes,
       patch.metadata === undefined ? current.metadata : patch.metadata,
+      patch.paypal_subscription_id === undefined ? current.paypal_subscription_id : patch.paypal_subscription_id,
       patch.created_by === undefined ? current.created_by : patch.created_by,
       patch.updated_by === undefined ? current.updated_by : patch.updated_by
     ]
@@ -157,6 +179,8 @@ async function updateById(id, patch, { client = pool } = {}) {
 module.exports = {
   list,
   getById,
+  getByIdForUpdate,
+  findByPayPalSubscriptionId,
   create,
   updateById
 };

@@ -76,7 +76,8 @@ async function run() {
     '031_seed_roles_and_permissions.sql',
     '032_seed_default_plans.sql',
     '033_add_saas_license_payment_controls.sql',
-    '034_update_activation_saas_fields.sql'
+    '034_update_activation_saas_fields.sql',
+    '035_add_paypal_saas_integration.sql'
   ]);
 
   const selectedFiles = licenseOnly

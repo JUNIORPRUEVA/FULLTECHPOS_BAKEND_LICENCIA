@@ -45,6 +45,7 @@ const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const activationsRoutes = require('./routes/activationsRoutes');
+const paypalRoutes = require('./routes/paypalRoutes');
 const licenseValidationRoutes = require('./routes/licenseValidationRoutes');
 const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
@@ -462,6 +463,7 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 // tight enough to block naive brute-force and scraping).
 const licensePublicLimiter = rateLimit({ windowMs: 60_000, max: 120, message: 'Límite de peticiones alcanzado. Espere un momento.' });
 app.use('/api/activations', licensePublicLimiter, activationsRoutes);
+app.use('/api/paypal', licensePublicLimiter, paypalRoutes);
 app.use('/api/licenses', licensePublicLimiter, licensesPublicRoutes);
 app.use('/api/v2/licenses', licensePublicLimiter, licenseValidationRoutes);
 
