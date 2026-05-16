@@ -46,6 +46,7 @@ const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const activationsRoutes = require('./routes/activationsRoutes');
 const paypalRoutes = require('./routes/paypalRoutes');
+const billingPortalRoutes = require('./routes/billingPortalRoutes');
 const licenseValidationRoutes = require('./routes/licenseValidationRoutes');
 const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
@@ -462,6 +463,7 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 // Rate limit public endpoints: 120 req/min per IP (generous for POS apps,
 // tight enough to block naive brute-force and scraping).
 const licensePublicLimiter = rateLimit({ windowMs: 60_000, max: 120, message: 'Límite de peticiones alcanzado. Espere un momento.' });
+app.use('/api', licensePublicLimiter, billingPortalRoutes);
 app.use('/api/activations', licensePublicLimiter, activationsRoutes);
 app.use('/api/paypal', licensePublicLimiter, paypalRoutes);
 app.use('/api/licenses', licensePublicLimiter, licensesPublicRoutes);

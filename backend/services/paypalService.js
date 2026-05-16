@@ -63,6 +63,24 @@ function normalizeDescription(value) {
   return description.slice(0, 127);
 }
 
+async function resolvePlatformUserId(payload, req, client) {
+  const explicit = payload?.user_id || payload?.usuario_id || req?.headers?.['x-user-id'];
+  if (explicit) return normalizeUuid(explicit, 'user_id');
+
+  const username = String(req?.adminUser || req?.user?.email || '').trim().toLowerCase();
+  if (username) {
+    const res = await client.query(
+      `SELECT id FROM platform_users
+       WHERE lower(email) = $1 OR lower(COALESCE(display_name, '')) = $1
+       LIMIT 1`,
+      [username]
+    );
+    if (res.rows[0]) return res.rows[0].id;
+  }
+
+  throw httpError(401, 'USER_ID_REQUIRED', 'No se pudo identificar el usuario para el pago');
+}
+
 function getReturnUrl(payload) {
   return String(payload?.return_url || process.env.PAYPAL_RETURN_URL || process.env.PUBLIC_APP_URL || '').trim() || 'https://example.com/paypal/success';
 }
@@ -348,7 +366,6 @@ function approvalUrlFromLinks(links = []) {
 }
 
 async function createDirectOrder(payload, { req } = {}) {
-  const userId = normalizeUuid(payload?.user_id, 'user_id');
   const amount = payload?.amount ?? payload?.monto;
   const description = normalizeDescription(payload?.description ?? payload?.descripcion);
   const currency = normalizeCurrency(payload?.currency ?? payload?.moneda, 'USD');
@@ -356,6 +373,7 @@ async function createDirectOrder(payload, { req } = {}) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const userId = await resolvePlatformUserId(payload, req, client);
 
     const localOrder = await paypalModel.createOrder({
       order_type: 'ONE_TIME',
@@ -424,7 +442,91 @@ async function createDirectOrder(payload, { req } = {}) {
   }
 }
 
+async function createUserSaasPlanOrder(payload, { req } = {}) {
+  const planId = normalizeUuid(payload.plan_id, 'plan_id');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const userId = await resolvePlatformUserId(payload, req, client);
+    const plan = await getSaasPlanById(planId, { client, forUpdate: true });
+    if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
+    if (!plan.activo) throw httpError(400, 'PLAN_INACTIVE', 'El plan no está activo');
+    if (plan.tipo !== 'permanente') {
+      throw httpError(400, 'PLAN_NOT_ONE_TIME', 'Los pagos únicos requieren un plan permanente');
+    }
+
+    const description = `${plan.nombre} - licencia permanente`;
+    const currency = normalizeCurrency(plan.moneda);
+    const localOrder = await paypalModel.createOrder({
+      order_type: 'ONE_TIME',
+      user_id: userId,
+      amount: moneyValue(plan.precio),
+      currency,
+      status: 'pendiente',
+      description,
+      request_payload: { ...payload, user_id: userId, saas_plan_id: plan.id }
+    }, { client });
+
+    const paypalOrder = await paypalRequest('POST', '/v2/checkout/orders', {
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          reference_id: localOrder.id,
+          custom_id: localOrder.id,
+          description,
+          amount: { currency_code: currency, value: moneyValue(plan.precio) }
+        }
+      ],
+      application_context: {
+        brand_name: process.env.PAYPAL_BRAND_NAME || 'FULLTECH POS',
+        landing_page: 'NO_PREFERENCE',
+        user_action: 'PAY_NOW',
+        return_url: getReturnUrl(payload),
+        cancel_url: getCancelUrl(payload)
+      }
+    });
+
+    const approvalUrl = approvalUrlFromLinks(paypalOrder.links || []);
+    const order = await paypalModel.updateOrderById(localOrder.id, {
+      paypal_order_id: paypalOrder.id,
+      status: 'pendiente',
+      approval_url: approvalUrl,
+      paypal_payload: paypalOrder
+    }, { client });
+
+    await auditLogService.log({
+      target_type: 'payment',
+      target_id: order.id,
+      action: 'paypal.saas_order_create',
+      after_data: {
+        user_id: userId,
+        saas_plan_id: plan.id,
+        paypal_order_id: paypalOrder.id,
+        amount: order.amount,
+        currency: order.currency
+      }
+    }, { client, req });
+
+    await client.query('COMMIT');
+    return {
+      paypal_order_id: paypalOrder.id,
+      approval_url: approvalUrl,
+      estado: 'pendiente',
+      status: 'pendiente'
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function createOrder(payload, { req } = {}) {
+  if (payload?.plan_id && !payload?.company_id) {
+    return createUserSaasPlanOrder(payload, { req });
+  }
+
   if (!payload?.plan_id && (payload?.amount != null || payload?.monto != null)) {
     return createDirectOrder(payload, { req });
   }
@@ -608,16 +710,18 @@ async function createPermanentSaasLicense({ userId, order, paypalPayload, client
   const currency = capture.amount?.currency_code || order.currency || 'USD';
 
   let license = null;
+  const saasPlanId = order.request_payload?.saas_plan_id || order.request_payload?.plan_id || null;
   for (let attempt = 0; attempt < 8; attempt++) {
     const licenseKey = generateLicenseKey('FULL');
     try {
       const licenseRes = await client.query(
         `INSERT INTO saas_licencias (
-           user_id, tipo, estado, fecha_activacion, fecha_expiracion, license_key, metadata
-         ) VALUES ($1,'permanente','activa',$2,NULL,$3,$4)
+           user_id, plan_id, tipo, estado, fecha_activacion, fecha_expiracion, license_key, metadata
+         ) VALUES ($1,$2,'permanente','activa',$3,NULL,$4,$5)
          RETURNING *`,
         [
           userId,
+          saasPlanId,
           paidAt,
           licenseKey,
           {
@@ -811,16 +915,66 @@ async function captureOrder(payload, { req } = {}) {
   };
 }
 
+async function getPaymentStatus(payload = {}, { req } = {}) {
+  const orderId = String(payload.order_id || payload.paypal_order_id || '').trim();
+  const subscriptionId = String(payload.subscription_id || payload.paypal_subscription_id || '').trim();
+  if (!orderId && !subscriptionId) {
+    throw httpError(400, 'PAYPAL_STATUS_ID_REQUIRED', 'order_id o subscription_id es requerido');
+  }
+
+  const client = await pool.connect();
+  try {
+    if (orderId) {
+      const order = await paypalModel.getOrderByPayPalId(orderId, { client });
+      if (!order) throw httpError(404, 'ORDER_NOT_FOUND', 'Orden no encontrada');
+      return {
+        type: 'order',
+        paypal_order_id: order.paypal_order_id,
+        estado: order.status,
+        status: order.status,
+        paid: ['completado', 'COMPLETED'].includes(String(order.status)),
+        license_id: order.license_id || null,
+        subscription_id: order.subscription_id || null
+      };
+    }
+
+    const saasSubscription = await findSaasSubscription({
+      paypalSubscriptionId: subscriptionId,
+      client
+    });
+    if (saasSubscription) {
+      return {
+        type: 'subscription',
+        paypal_subscription_id: subscriptionId,
+        estado: saasSubscription.estado,
+        status: saasSubscription.estado,
+        paid: saasSubscription.estado === 'activa',
+        subscription: saasSubscription
+      };
+    }
+
+    const subscription = await subscriptionsModel.findByPayPalSubscriptionId(subscriptionId, { client });
+    if (!subscription) throw httpError(404, 'SUBSCRIPTION_NOT_FOUND', 'Suscripción no encontrada');
+    return {
+      type: 'subscription',
+      paypal_subscription_id: subscriptionId,
+      estado: subscription.status,
+      status: subscription.status,
+      paid: String(subscription.status).toUpperCase() === 'ACTIVE',
+      subscription
+    };
+  } finally {
+    client.release();
+  }
+}
+
 async function createUserSaasSubscription(payload, { req } = {}) {
   const planId = normalizeUuid(payload.plan_id, 'plan_id');
-  const userId = normalizeUuid(
-    payload.user_id || payload.usuario_id || req?.user?.id || req?.session?.user_id,
-    'user_id'
-  );
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const userId = await resolvePlatformUserId(payload, req, client);
 
     const userRes = await client.query('SELECT id, email, full_name FROM platform_users WHERE id = $1 FOR UPDATE', [userId]);
     if (!userRes.rows[0]) throw httpError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
@@ -1609,6 +1763,7 @@ module.exports = {
   createOrder,
   captureOrder,
   createSubscription,
+  getPaymentStatus,
   cancelSubscription,
   syncPlanToPayPal,
   syncRecurringPlansToPayPal,

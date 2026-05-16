@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
+    "test": "npm run test:payments",
     "test:payments": "node --test tests/paypal-payments.test.js",
     "migrate": "node backend/db/runMigrations.js",
     "smoke:saas": "node scripts/smoke-saas.js",

@@ -37,6 +37,15 @@ async function createSubscription(req, res) {
   }
 }
 
+async function status(req, res) {
+  try {
+    const result = await paypalService.getPaymentStatus(req.query || {}, { req });
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
 async function cancelSubscription(req, res) {
   try {
     const result = await paypalService.cancelSubscription(req.body || {}, { req });
@@ -59,6 +68,7 @@ module.exports = {
   createOrder,
   captureOrder,
   createSubscription,
+  status,
   cancelSubscription,
   webhook
 };

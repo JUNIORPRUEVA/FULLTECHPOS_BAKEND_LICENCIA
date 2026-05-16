@@ -15,6 +15,10 @@ router.post('/create-subscription', (req, res, next) => {
   Promise.resolve(paypalController.createSubscription(req, res)).catch(next);
 });
 
+router.get('/status', (req, res, next) => {
+  Promise.resolve(paypalController.status(req, res)).catch(next);
+});
+
 router.post('/cancel-subscription', (req, res, next) => {
   Promise.resolve(paypalController.cancelSubscription(req, res)).catch(next);
 });

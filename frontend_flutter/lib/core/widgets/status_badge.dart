@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-enum StatusType { active, inactive, expired, demo, trial, suspended, pastDue, unknown }
+enum StatusType {
+  active,
+  inactive,
+  expired,
+  demo,
+  trial,
+  suspended,
+  pastDue,
+  unknown,
+}
 
 class StatusBadge extends StatelessWidget {
   final String label;
@@ -27,6 +36,11 @@ class StatusBadge extends StatelessWidget {
       case 'vencida':
       case 'vencido':
         type = StatusType.expired;
+        break;
+      case 'blocked':
+      case 'bloqueada':
+      case 'bloqueado':
+        type = StatusType.suspended;
         break;
       case 'demo':
         type = StatusType.demo;
