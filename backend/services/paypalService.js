@@ -1281,6 +1281,7 @@ async function createUserSaasSubscription(payload, { req } = {}) {
         : undefined,
       application_context: {
         brand_name: process.env.PAYPAL_BRAND_NAME || 'FULLTECH POS',
+        landing_page: 'BILLING',
         user_action: 'SUBSCRIBE_NOW',
         return_url: getReturnUrl(payload),
         cancel_url: getCancelUrl(payload)
@@ -1471,6 +1472,7 @@ async function createSubscription(payload, { req } = {}) {
       quantity: '1',
       application_context: {
         brand_name: process.env.PAYPAL_BRAND_NAME || 'FULLTECH POS',
+        landing_page: 'BILLING',
         user_action: 'SUBSCRIBE_NOW',
         return_url: getReturnUrl(payload),
         cancel_url: getCancelUrl(payload)
