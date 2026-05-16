@@ -1236,7 +1236,7 @@ async function createUserSaasSubscription(payload, { req } = {}) {
     await client.query('BEGIN');
     const userId = await resolvePlatformUserId(payload, req, client);
 
-    const userRes = await client.query('SELECT id, email, full_name FROM platform_users WHERE id = $1 FOR UPDATE', [userId]);
+    const userRes = await client.query('SELECT id, email, display_name AS full_name FROM platform_users WHERE id = $1 FOR UPDATE', [userId]);
     if (!userRes.rows[0]) throw httpError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
 
     let plan = await resolveFullCreditPlan(payload, client);
