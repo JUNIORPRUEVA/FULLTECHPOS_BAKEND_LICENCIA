@@ -465,7 +465,10 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 const licensePublicLimiter = rateLimit({ windowMs: 60_000, max: 120, message: 'Límite de peticiones alcanzado. Espere un momento.' });
 app.use('/api', licensePublicLimiter, billingPortalRoutes);
 app.use('/api/activations', licensePublicLimiter, activationsRoutes);
-app.use('/api/paypal', licensePublicLimiter, paypalRoutes);
+app.use('/api/paypal', (req, res, next) => {
+  if (req.path === '/webhook') return next();
+  return licensePublicLimiter(req, res, next);
+}, paypalRoutes);
 app.use('/api/licenses', licensePublicLimiter, licensesPublicRoutes);
 app.use('/api/v2/licenses', licensePublicLimiter, licenseValidationRoutes);
 

@@ -1302,9 +1302,55 @@ async function cancelSubscription(payload, { req } = {}) {
   }
 }
 
-async function verifyWebhook(headers, event) {
+function isNonEmptyObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0;
+}
+
+function shouldVerifyWebhookSignature() {
+  const mode = String(process.env.PAYPAL_VERIFY_WEBHOOK_SIGNATURE || '').trim().toLowerCase();
+  if (mode === '0' || mode === 'false' || mode === 'no') return false;
+  if (mode === '1' || mode === 'true' || mode === 'yes') return true;
+  return String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production' && Boolean(String(process.env.PAYPAL_WEBHOOK_ID || '').trim());
+}
+
+function paypalWebhookSummary(event) {
+  const resource = event?.resource || {};
+  return {
+    id: event?.id || null,
+    event_type: event?.event_type || null,
+    resource_id: resource.id || resource.billing_agreement_id || resource.subscription_id || null,
+    resource_status: resource.status || resource.state || null,
+    paypal_subscription_id: resource.id || resource.billing_agreement_id || resource.subscription_id || null,
+    amount: resource.amount?.total || resource.amount?.value || null,
+    currency: resource.amount?.currency || resource.amount?.currency_code || null,
+    timestamp: new Date().toISOString()
+  };
+}
+
+function logWebhookReceived(event) {
+  console.log('[paypal:webhook] recibido:', paypalWebhookSummary(event));
+}
+
+async function validatePayPalWebhookSignature(headers, event) {
   const webhookId = String(process.env.PAYPAL_WEBHOOK_ID || '').trim();
-  if (!webhookId) throw httpError(500, 'PAYPAL_WEBHOOK_NOT_CONFIGURED', 'PAYPAL_WEBHOOK_ID es requerido para validar webhooks');
+  if (!webhookId) {
+    console.warn('[paypal:webhook] PAYPAL_WEBHOOK_ID no configurado; validacion de firma omitida', {
+      timestamp: new Date().toISOString()
+    });
+    return { ok: true, skipped: true, reason: 'PAYPAL_WEBHOOK_ID_NOT_CONFIGURED' };
+  }
+
+  const requiredHeaders = [
+    'paypal-auth-algo',
+    'paypal-cert-url',
+    'paypal-transmission-id',
+    'paypal-transmission-sig',
+    'paypal-transmission-time'
+  ];
+  const missingHeaders = requiredHeaders.filter((name) => !headers?.[name]);
+  if (missingHeaders.length) {
+    throw httpError(401, 'PAYPAL_WEBHOOK_HEADERS_MISSING', `Faltan headers de firma PayPal: ${missingHeaders.join(', ')}`);
+  }
 
   const verification = await paypalRequest('POST', '/v1/notifications/verify-webhook-signature', {
     auth_algo: headers['paypal-auth-algo'],
@@ -1319,7 +1365,14 @@ async function verifyWebhook(headers, event) {
   if (verification.verification_status !== 'SUCCESS') {
     throw httpError(401, 'PAYPAL_WEBHOOK_INVALID', 'Firma de webhook PayPal inválida');
   }
-  return true;
+  return { ok: true, skipped: false, status: verification.verification_status };
+}
+
+async function verifyWebhook(headers, event) {
+  if (!shouldVerifyWebhookSignature()) {
+    return { ok: true, skipped: true, reason: 'PAYPAL_VERIFY_WEBHOOK_SIGNATURE_DISABLED' };
+  }
+  return validatePayPalWebhookSignature(headers, event);
 }
 
 function nextBillingDateFromResource(resource) {
@@ -1713,8 +1766,10 @@ async function handleSaleDenied(event, { client, req }) {
 }
 
 async function processWebhook(event, { req } = {}) {
-  if (!event?.id || !event?.event_type) throw httpError(400, 'INVALID_WEBHOOK_EVENT', 'Evento PayPal inválido');
-  await verifyWebhook(req.headers || {}, event);
+  if (!isNonEmptyObject(event)) throw httpError(400, 'EMPTY_WEBHOOK_BODY', 'Body de webhook PayPal vacío');
+  logWebhookReceived(event);
+  if (!event.id || !event.event_type) throw httpError(400, 'INVALID_WEBHOOK_EVENT', 'Evento PayPal inválido');
+  const verification = await verifyWebhook(req?.headers || {}, event);
 
   const client = await pool.connect();
   try {
@@ -1730,7 +1785,7 @@ async function processWebhook(event, { req } = {}) {
       result = await handleSubscriptionActivated(event, { client, req });
     } else if (event.event_type === 'PAYMENT.SALE.COMPLETED') {
       result = await handleSaleCompleted(event, { client, req });
-    } else if (event.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') {
+    } else if (event.event_type === 'BILLING.SUBSCRIPTION.CANCELLED' || event.event_type === 'BILLING.SUBSCRIPTION.EXPIRED') {
       result = await handleSubscriptionCancelled(event, { client, req });
     } else if (event.event_type === 'PAYMENT.SALE.DENIED') {
       result = await handleSaleDenied(event, { client, req });
@@ -1738,7 +1793,12 @@ async function processWebhook(event, { req } = {}) {
 
     await paypalModel.markWebhookProcessed(event.id, { status: 'processed' }, { client });
     await client.query('COMMIT');
-    return { ok: true, event_type: event.event_type, processed: Boolean(result), result };
+    console.log('[paypal:webhook] procesado:', {
+      event_type: event.event_type,
+      processed: Boolean(result),
+      timestamp: new Date().toISOString()
+    });
+    return { ok: true, event_type: event.event_type, processed: Boolean(result), verification, result };
   } catch (error) {
     await client.query('ROLLBACK');
     const failClient = await pool.connect();

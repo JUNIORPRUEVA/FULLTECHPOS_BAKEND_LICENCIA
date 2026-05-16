@@ -56,11 +56,22 @@ async function cancelSubscription(req, res) {
 }
 
 async function webhook(req, res) {
+  // PayPal espera HTTP 200 para no reintentar indefinidamente. Los errores se
+  // registran y se devuelven dentro del body, pero el status permanece en 200.
   try {
     const result = await paypalService.processWebhook(req.body || {}, { req });
-    return res.json(result);
+    return res.status(200).json(result);
   } catch (error) {
-    return sendError(res, error);
+    console.error('[paypal:webhook] error:', {
+      code: error?.code || 'PAYPAL_WEBHOOK_ERROR',
+      message: error?.message || String(error),
+      timestamp: new Date().toISOString()
+    });
+    return res.status(200).json({
+      ok: false,
+      code: error?.code || 'PAYPAL_WEBHOOK_ERROR',
+      message: error?.message || 'Error procesando webhook PayPal'
+    });
   }
 }
 

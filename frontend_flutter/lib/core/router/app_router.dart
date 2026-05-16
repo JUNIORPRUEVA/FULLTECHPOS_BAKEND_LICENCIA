@@ -4,8 +4,6 @@ import '../../features/auth/pages/login_page.dart';
 import '../../features/customers/pages/customers_page.dart';
 import '../../features/dashboard/pages/dashboard_page.dart';
 import '../../features/licenses/pages/licenses_page.dart';
-import '../../features/billing/pages/plans_page.dart';
-import '../../features/billing/pages/subscriptions_page.dart';
 import '../../features/cloud_admin/pages/cloud_resource_page.dart';
 import '../auth/auth_service.dart';
 import '../layout/admin_shell.dart';
@@ -60,14 +58,6 @@ class AppRouter {
             GoRoute(
               path: '/admin/licencias',
               builder: (context, state) => const LicensesPage(),
-            ),
-            GoRoute(
-              path: '/admin/planes-pago',
-              builder: (context, state) => const PlansPage(),
-            ),
-            GoRoute(
-              path: '/admin/mis-suscripciones',
-              builder: (context, state) => const SubscriptionsPage(),
             ),
             GoRoute(
               path: '/admin/configuracion-licencias',
@@ -126,10 +116,6 @@ class AppRouter {
         return 'Clientes';
       case '/admin/licencias':
         return 'Licencias';
-      case '/admin/planes-pago':
-        return 'Planes';
-      case '/admin/mis-suscripciones':
-        return 'Mis suscripciones';
       case '/admin/configuracion-licencias':
         return 'Configuración licencias';
       case '/admin/activaciones':

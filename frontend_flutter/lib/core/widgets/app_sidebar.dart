@@ -34,16 +34,6 @@ const List<AppSidebarItem> sidebarItems = [
     route: '/admin/licencias',
   ),
   AppSidebarItem(
-    label: 'Planes',
-    icon: Icons.workspace_premium_outlined,
-    route: '/admin/planes-pago',
-  ),
-  AppSidebarItem(
-    label: 'Mis suscripciones',
-    icon: Icons.credit_card_outlined,
-    route: '/admin/mis-suscripciones',
-  ),
-  AppSidebarItem(
     label: 'Activaciones',
     icon: Icons.devices_other_outlined,
     route: '/admin/activaciones',

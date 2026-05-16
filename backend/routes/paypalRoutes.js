@@ -23,6 +23,15 @@ router.post('/cancel-subscription', (req, res, next) => {
   Promise.resolve(paypalController.cancelSubscription(req, res)).catch(next);
 });
 
+// PayPal Webhooks
+// Desarrollo local con ngrok:
+//   1) Ejecutar backend en el puerto configurado, normalmente 3000.
+//   2) Ejecutar: ngrok http 3000
+//   3) Registrar en PayPal la URL publica:
+//      https://TU-SUBDOMINIO.ngrok-free.app/api/paypal/webhook
+// Produccion:
+//   Registrar https://TU-DOMINIO/api/paypal/webhook en PayPal y configurar
+//   PAYPAL_WEBHOOK_ID para validar la firma del evento.
 router.post('/webhook', (req, res, next) => {
   Promise.resolve(paypalController.webhook(req, res)).catch(next);
 });
