@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -110,7 +111,13 @@ class CloudAdminService {
     }
 
     final path = Uri(path: config.endpoint, queryParameters: query).toString();
-    final data = await _client.get(path);
+    Map<String, dynamic> data;
+    try {
+      data = await _client.get(path);
+    } on ApiException catch (error) {
+      if (error.statusCode == 500) return [];
+      rethrow;
+    }
     final list =
         data[config.listKey] as List<dynamic>? ??
         data['data'] as List<dynamic>? ??

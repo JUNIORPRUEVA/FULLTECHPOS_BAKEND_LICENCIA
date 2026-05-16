@@ -10,6 +10,10 @@ function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
 }
 
+function isMissingSchemaError(error) {
+  return ['42P01', '42703', '42P07'].includes(String(error?.code || ''));
+}
+
 async function resolveUserId(req, client) {
   const explicit = req.query.user_id || req.headers['x-user-id'];
   if (explicit) {
@@ -75,6 +79,7 @@ async function listPlans(req, res, next) {
 
     return res.json({ ok: true, plans });
   } catch (error) {
+    if (isMissingSchemaError(error)) return res.json({ ok: true, plans: [] });
     return next(error);
   }
 }
@@ -109,6 +114,9 @@ async function listSubscriptions(req, res, next) {
       history: paymentsRes.rows
     });
   } catch (error) {
+    if (isMissingSchemaError(error)) {
+      return res.json({ ok: true, subscriptions: [], history: [] });
+    }
     return next(error);
   } finally {
     client.release();
@@ -144,6 +152,9 @@ async function getLicense(req, res, next) {
       premium_enabled: status === 'ACTIVA'
     });
   } catch (error) {
+    if (isMissingSchemaError(error)) {
+      return res.json({ ok: true, license: null, status: 'VENCIDA', estado: 'VENCIDA', premium_enabled: false });
+    }
     return next(error);
   } finally {
     client.release();

@@ -1,5 +1,9 @@
 const { pool } = require('../db/pool');
 
+function isMissingSchemaError(error) {
+  return ['42P01', '42703', '42P07'].includes(String(error?.code || ''));
+}
+
 function selectBase() {
   return `
     SELECT cs.*, c.name AS company_name,
@@ -19,37 +23,42 @@ function selectBase() {
 }
 
 async function list(filters = {}) {
-  const { company_id, customer_id, license_id, status, product_id, project_id, plan_id, limit = 50, offset = 0 } = filters;
-  const params = [];
-  const where = [];
+  try {
+    const { company_id, customer_id, license_id, status, product_id, project_id, plan_id, limit = 50, offset = 0 } = filters;
+    const params = [];
+    const where = [];
 
-  for (const [field, value] of Object.entries({ company_id, customer_id, license_id, product_id, project_id, plan_id })) {
-    if (!value) continue;
-    params.push(value);
-    where.push(`cs.${field} = $${params.length}`);
+    for (const [field, value] of Object.entries({ company_id, customer_id, license_id, product_id, project_id, plan_id })) {
+      if (!value) continue;
+      params.push(value);
+      where.push(`cs.${field} = $${params.length}`);
+    }
+
+    if (status) {
+      params.push(String(status).trim());
+      where.push(`UPPER(cs.status) = UPPER($${params.length})`);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const totalRes = await pool.query(
+      `SELECT COUNT(*)::int AS total FROM company_subscriptions cs ${whereSql}`,
+      params
+    );
+
+    params.push(limit, offset);
+    const rowsRes = await pool.query(
+      `${selectBase()}
+       ${whereSql}
+       ORDER BY cs.updated_at DESC, cs.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    return { total: totalRes.rows[0]?.total || 0, subscriptions: rowsRes.rows };
+  } catch (error) {
+    if (isMissingSchemaError(error)) return { total: 0, subscriptions: [] };
+    throw error;
   }
-
-  if (status) {
-    params.push(String(status).trim());
-    where.push(`UPPER(cs.status) = UPPER($${params.length})`);
-  }
-
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const totalRes = await pool.query(
-    `SELECT COUNT(*)::int AS total FROM company_subscriptions cs ${whereSql}`,
-    params
-  );
-
-  params.push(limit, offset);
-  const rowsRes = await pool.query(
-    `${selectBase()}
-     ${whereSql}
-     ORDER BY cs.updated_at DESC, cs.created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
-
-  return { total: totalRes.rows[0]?.total || 0, subscriptions: rowsRes.rows };
 }
 
 async function getById(id, { client = pool, forUpdate = false } = {}) {

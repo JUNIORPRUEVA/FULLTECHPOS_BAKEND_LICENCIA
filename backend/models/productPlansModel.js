@@ -34,6 +34,10 @@ function normalizeOptionalAmount(value, fallback = null) {
   return next;
 }
 
+function isMissingSchemaError(error) {
+  return ['42P01', '42703', '42P07'].includes(String(error?.code || ''));
+}
+
 function sanitizePlanInput(input, { partial = false } = {}) {
   const payload = input || {};
   const productId = payload.product_id === undefined ? undefined : normalizeUuid(payload.product_id);
@@ -100,42 +104,47 @@ function selectBase() {
 }
 
 async function list({ product_id, project_id, is_active, q, limit = 50, offset = 0 } = {}) {
-  const params = [];
-  const where = [];
+  try {
+    const params = [];
+    const where = [];
 
-  if (product_id) {
-    params.push(product_id);
-    where.push(`pp.product_id = $${params.length}`);
-  }
-  if (project_id) {
-    params.push(project_id);
-    where.push(`pp.project_id = $${params.length}`);
-  }
-  if (is_active !== undefined) {
-    params.push(Boolean(is_active));
-    where.push(`pp.is_active = $${params.length}`);
-  }
-  if (q) {
-    params.push(`%${String(q).trim().toLowerCase()}%`);
-    where.push(`(lower(pp.name) LIKE $${params.length} OR lower(pp.code) LIKE $${params.length})`);
-  }
+    if (product_id) {
+      params.push(product_id);
+      where.push(`pp.product_id = $${params.length}`);
+    }
+    if (project_id) {
+      params.push(project_id);
+      where.push(`pp.project_id = $${params.length}`);
+    }
+    if (is_active !== undefined) {
+      params.push(Boolean(is_active));
+      where.push(`pp.is_active = $${params.length}`);
+    }
+    if (q) {
+      params.push(`%${String(q).trim().toLowerCase()}%`);
+      where.push(`(lower(pp.name) LIKE $${params.length} OR lower(pp.code) LIKE $${params.length})`);
+    }
 
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const totalRes = await pool.query(
-    `SELECT COUNT(*)::int AS total FROM product_plans pp ${whereSql}`,
-    params
-  );
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const totalRes = await pool.query(
+      `SELECT COUNT(*)::int AS total FROM product_plans pp ${whereSql}`,
+      params
+    );
 
-  params.push(limit, offset);
-  const rowsRes = await pool.query(
-    `${selectBase()}
-     ${whereSql}
-     ORDER BY pp.updated_at DESC, pp.created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
+    params.push(limit, offset);
+    const rowsRes = await pool.query(
+      `${selectBase()}
+       ${whereSql}
+       ORDER BY pp.updated_at DESC, pp.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
 
-  return { total: totalRes.rows[0]?.total || 0, plans: rowsRes.rows };
+    return { total: totalRes.rows[0]?.total || 0, plans: rowsRes.rows };
+  } catch (error) {
+    if (isMissingSchemaError(error)) return { total: 0, plans: [] };
+    throw error;
+  }
 }
 
 async function getById(id, { client = pool } = {}) {

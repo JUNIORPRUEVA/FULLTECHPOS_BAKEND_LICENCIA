@@ -1,5 +1,9 @@
 const { pool } = require('../db/pool');
 
+function isMissingSchemaError(error) {
+  return ['42P01', '42703', '42P07'].includes(String(error?.code || ''));
+}
+
 function selectBase() {
   return `
     SELECT sp.*, c.name AS company_name,
@@ -17,32 +21,37 @@ function selectBase() {
 }
 
 async function list(filters = {}) {
-  const { company_id, subscription_id, status, product_id, project_id, license_id, limit = 50, offset = 0 } = filters;
-  const params = [];
-  const where = [];
+  try {
+    const { company_id, subscription_id, status, product_id, project_id, license_id, limit = 50, offset = 0 } = filters;
+    const params = [];
+    const where = [];
 
-  for (const [field, value] of Object.entries({ company_id, subscription_id, status, product_id, project_id, license_id })) {
-    if (!value) continue;
-    params.push(value);
-    where.push(`sp.${field} = $${params.length}`);
+    for (const [field, value] of Object.entries({ company_id, subscription_id, status, product_id, project_id, license_id })) {
+      if (!value) continue;
+      params.push(value);
+      where.push(`sp.${field} = $${params.length}`);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const totalRes = await pool.query(
+      `SELECT COUNT(*)::int AS total FROM subscription_payments sp ${whereSql}`,
+      params
+    );
+
+    params.push(limit, offset);
+    const rowsRes = await pool.query(
+      `${selectBase()}
+       ${whereSql}
+       ORDER BY COALESCE(sp.paid_at, sp.recorded_at) DESC, sp.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    return { total: totalRes.rows[0]?.total || 0, payments: rowsRes.rows };
+  } catch (error) {
+    if (isMissingSchemaError(error)) return { total: 0, payments: [] };
+    throw error;
   }
-
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const totalRes = await pool.query(
-    `SELECT COUNT(*)::int AS total FROM subscription_payments sp ${whereSql}`,
-    params
-  );
-
-  params.push(limit, offset);
-  const rowsRes = await pool.query(
-    `${selectBase()}
-     ${whereSql}
-     ORDER BY COALESCE(sp.paid_at, sp.recorded_at) DESC, sp.created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
-
-  return { total: totalRes.rows[0]?.total || 0, payments: rowsRes.rows };
 }
 
 async function getById(id, { client = pool } = {}) {

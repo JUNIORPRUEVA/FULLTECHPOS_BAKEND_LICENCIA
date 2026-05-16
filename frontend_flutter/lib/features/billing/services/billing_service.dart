@@ -1,4 +1,5 @@
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/auth/session_manager.dart';
 import '../models/billing_models.dart';
 
@@ -9,7 +10,7 @@ class BillingService {
     : _client = ApiClient(sessionManager: sessionManager);
 
   Future<List<BillingPlan>> getPlans() async {
-    final data = await _client.get('/api/plans');
+    final data = await _getOrEmpty('/api/plans');
     final rows = data['plans'] as List? ?? const [];
     return rows
         .whereType<Map<String, dynamic>>()
@@ -43,7 +44,7 @@ class BillingService {
   }
 
   Future<LicenseState> getLicense() async {
-    final data = await _client.get('/api/license');
+    final data = await _getOrEmpty('/api/license');
     return LicenseState.fromJson(data);
   }
 
@@ -54,7 +55,7 @@ class BillingService {
     })
   >
   getSubscriptions() async {
-    final data = await _client.get('/api/subscriptions');
+    final data = await _getOrEmpty('/api/subscriptions');
     final subscriptions = (data['subscriptions'] as List? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(BillingSubscription.fromJson)
@@ -64,5 +65,14 @@ class BillingService {
         .map(PaymentHistoryItem.fromJson)
         .toList();
     return (subscriptions: subscriptions, history: history);
+  }
+
+  Future<Map<String, dynamic>> _getOrEmpty(String path) async {
+    try {
+      return await _client.get(path);
+    } on ApiException catch (error) {
+      if (error.statusCode == 500) return const {};
+      rethrow;
+    }
   }
 }
