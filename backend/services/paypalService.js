@@ -154,6 +154,47 @@ async function resolveFullCreditPlan(payload, client) {
   return upsertFullCreditLocalPlan(config, { client });
 }
 
+function normalizeProjectCode(value) {
+  const raw = String(value || '').trim().toUpperCase();
+  return raw || null;
+}
+
+function normalizePlanCode(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  return raw || null;
+}
+
+async function resolveProjectId(payload, client) {
+  if (payload?.project_id) return normalizeUuid(payload.project_id, 'project_id');
+  const projectCode = normalizeProjectCode(payload?.project_code || payload?.projectCode);
+  if (!projectCode) return null;
+  const project = await projectsModel.getProjectByCode(projectCode);
+  if (!project) throw httpError(404, 'PROJECT_NOT_FOUND', 'Proyecto no encontrado');
+  return project.id;
+}
+
+async function resolvePayPalProductPlan(payload, client) {
+  if (payload?.plan_id) {
+    const planId = normalizeUuid(payload.plan_id, 'plan_id');
+    const plan = await productPlansModel.getById(planId, { client });
+    if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
+    return plan;
+  }
+
+  const planCode = normalizePlanCode(payload?.plan || payload?.plan_code || payload?.planCode);
+  if (!planCode) {
+    throw httpError(400, 'PLAN_REQUIRED', 'plan_id o plan_code es requerido');
+  }
+
+  const projectId = await resolveProjectId(payload, client);
+  const plan = await productPlansModel.getByCode(planCode, {
+    client,
+    project_id: projectId
+  });
+  if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
+  return plan;
+}
+
 async function resolvePlatformUserId(payload, req, client) {
   const explicit = payload?.user_id || payload?.usuario_id || req?.headers?.['x-user-id'];
   if (explicit) return normalizeUuid(explicit, 'user_id');
@@ -429,8 +470,11 @@ async function ensureCustomer(customerId, client) {
 }
 
 async function defaultProjectId() {
-  const project = await projectsModel.getDefaultProject();
-  if (!project) throw httpError(500, 'DEFAULT_PROJECT_NOT_FOUND', 'Proyecto predeterminado no encontrado');
+  const projectCode = String(process.env.PAYPAL_DEFAULT_PROJECT_CODE || 'DEFAULT').trim().toUpperCase() || 'DEFAULT';
+  const project = await projectsModel.getProjectByCode(projectCode);
+  if (!project) {
+    throw httpError(500, 'DEFAULT_PROJECT_NOT_FOUND', `Proyecto predeterminado '${projectCode}' no encontrado`);
+  }
   return project.id;
 }
 
@@ -819,14 +863,13 @@ async function createOrder(payload, { req } = {}) {
 
   const companyId = normalizeUuid(payload.company_id, 'company_id');
   const customerId = optionalUuid(payload.customer_id);
-  const planId = normalizeUuid(payload.plan_id, 'plan_id');
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await ensureCompany(companyId, client);
     await ensureCustomer(customerId, client);
-    const plan = await productPlansModel.getById(planId, { client });
+    const plan = await resolvePayPalProductPlan(payload, client);
     if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
     if (plan.billing_period !== 'lifetime') {
       throw httpError(400, 'PLAN_NOT_ONE_TIME', 'Los pagos únicos requieren un plan lifetime/permanente');
@@ -1465,15 +1508,13 @@ async function createSubscription(payload, { req } = {}) {
 
   const companyId = normalizeUuid(payload.company_id, 'company_id');
   const customerId = optionalUuid(payload.customer_id);
-  const planId = normalizeUuid(payload.plan_id, 'plan_id');
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await ensureCompany(companyId, client);
     await ensureCustomer(customerId, client);
-    let plan = await productPlansModel.getById(planId, { client });
-    if (!plan) throw httpError(404, 'PLAN_NOT_FOUND', 'Plan no encontrado');
+    let plan = await resolvePayPalProductPlan(payload, client);
     if (!['monthly', 'annual'].includes(plan.billing_period)) {
       throw httpError(400, 'PLAN_NOT_RECURRING', 'Solo planes mensuales o anuales usan suscripción automática');
     }

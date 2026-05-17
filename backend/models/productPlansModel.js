@@ -152,6 +152,39 @@ async function getById(id, { client = pool } = {}) {
   return res.rows[0] || null;
 }
 
+async function getByCode(code, { project_id, product_id, client = pool } = {}) {
+  const normalizedCode = normalizeText(code, { lower: true });
+  if (!normalizedCode) return null;
+
+  const params = [normalizedCode];
+  const where = ['lower(pp.code) = $1'];
+
+  if (project_id) {
+    params.push(project_id);
+    where.push(`pp.project_id = $${params.length}`);
+  }
+
+  if (product_id) {
+    params.push(product_id);
+    where.push(`pp.product_id = $${params.length}`);
+  }
+
+  const rowsRes = await client.query(
+    `${selectBase()}
+     WHERE ${where.join(' AND ')}
+     ORDER BY pp.updated_at DESC, pp.created_at DESC
+     LIMIT 2`,
+    params
+  );
+
+  if (rowsRes.rows.length === 0) return null;
+  if (rowsRes.rows.length > 1) {
+    throw new Error('Más de un plan coincide con el código; use plan_id o especifique project_id/product_id');
+  }
+
+  return rowsRes.rows[0];
+}
+
 async function create(input, { client = pool } = {}) {
   const data = sanitizePlanInput(input);
   const res = await client.query(
@@ -256,5 +289,6 @@ module.exports = {
   create,
   update,
   setActive,
-  updatePayPalIds
+  updatePayPalIds,
+  getByCode
 };
