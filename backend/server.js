@@ -263,10 +263,32 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+app.get('/paypal/success', (req, res) => {
+  console.log('Pago completado:', req.query);
+  res.type('html').send(`<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pago completado</title>
+  </head>
+  <body>
+    <h1>Pago completado</h1>
+    <p>Tu suscripción fue creada correctamente.</p>
+    <p>subscription_id: ${String(req.query.subscription_id || req.query.token || req.query.id || '')}</p>
+  </body>
+</html>`);
+});
+
+app.get('/paypal/cancel', (req, res) => {
+  console.log('Pago cancelado:', req.query);
+  res.type('html').send('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8" /><title>Pago cancelado</title></head><body><h1>Pago cancelado</h1></body></html>');
+});
+
 // ==========================================
 // MIDDLEWARE
 // ==========================================
 // Backups pueden ser grandes (JSON + cifrado). Subimos el límite de forma moderada.
+app.use('/api/paypal/webhook', express.raw({ type: 'application/json' }));
 app.use(bodyParser.json({ limit: '25mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '25mb' }));
 

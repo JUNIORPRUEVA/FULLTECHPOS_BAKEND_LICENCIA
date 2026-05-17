@@ -175,12 +175,41 @@ async function resolvePlatformUserId(payload, req, client) {
   throw httpError(401, 'USER_ID_REQUIRED', 'No se pudo identificar el usuario para el pago');
 }
 
+function validatePayPalRedirectUrl(value, name) {
+  const raw = String(value || '').trim();
+  if (!raw) throw httpError(400, 'PAYPAL_REDIRECT_URL_REQUIRED', `${name} es requerido`);
+
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch (error) {
+    throw httpError(400, 'PAYPAL_REDIRECT_URL_INVALID', `${name} inválida`);
+  }
+
+  if (!/^https?:$/i.test(parsed.protocol)) {
+    throw httpError(400, 'PAYPAL_REDIRECT_URL_INVALID', `${name} debe ser http o https`);
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.localhost') ||
+    hostname === 'example.com' ||
+    hostname.endsWith('.example.com')
+  ) {
+    throw httpError(400, 'PAYPAL_REDIRECT_URL_INVALID', `${name} no puede usar localhost ni example.com`);
+  }
+
+  return raw;
+}
+
 function getReturnUrl(payload) {
-  return String(payload?.return_url || process.env.PAYPAL_RETURN_URL || process.env.PUBLIC_APP_URL || '').trim() || 'https://example.com/paypal/success';
+  return validatePayPalRedirectUrl(payload?.return_url || process.env.PAYPAL_RETURN_URL, 'PAYPAL_RETURN_URL');
 }
 
 function getCancelUrl(payload) {
-  return String(payload?.cancel_url || process.env.PAYPAL_CANCEL_URL || process.env.PUBLIC_APP_URL || '').trim() || 'https://example.com/paypal/cancel';
+  return validatePayPalRedirectUrl(payload?.cancel_url || process.env.PAYPAL_CANCEL_URL, 'PAYPAL_CANCEL_URL');
 }
 
 async function getAccessToken() {
@@ -2033,6 +2062,8 @@ async function handleSaleDenied(event, { client, req }) {
 
 async function processWebhook(event, { req } = {}) {
   if (!isNonEmptyObject(event)) throw httpError(400, 'EMPTY_WEBHOOK_BODY', 'Body de webhook PayPal vacío');
+  console.log('Webhook recibido');
+  console.log('Evento:', event.event_type);
   logWebhookReceived(event);
   if (!event.id || !event.event_type) throw httpError(400, 'INVALID_WEBHOOK_EVENT', 'Evento PayPal inválido');
   const verification = await verifyWebhook(req?.headers || {}, event);

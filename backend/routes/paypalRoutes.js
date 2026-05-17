@@ -38,6 +38,20 @@ router.post('/cancel-subscription', (req, res, next) => {
 //   Registrar https://TU-DOMINIO/api/paypal/webhook en PayPal y configurar
 //   PAYPAL_WEBHOOK_ID para validar la firma del evento.
 router.post('/webhook', (req, res, next) => {
+  console.log('Webhook recibido');
+
+  let eventBody = req.body;
+  if (Buffer.isBuffer(req.body)) {
+    try {
+      eventBody = JSON.parse(req.body.toString('utf8'));
+    } catch (error) {
+      console.error('[paypal:webhook] JSON inválido:', error?.message || error);
+      return res.status(400).json({ ok: false, code: 'INVALID_JSON', message: 'Webhook PayPal body inválido' });
+    }
+  }
+
+  console.log('Evento:', eventBody?.event_type);
+  req.body = eventBody;
   Promise.resolve(paypalController.webhook(req, res)).catch(next);
 });
 
