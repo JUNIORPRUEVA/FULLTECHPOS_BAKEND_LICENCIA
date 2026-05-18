@@ -16,7 +16,16 @@ async function getProjectByCode(code) {
 }
 
 async function getDefaultProject() {
-  return getProjectByCode('DEFAULT');
+  let project = await getProjectByCode('DEFAULT');
+  if (project) return project;
+
+  project = await getProjectByCode('FULLPOS');
+  if (project) return project;
+
+  const result = await pool.query(
+    'SELECT * FROM projects ORDER BY created_at DESC LIMIT 1'
+  );
+  return result.rows[0] || null;
 }
 
 async function createProject({ code, name, description }) {

@@ -28,6 +28,9 @@ class LicenseFormPanel extends StatefulWidget {
   final bool loading;
   final Future<void> Function(LicenseFormValues values) onSubmit;
   final VoidCallback onClose;
+  final LicenseFormValues? initialValues;
+  final String title;
+  final String submitLabel;
 
   const LicenseFormPanel({
     super.key,
@@ -35,6 +38,9 @@ class LicenseFormPanel extends StatefulWidget {
     required this.loading,
     required this.onSubmit,
     required this.onClose,
+    this.initialValues,
+    this.title = 'Crear licencia',
+    this.submitLabel = 'Crear licencia',
   });
 
   @override
@@ -50,6 +56,20 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
   String? _selectedCustomerId;
   String _tipo = 'FULL';
   bool _autoActivate = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialValues;
+    if (initial != null) {
+      _selectedCustomerId = initial.customerId;
+      _tipo = initial.tipo;
+      _diasCtrl.text = initial.diasValidez.toString();
+      _projectCodeCtrl.text = initial.projectCode ?? '';
+      _notasCtrl.text = initial.notas ?? '';
+      _autoActivate = initial.autoActivate;
+    }
+  }
 
   @override
   void dispose() {
@@ -101,10 +121,10 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Crear licencia',
-                    style: TextStyle(
+                    widget.title,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -127,6 +147,15 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     const Text(
                       'Cliente',
                       style: TextStyle(
@@ -225,7 +254,7 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
                     SizedBox(
                       width: double.infinity,
                       child: AppButton(
-                        label: 'Crear licencia',
+                        label: widget.submitLabel,
                         loading: widget.loading,
                         onPressed: _submit,
                       ),

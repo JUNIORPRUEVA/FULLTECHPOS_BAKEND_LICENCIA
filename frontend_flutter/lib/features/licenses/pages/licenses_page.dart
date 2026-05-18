@@ -34,6 +34,7 @@ class _LicensesPageState extends State<LicensesPage> {
   License? _selected;
 
   bool _showCreatePanel = false;
+  bool _editingLicense = false;
   bool _creating = false;
 
   bool get _isDesktop => MediaQuery.of(context).size.width >= 1000;
@@ -128,6 +129,79 @@ class _LicensesPageState extends State<LicensesPage> {
     }
   }
 
+  Future<void> _updateLicense(LicenseFormValues values) async {
+    final selected = _selected;
+    if (selected == null) return;
+
+    setState(() => _creating = true);
+    try {
+      final body = {
+        'customer_id': values.customerId,
+        'tipo': values.tipo,
+        'dias_validez': values.diasValidez,
+      };
+      if (values.projectCode != null) body['project_code'] = values.projectCode!;
+      if (values.notas != null) body['notas'] = values.notas!;
+
+      await _licensesService.updateLicense(selected.id, body);
+      if (mounted) {
+        setState(() {
+          _creating = false;
+          _editingLicense = false;
+          _selected = null;
+        });
+        _refresh();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Licencia actualizada correctamente')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _creating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  void _openEditLicense(License license) {
+    setState(() {
+      _selected = license;
+      _showCreatePanel = false;
+      _editingLicense = true;
+    });
+  }
+
+  Future<void> _openEditMobile(License license) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog.fullscreen(
+        child: LicenseFormPanel(
+          customers: _customers,
+          loading: _creating,
+          initialValues: LicenseFormValues(
+            customerId: license.customerId ?? '',
+            tipo: license.licenseType ?? 'FULL',
+            diasValidez: int.tryParse(license.raw?['dias_validez']?.toString() ?? '') ?? 30,
+            projectCode: license.raw?['project_code']?.toString(),
+            notas: license.notes,
+            autoActivate: false,
+          ),
+          title: 'Editar licencia',
+          submitLabel: 'Guardar cambios',
+          onSubmit: (values) async {
+            Navigator.of(ctx).pop();
+            setState(() => _selected = license);
+            await _updateLicense(values);
+          },
+          onClose: () => Navigator.of(ctx).pop(),
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteSelected() async {
     final selected = _selected;
     if (selected == null) return;
@@ -191,6 +265,10 @@ class _LicensesPageState extends State<LicensesPage> {
         child: LicenseDetailPanel(
           license: license,
           onClose: () => Navigator.of(context).pop(),
+          onEdit: () async {
+            Navigator.of(context).pop();
+            await _openEditMobile(license);
+          },
           onActivate: () => _licensesService.activateManual(license.id),
           onBlock: () => _licensesService.blockLicense(license.id),
           onUnblock: () => _licensesService.unblockLicense(license.id),
@@ -366,11 +444,29 @@ class _LicensesPageState extends State<LicensesPage> {
                   onSubmit: _createLicense,
                   onClose: () => setState(() => _showCreatePanel = false),
                 ),
-              if (_isDesktop && !_showCreatePanel && _selected != null)
+              if (_isDesktop && _editingLicense && _selected != null)
+                LicenseFormPanel(
+                  customers: _customers,
+                  loading: _creating,
+                  initialValues: LicenseFormValues(
+                    customerId: _selected!.customerId ?? '',
+                    tipo: _selected!.licenseType ?? 'FULL',
+                    diasValidez: int.tryParse(_selected!.raw?['dias_validez']?.toString() ?? '') ?? 30,
+                    projectCode: _selected!.raw?['project_code']?.toString(),
+                    notas: _selected!.notes,
+                    autoActivate: false,
+                  ),
+                  title: 'Editar licencia',
+                  submitLabel: 'Guardar cambios',
+                  onSubmit: _updateLicense,
+                  onClose: () => setState(() => _editingLicense = false),
+                ),
+              if (_isDesktop && !_showCreatePanel && !_editingLicense && _selected != null)
                 LicenseDetailPanel(
                   key: ValueKey(_selected!.id),
                   license: _selected!,
                   onClose: () => setState(() => _selected = null),
+                  onEdit: () => _openEditLicense(_selected!),
                   onActivate: () => _actionAndRefresh(
                     () => _licensesService.activateManual(_selected!.id),
                   ),

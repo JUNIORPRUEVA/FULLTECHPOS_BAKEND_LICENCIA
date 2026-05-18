@@ -36,7 +36,10 @@ async function createLicense(req, res) {
     }
 
     if (!project) {
-      return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+      return res.status(400).json({
+        ok: false,
+        message: 'No existe un proyecto por defecto ni proyectos registrados. Crea un proyecto antes de generar licencias.'
+      });
     }
 
     if (!customer_id || !String(customer_id).trim()) {
@@ -350,6 +353,40 @@ async function updateLicense(req, res) {
         return res.status(400).json({ ok: false, message: "license_type debe ser 'PERMANENTE' o 'SUSCRIPCION'" });
       }
       patch.license_type = licenseType;
+    }
+
+    if (body.customer_id !== undefined) {
+      const customerId = String(body.customer_id || '').trim();
+      if (!isUuid(customerId)) {
+        return res.status(400).json({ ok: false, message: 'customer_id inválido' });
+      }
+      const customer = await customersModel.getCustomerById(customerId);
+      if (!customer) {
+        return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+      }
+      patch.customer_id = customer.id;
+    }
+
+    if (body.project_id !== undefined) {
+      const projectId = String(body.project_id || '').trim();
+      if (!isUuid(projectId)) {
+        return res.status(400).json({ ok: false, message: 'project_id inválido' });
+      }
+      const project = await projectsModel.getProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+      }
+      patch.project_id = project.id;
+    } else if (body.project_code !== undefined) {
+      const projectCode = String(body.project_code || '').trim();
+      if (!projectCode) {
+        return res.status(400).json({ ok: false, message: 'project_code inválido' });
+      }
+      const project = await projectsModel.getProjectByCode(projectCode);
+      if (!project) {
+        return res.status(404).json({ ok: false, message: 'Proyecto no encontrado' });
+      }
+      patch.project_id = project.id;
     }
 
     if (body.dias_validez !== undefined) {

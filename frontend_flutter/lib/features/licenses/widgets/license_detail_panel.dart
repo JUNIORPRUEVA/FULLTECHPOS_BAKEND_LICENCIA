@@ -8,6 +8,7 @@ import '../models/license.dart';
 class LicenseDetailPanel extends StatelessWidget {
   final License license;
   final VoidCallback onClose;
+  final VoidCallback? onEdit;
   final Future<void> Function()? onBlock;
   final Future<void> Function()? onUnblock;
   final Future<void> Function()? onActivate;
@@ -18,6 +19,7 @@ class LicenseDetailPanel extends StatelessWidget {
     super.key,
     required this.license,
     required this.onClose,
+    this.onEdit,
     this.onBlock,
     this.onUnblock,
     this.onActivate,
@@ -150,6 +152,13 @@ class LicenseDetailPanel extends StatelessWidget {
                       icon: Icons.check_circle_outline_rounded,
                       color: AppColors.success,
                       onTap: onActivate!,
+                    ),
+                  if (onEdit != null)
+                    _ActionBtn(
+                      label: 'Editar licencia',
+                      icon: Icons.edit_outlined,
+                      color: AppColors.primary,
+                      onTap: onEdit!,
                     ),
                   if (onBlock != null)
                     _ActionBtn(

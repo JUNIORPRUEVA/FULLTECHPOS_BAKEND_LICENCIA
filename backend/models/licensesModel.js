@@ -341,6 +341,8 @@ async function updateLicense(licenseId, patch) {
       return null;
     }
 
+    const nextCustomerId = patch.customer_id != null ? patch.customer_id : current.customer_id;
+    const nextProjectId = patch.project_id != null ? patch.project_id : current.project_id;
     const nextTipo = patch.tipo != null ? patch.tipo : current.tipo;
     const nextDias = patch.dias_validez != null ? patch.dias_validez : current.dias_validez;
     const nextMax = patch.max_dispositivos != null ? patch.max_dispositivos : current.max_dispositivos;
@@ -373,19 +375,23 @@ async function updateLicense(licenseId, patch) {
 
     const updRes = await client.query(
       `UPDATE licenses
-       SET tipo = $2,
-           dias_validez = $3,
-           max_dispositivos = $4,
-           estado = $5,
-           notas = $6,
-           fecha_inicio = $7,
-             fecha_fin = $8,
-             expires_at = $8,
-             license_type = $9
+       SET customer_id = $2,
+           project_id = $3,
+           tipo = $4,
+           dias_validez = $5,
+           max_dispositivos = $6,
+           estado = $7,
+           notas = $8,
+           fecha_inicio = $9,
+           fecha_fin = $10,
+           expires_at = $10,
+           license_type = $11
        WHERE id = $1
        RETURNING *`,
       [
         licenseId,
+        nextCustomerId,
+        nextProjectId,
         nextTipo,
         Number(nextDias),
         Number(nextMax),
