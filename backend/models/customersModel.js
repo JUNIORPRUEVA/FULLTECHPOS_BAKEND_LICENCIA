@@ -247,3 +247,28 @@ module.exports = {
   findCustomerByContact,
   deleteCustomerCascade
 };
+
+async function updateCustomer(customerId, fields) {
+  const allowed = ['nombre_negocio', 'contacto_nombre', 'contacto_telefono', 'contacto_email', 'rol_negocio'];
+  const sets = [];
+  const params = [];
+  let idx = 1;
+
+  for (const k of allowed) {
+    if (Object.prototype.hasOwnProperty.call(fields, k)) {
+      sets.push(`${k} = $${idx}`);
+      params.push(fields[k] === null ? null : fields[k]);
+      idx += 1;
+    }
+  }
+
+  if (!sets.length) return null;
+
+  params.push(customerId);
+  const sql = `UPDATE customers SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`;
+  const result = await pool.query(sql, params);
+  return result.rows[0] || null;
+}
+
+// expose updateCustomer for external use
+module.exports.updateCustomer = updateCustomer;

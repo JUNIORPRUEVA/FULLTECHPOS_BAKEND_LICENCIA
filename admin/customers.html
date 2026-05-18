@@ -2377,6 +2377,7 @@
                         <button type="button" class="btn btn-primary" onclick="goToLicenses('${escapeAttr(customer?.id || '')}', 'create')">Crear licencia</button>
                         <button type="button" class="btn btn-ghost" onclick="goToLicenses('${escapeAttr(customer?.id || '')}')">Ver licencias</button>
                         <button type="button" class="btn btn-ghost" onclick="setBusinessIdPrompt('${escapeAttr(customer?.id || '')}', '${escapeAttr(displayName)}', '${escapeAttr(businessId)}')">Asignar Business ID</button>
+                        <button type="button" class="btn btn-ghost" onclick="openEditPanel()">Editar cliente</button>
                         <button type="button" class="btn btn-ghost" onclick="goToSupportToken('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Token reset</button>
                         <button type="button" class="btn btn-muted" onclick="window.location.href='/admin/customer-detail.html?id=${encodeURIComponent(customer?.id || '')}'">Vista completa</button>
                         <button type="button" class="btn btn-danger" onclick="deleteCustomer('${escapeAttr(customer?.id || '')}', '${escapeAttr(displayName)}')">Eliminar</button>
@@ -2708,6 +2709,93 @@
 
             const target = `/admin/license-config.html?support_business_id=${encodeURIComponent(id)}&support_username=admin&autogen=1`;
             window.location.href = target;
+        }
+
+        function openEditPanel() {
+            if (!currentCustomer) return;
+            currentPanelMode = 'edit';
+            openCustomerPanelSurface();
+            setCustomerPanelHeader('Editar cliente', 'Modifica los datos del cliente y guarda los cambios.');
+            const c = currentCustomer || {};
+            document.getElementById('customerPanelBody').innerHTML = `
+                <div class="customer-formPanel">
+                    <div class="panel-block">
+                        <strong class="panel-blockTitle">Editar cliente</strong>
+                        <p class="customer-formLead">Actualiza los datos del cliente y pulsa Guardar para aplicar los cambios.</p>
+                    </div>
+                    <form id="editCustomerPanelForm">
+                        <div class="form-grid">
+                            <div class="field full">
+                                <label for="edit_panel_business_id">Business ID (no editable aquí)</label>
+                                <input id="edit_panel_business_id" name="business_id" value="${escapeAttr(String(c.business_id || ''))}" disabled />
+                            </div>
+                            <div class="field full">
+                                <label for="edit_panel_nombre_negocio">Nombre del negocio *</label>
+                                <input id="edit_panel_nombre_negocio" name="nombre_negocio" value="${escapeAttr(String(c.nombre_negocio || ''))}" required />
+                            </div>
+                            <div class="field">
+                                <label for="edit_panel_contacto_nombre">Nombre de contacto</label>
+                                <input id="edit_panel_contacto_nombre" name="contacto_nombre" value="${escapeAttr(String(c.contacto_nombre || ''))}" />
+                            </div>
+                            <div class="field">
+                                <label for="edit_panel_contacto_telefono">Teléfono *</label>
+                                <input id="edit_panel_contacto_telefono" name="contacto_telefono" value="${escapeAttr(String(c.contacto_telefono || ''))}" required />
+                            </div>
+                            <div class="field">
+                                <label for="edit_panel_contacto_email">Email</label>
+                                <input id="edit_panel_contacto_email" name="contacto_email" value="${escapeAttr(String(c.contacto_email || ''))}" />
+                            </div>
+                            <div class="field">
+                                <label for="edit_panel_rol_negocio">Rol del negocio</label>
+                                <input id="edit_panel_rol_negocio" name="rol_negocio" value="${escapeAttr(String(c.rol_negocio || ''))}" />
+                            </div>
+                        </div>
+                        <div class="customer-formActions">
+                            <button type="button" class="btn btn-ghost" onclick="openCustomerDetail('${escapeAttr(c.id || '')}')">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar cliente</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            const form = document.getElementById('editCustomerPanelForm');
+            if (form) form.addEventListener('submit', editCustomer);
+            document.getElementById('edit_panel_nombre_negocio')?.focus();
+        }
+
+        async function editCustomer(e) {
+            e.preventDefault();
+            clearMessage();
+            const id = String(currentCustomer?.id || '').trim();
+            if (!id) return showMessage('err', 'Cliente no seleccionado');
+
+            const nombre_negocio = (document.getElementById('edit_panel_nombre_negocio').value || '').trim();
+            const contacto_nombre = (document.getElementById('edit_panel_contacto_nombre').value || '').trim();
+            const contacto_telefono = (document.getElementById('edit_panel_contacto_telefono').value || '').trim();
+            const contacto_email = (document.getElementById('edit_panel_contacto_email').value || '').trim();
+            const rol_negocio = (document.getElementById('edit_panel_rol_negocio').value || '').trim();
+
+            if (!nombre_negocio) return showMessage('err', 'nombre_negocio es requerido');
+            if (!contacto_telefono) return showMessage('err', 'contacto_telefono es requerido');
+
+            try {
+                const res = await apiFetch(`/api/admin/customers/${encodeURIComponent(id)}`, {
+                    method: 'PUT',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ nombre_negocio, contacto_nombre: contacto_nombre || null, contacto_telefono, contacto_email: contacto_email || null, rol_negocio: rol_negocio || null })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showMessage('err', data?.message || `Error actualizando cliente (${res.status})`);
+                    return;
+                }
+
+                showMessage('ok', 'Cliente actualizado correctamente.');
+                await loadCustomers();
+                await openCustomerDetail(id);
+            } catch (err) {
+                showMessage('err', 'No se pudo conectar con el servidor');
+            }
         }
     </script>
 <script>AdminCommon.initSidebarLayout('customers');</script>

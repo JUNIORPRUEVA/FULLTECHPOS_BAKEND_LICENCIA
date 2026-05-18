@@ -194,11 +194,76 @@ async function getCustomerById(req, res) {
   }
 }
 
+async function updateCustomer(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ ok: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ ok: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const body = req.body || {};
+    const allowed = ['nombre_negocio', 'contacto_nombre', 'contacto_telefono', 'contacto_email', 'rol_negocio'];
+    const updates = {};
+    for (const k of allowed) {
+      if (Object.prototype.hasOwnProperty.call(body, k)) {
+        updates[k] = body[k] === null ? null : String(body[k] || '').trim();
+      }
+    }
+
+    if (!Object.keys(updates).length) {
+      return res.status(400).json({ ok: false, message: 'No hay campos para actualizar' });
+    }
+
+    // Basic validation: if nombre_negocio or contacto_telefono provided, must be non-empty
+    if (updates.hasOwnProperty('nombre_negocio') && !updates.nombre_negocio) {
+      return res.status(400).json({ ok: false, message: 'nombre_negocio es requerido' });
+    }
+
+    if (updates.hasOwnProperty('contacto_telefono') && !updates.contacto_telefono) {
+      return res.status(400).json({ ok: false, message: 'contacto_telefono es requerido' });
+    }
+
+    const current = await customersModel.getCustomerById(customerId);
+    if (!current) {
+      return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+    }
+
+    const updated = await customersModel.updateCustomer(customerId, updates);
+    if (!updated) {
+      return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+    }
+
+    return res.json({ ok: true, customer: updated });
+  } catch (error) {
+    console.error('updateCustomer error:', error);
+    if (error && error.code === '23505') {
+      const constraint = String(error.constraint || '');
+      if (constraint.includes('contacto_telefono')) {
+        return res.status(409).json({ ok: false, message: 'Ya existe un cliente con ese contacto_telefono' });
+      }
+      if (constraint.includes('contacto_email')) {
+        return res.status(409).json({ ok: false, message: 'Ya existe un cliente con ese contacto_email' });
+      }
+      if (constraint.includes('business_id') || constraint.includes('idx_customers_business_id_unique')) {
+        return res.status(409).json({ ok: false, message: 'Ya existe un cliente con ese business_id' });
+      }
+      return res.status(409).json({ ok: false, message: 'Ya existe un cliente con esos datos (duplicado)' });
+    }
+
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
   deleteCustomer,
   setBusinessId,
   getCustomerByBusinessId,
-  getCustomerById
+  getCustomerById,
+  updateCustomer
 };

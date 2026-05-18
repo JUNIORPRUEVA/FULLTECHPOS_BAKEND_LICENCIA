@@ -34,4 +34,8 @@ router.put('/:id/business_id', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.setBusinessId(req, res)).catch(next);
 });
 
+// PUT /api/admin/customers/:id
+router.put('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.updateCustomer(req, res)).catch(next);
+});
 module.exports = router;
