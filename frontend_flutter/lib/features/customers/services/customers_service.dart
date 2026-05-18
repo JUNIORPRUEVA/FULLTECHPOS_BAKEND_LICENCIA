@@ -30,6 +30,12 @@ class CustomersService {
         data['customer'] as Map<String, dynamic>? ?? data);
   }
 
+  Future<Customer> updateCustomer(String id, Map<String, dynamic> body) async {
+    final data = await _client.put('/api/admin/customers/$id', body);
+    return Customer.fromJson(
+        data['customer'] as Map<String, dynamic>? ?? data);
+  }
+
   Future<void> deleteCustomer(String id) async {
     await _client.delete('/api/admin/customers/$id');
   }

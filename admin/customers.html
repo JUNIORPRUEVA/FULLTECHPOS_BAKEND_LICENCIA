@@ -2139,6 +2139,7 @@
                                         ${escapeHtml(tel || businessId || 'Sin datos extra')}
                                     </div>
                                     <button class="slim-menuItem" type="button" onclick="openCustomerDetail('${escapeAttr(customerId)}')">Ver detalle</button>
+                                    <button class="slim-menuItem" type="button" onclick="openEditPanel()">Editar cliente</button>
                                     <button class="slim-menuItem" type="button" onclick="goToLicenses('${escapeAttr(customerId)}', 'create')">Crear licencia</button>
                                     <button class="slim-menuItem" type="button" onclick="setBusinessIdPrompt('${escapeAttr(customerId)}', '${escapeAttr(displayName)}', '${escapeAttr(businessId)}')">Asignar Business ID</button>
                                     <button class="slim-menuItem" type="button" onclick="goToSupportToken('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Generar token reset</button>
@@ -2726,8 +2727,8 @@
                     <form id="editCustomerPanelForm">
                         <div class="form-grid">
                             <div class="field full">
-                                <label for="edit_panel_business_id">Business ID (no editable aquí)</label>
-                                <input id="edit_panel_business_id" name="business_id" value="${escapeAttr(String(c.business_id || ''))}" disabled />
+                                <label for="edit_panel_business_id">Business ID</label>
+                                <input id="edit_panel_business_id" name="business_id" value="${escapeAttr(String(c.business_id || ''))}" />
                             </div>
                             <div class="field full">
                                 <label for="edit_panel_nombre_negocio">Nombre del negocio *</label>
@@ -2774,6 +2775,7 @@
             const contacto_telefono = (document.getElementById('edit_panel_contacto_telefono').value || '').trim();
             const contacto_email = (document.getElementById('edit_panel_contacto_email').value || '').trim();
             const rol_negocio = (document.getElementById('edit_panel_rol_negocio').value || '').trim();
+            const business_id = (document.getElementById('edit_panel_business_id').value || '').trim();
 
             if (!nombre_negocio) return showMessage('err', 'nombre_negocio es requerido');
             if (!contacto_telefono) return showMessage('err', 'contacto_telefono es requerido');
@@ -2782,7 +2784,14 @@
                 const res = await apiFetch(`/api/admin/customers/${encodeURIComponent(id)}`, {
                     method: 'PUT',
                     headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ nombre_negocio, contacto_nombre: contacto_nombre || null, contacto_telefono, contacto_email: contacto_email || null, rol_negocio: rol_negocio || null })
+                    body: JSON.stringify({
+                      nombre_negocio,
+                      contacto_nombre: contacto_nombre || null,
+                      contacto_telefono,
+                      contacto_email: contacto_email || null,
+                      rol_negocio: rol_negocio || null,
+                      business_id: business_id || null
+                    })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {

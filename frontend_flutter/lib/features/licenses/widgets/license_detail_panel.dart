@@ -8,7 +8,7 @@ import '../models/license.dart';
 class LicenseDetailPanel extends StatelessWidget {
   final License license;
   final VoidCallback onClose;
-  final VoidCallback? onEdit;
+  final Future<void> Function()? onEdit;
   final Future<void> Function()? onBlock;
   final Future<void> Function()? onUnblock;
   final Future<void> Function()? onActivate;

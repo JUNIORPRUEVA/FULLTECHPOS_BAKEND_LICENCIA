@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../customers/services/customers_service.dart';
+import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../models/customer.dart';
@@ -164,6 +167,11 @@ class CustomerDetailDrawer extends StatelessWidget {
                     onTap: () {},
                   ),
                   _ActionButton(
+                    label: 'Editar cliente',
+                    icon: Icons.edit_outlined,
+                    onTap: () => _openEditDialog(context),
+                  ),
+                  _ActionButton(
                     label: 'Vista completa',
                     icon: Icons.open_in_new_rounded,
                     onTap: () {},
@@ -187,6 +195,71 @@ class CustomerDetailDrawer extends StatelessWidget {
   String get _initial {
     final name = customer.nombreNegocio.trim();
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
+  }
+
+  Future<void> _openEditDialog(BuildContext context) async {
+    final nameCtrl = TextEditingController(text: customer.nombreNegocio);
+    final contactNameCtrl = TextEditingController(text: customer.contactoNombre ?? '');
+    final phoneCtrl = TextEditingController(text: customer.contactoTelefono ?? '');
+    final emailCtrl = TextEditingController(text: customer.contactoEmail ?? '');
+    final roleCtrl = TextEditingController(text: customer.rolNegocio ?? '');
+
+    final formKey = GlobalKey<FormState>();
+
+    final session = Provider.of<SessionManager>(context, listen: false);
+    final service = CustomersService(sessionManager: session);
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Editar cliente'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Nombre del negocio'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                ),
+                TextFormField(controller: contactNameCtrl, decoration: const InputDecoration(labelText: 'Contacto')),
+                TextFormField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Teléfono'), validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null),
+                TextFormField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+                TextFormField(controller: roleCtrl, decoration: const InputDecoration(labelText: 'Rol')),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                await service.updateCustomer(customer.id, {
+                  'nombre_negocio': nameCtrl.text.trim(),
+                  'contacto_nombre': contactNameCtrl.text.trim().isEmpty ? null : contactNameCtrl.text.trim(),
+                  'contacto_telefono': phoneCtrl.text.trim(),
+                  'contacto_email': emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
+                  'rol_negocio': roleCtrl.text.trim().isEmpty ? null : roleCtrl.text.trim(),
+                });
+                Navigator.pop(ctx, true);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      // refresh by navigating back to parent or closing drawer then re-open could be handled by caller
+      showDialog<void>(context: context, builder: (_) => AlertDialog(title: const Text('Guardado'), content: const Text('Cliente actualizado correctamente.'), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))]));
+    }
   }
 }
 

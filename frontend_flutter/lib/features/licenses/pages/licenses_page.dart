@@ -466,7 +466,9 @@ class _LicensesPageState extends State<LicensesPage> {
                   key: ValueKey(_selected!.id),
                   license: _selected!,
                   onClose: () => setState(() => _selected = null),
-                  onEdit: () => _openEditLicense(_selected!),
+                  onEdit: () async {
+                    _openEditLicense(_selected!);
+                  },
                   onActivate: () => _actionAndRefresh(
                     () => _licensesService.activateManual(_selected!.id),
                   ),

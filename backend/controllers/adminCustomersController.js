@@ -206,11 +206,17 @@ async function updateCustomer(req, res) {
     }
 
     const body = req.body || {};
-    const allowed = ['nombre_negocio', 'contacto_nombre', 'contacto_telefono', 'contacto_email', 'rol_negocio'];
+    const allowed = ['nombre_negocio', 'contacto_nombre', 'contacto_telefono', 'contacto_email', 'rol_negocio', 'business_id'];
     const updates = {};
     for (const k of allowed) {
       if (Object.prototype.hasOwnProperty.call(body, k)) {
-        updates[k] = body[k] === null ? null : String(body[k] || '').trim();
+        const rawValue = body[k];
+        if (rawValue === null) {
+          updates[k] = null;
+        } else {
+          const trimmed = String(rawValue || '').trim();
+          updates[k] = trimmed === '' ? null : trimmed;
+        }
       }
     }
 

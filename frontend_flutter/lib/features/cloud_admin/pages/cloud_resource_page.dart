@@ -1221,23 +1221,29 @@ class _ResourceActionDialogState extends State<_ResourceActionDialog> {
       case ResourceFormFieldType.select:
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: DropdownButtonFormField<String>(
-            initialValue: _selectValues[field.key],
-            decoration: InputDecoration(labelText: field.label),
-            validator: field.required
-                ? (value) => value == null || value.isEmpty ? 'Requerido' : null
-                : null,
-            items: field.options
-                .where((option) => option.value != null)
-                .map(
-                  (option) => DropdownMenuItem<String>(
-                    value: option.value,
-                    child: Text(option.label),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) => _selectValues[field.key] = value,
-          ),
+          child: Builder(builder: (ctx) {
+            final items = <DropdownMenuItem<String>>[];
+            final seen = <String>{};
+            for (final option in field.options) {
+              if (option.value == null) continue;
+              if (seen.contains(option.value)) continue;
+              seen.add(option.value!);
+              items.add(DropdownMenuItem<String>(value: option.value, child: Text(option.label)));
+            }
+
+            final current = _selectValues[field.key];
+            final safeInitial = items.any((it) => it.value == current) ? current : null;
+
+            return DropdownButtonFormField<String>(
+              initialValue: safeInitial,
+              decoration: InputDecoration(labelText: field.label),
+              validator: field.required
+                  ? (value) => value == null || value.isEmpty ? 'Requerido' : null
+                  : null,
+              items: items,
+              onChanged: (value) => _selectValues[field.key] = value,
+            );
+          }),
         );
       case ResourceFormFieldType.text:
       case ResourceFormFieldType.number:

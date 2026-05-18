@@ -249,7 +249,7 @@ module.exports = {
 };
 
 async function updateCustomer(customerId, fields) {
-  const allowed = ['nombre_negocio', 'contacto_nombre', 'contacto_telefono', 'contacto_email', 'rol_negocio'];
+  const allowed = ['nombre_negocio', 'contacto_nombre', 'contacto_telefono', 'contacto_email', 'rol_negocio', 'business_id'];
   const sets = [];
   const params = [];
   let idx = 1;
