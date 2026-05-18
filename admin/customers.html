@@ -2377,7 +2377,7 @@
                     <div class="panel-actionGrid">
                         <button type="button" class="btn btn-primary" onclick="goToLicenses('${escapeAttr(customer?.id || '')}', 'create')">Crear licencia</button>
                         <button type="button" class="btn btn-ghost" onclick="goToLicenses('${escapeAttr(customer?.id || '')}')">Ver licencias</button>
-                        <button type="button" class="btn btn-ghost" onclick="setBusinessIdPrompt('${escapeAttr(customer?.id || '')}', '${escapeAttr(displayName)}', '${escapeAttr(businessId)}')">Asignar Business ID</button>
+                        <button type="button" class="btn btn-ghost" onclick="openEditPanel()">Asignar Business ID</button>
                         <button type="button" class="btn btn-ghost" onclick="openEditPanel()">Editar cliente</button>
                         <button type="button" class="btn btn-ghost" onclick="goToSupportToken('${escapeAttr(businessId)}')" ${businessId ? '' : 'disabled'}>Token reset</button>
                         <button type="button" class="btn btn-muted" onclick="window.location.href='/admin/customer-detail.html?id=${encodeURIComponent(customer?.id || '')}'">Vista completa</button>
