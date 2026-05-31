@@ -53,7 +53,10 @@ class AppRouter {
             ),
             GoRoute(
               path: '/admin/clientes',
-              builder: (context, state) => const CustomersPage(),
+              builder: (context, state) {
+                final customerId = state.uri.queryParameters['customerId'];
+                return CustomersPage(initialCustomerId: customerId);
+              },
             ),
             GoRoute(
               path: '/admin/licencias',
@@ -77,21 +80,6 @@ class AppRouter {
               path: '/admin/productos',
               builder: (context, state) =>
                   const CloudResourcePage(config: productResourceConfig),
-            ),
-            GoRoute(
-              path: '/admin/planes',
-              builder: (context, state) =>
-                  const CloudResourcePage(config: planResourceConfig),
-            ),
-            GoRoute(
-              path: '/admin/suscripciones',
-              builder: (context, state) =>
-                  const CloudResourcePage(config: subscriptionResourceConfig),
-            ),
-            GoRoute(
-              path: '/admin/pagos',
-              builder: (context, state) =>
-                  const CloudResourcePage(config: paymentResourceConfig),
             ),
             GoRoute(
               path: '/admin/usuarios',
@@ -124,12 +112,6 @@ class AppRouter {
         return 'Proyectos';
       case '/admin/productos':
         return 'Productos';
-      case '/admin/planes':
-        return 'Planes';
-      case '/admin/suscripciones':
-        return 'Suscripciones';
-      case '/admin/pagos':
-        return 'Pagos';
       case '/admin/usuarios':
         return 'Usuarios del sistema';
       case '/admin/configuracion-tienda':

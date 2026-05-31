@@ -83,6 +83,23 @@ class LicenseListItem extends StatelessWidget {
                           fontFamily: 'monospace',
                         ),
                       ),
+                      if (license.customerName != null) ...[
+                        const Text(
+                          ' · ',
+                          style: TextStyle(
+                              fontSize: 11, color: AppColors.textMuted),
+                        ),
+                        Flexible(
+                          child: Text(
+                            license.customerName!,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                       if (license.expiresAt != null) ...[
                         const Text(
                           ' · ',

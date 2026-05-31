@@ -48,21 +48,6 @@ const List<AppSidebarItem> sidebarItems = [
     icon: Icons.inventory_2_outlined,
     route: '/admin/productos',
   ),
-  AppSidebarItem(
-    label: 'Gestión planes',
-    icon: Icons.layers_outlined,
-    route: '/admin/planes',
-  ),
-  AppSidebarItem(
-    label: 'Suscripciones',
-    icon: Icons.subscriptions_outlined,
-    route: '/admin/suscripciones',
-  ),
-  AppSidebarItem(
-    label: 'Pagos',
-    icon: Icons.payments_outlined,
-    route: '/admin/pagos',
-  ),
 ];
 
 const List<AppSidebarItem> settingsSidebarItems = [

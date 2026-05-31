@@ -3,6 +3,7 @@ class License {
   final String? licenseKey;
   final String? status;
   final String? customerId;
+  final String? customerName;
   final String? businessId;
   final String? projectId;
   final String? projectName;
@@ -19,6 +20,7 @@ class License {
     this.licenseKey,
     this.status,
     this.customerId,
+    this.customerName,
     this.businessId,
     this.projectId,
     this.projectName,
@@ -37,6 +39,7 @@ class License {
       licenseKey: json['license_key'] as String? ?? json['key'] as String?,
       status: json['status'] as String?,
       customerId: json['customer_id']?.toString(),
+      customerName: json['nombre_negocio'] as String? ?? json['customer_name'] as String?,
       businessId: json['business_id']?.toString(),
       projectId: json['project_id']?.toString(),
       projectName: json['project_name'] as String?,

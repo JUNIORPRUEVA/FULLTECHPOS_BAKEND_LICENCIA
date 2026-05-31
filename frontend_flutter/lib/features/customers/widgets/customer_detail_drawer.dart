@@ -118,6 +118,62 @@ class CustomerDetailDrawer extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  // Licencia activa section
+                  _DetailSection(
+                    title: 'Licencia',
+                    children: [
+                      _DetailRow(
+                        label: 'Estado',
+                        value: customer.hasActiveLicense
+                            ? 'Activa'
+                            : customer.hasLicense
+                                ? (customer.licenseStatus ?? 'Inactiva')
+                                : 'Sin licencia',
+                      ),
+                      if (customer.licenseTipo != null)
+                        _DetailRow(
+                          label: 'Tipo',
+                          value: customer.licenseTipo!,
+                        ),
+                    ],
+                  ),
+                  if (customer.hasActiveLicense)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.xs),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                          border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 16,
+                              color: AppColors.success,
+                            ),
+                            SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'Licencia activa',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.md),
                   _DetailSection(
                     title: 'IDs del sistema',
                     children: [

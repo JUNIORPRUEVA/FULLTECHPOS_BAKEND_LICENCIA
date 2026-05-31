@@ -12,7 +12,9 @@ import '../widgets/customer_detail_drawer.dart';
 import '../widgets/customer_list_item.dart';
 
 class CustomersPage extends StatefulWidget {
-  const CustomersPage({super.key});
+  final String? initialCustomerId;
+
+  const CustomersPage({super.key, this.initialCustomerId});
 
   @override
   State<CustomersPage> createState() => _CustomersPageState();
@@ -25,6 +27,7 @@ class _CustomersPageState extends State<CustomersPage> {
   Customer? _selected;
   String _query = '';
   String _licenseFilter = 'TODOS';
+  bool _initialSelectionDone = false;
 
   bool get _isDesktop => MediaQuery.of(context).size.width >= 1000;
 
@@ -33,6 +36,24 @@ class _CustomersPageState extends State<CustomersPage> {
     super.initState();
     _service = CustomersService(sessionManager: context.read<SessionManager>());
     _future = _service.listCustomers();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialSelectionDone && widget.initialCustomerId != null) {
+      _initialSelectionDone = true;
+      // Esperar a que se carguen los clientes y seleccionar el indicado
+      _future.then((customers) {
+        if (!mounted) return;
+        final found = customers.where(
+          (c) => c.id == widget.initialCustomerId,
+        ).firstOrNull;
+        if (found != null) {
+          setState(() => _selected = found);
+        }
+      });
+    }
   }
 
   @override

@@ -14,6 +14,7 @@ class LicenseDetailPanel extends StatelessWidget {
   final Future<void> Function()? onActivate;
   final Future<void> Function(int days)? onExtend;
   final Future<void> Function()? onDelete;
+  final VoidCallback? onViewCustomer;
 
   const LicenseDetailPanel({
     super.key,
@@ -25,6 +26,7 @@ class LicenseDetailPanel extends StatelessWidget {
     this.onActivate,
     this.onExtend,
     this.onDelete,
+    this.onViewCustomer,
   });
 
   @override
@@ -109,6 +111,38 @@ class LicenseDetailPanel extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  // Cliente section
+                  if (license.customerName != null || license.customerId != null)
+                    _Section(title: 'Cliente', rows: [
+                      if (license.customerName != null)
+                        _Row('Nombre', license.customerName!),
+                      if (license.customerId != null)
+                        _Row('ID', license.customerId!, mono: true),
+                    ]),
+                  if (onViewCustomer != null && license.customerId != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.xs),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: onViewCustomer,
+                          icon: const Icon(Icons.person_outline_rounded, size: 16),
+                          label: const Text('Ir al cliente'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.md),
                   // Details
                   _Section(title: 'Información', rows: [
                     if (license.projectName != null)
@@ -117,8 +151,6 @@ class LicenseDetailPanel extends StatelessWidget {
                       _Row('Tipo', license.licenseType!),
                     if (license.businessId != null)
                       _Row('Business ID', license.businessId!, mono: true),
-                    if (license.customerId != null)
-                      _Row('Customer ID', license.customerId!, mono: true),
                     if (license.maxDevices != null)
                       _Row('Máx. dispositivos', license.maxDevices!.toString()),
                     if (license.expiresAt != null)

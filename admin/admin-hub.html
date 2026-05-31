@@ -133,63 +133,10 @@
             <strong class="kpi-value" id="kpiActiveLicenses">--</strong>
             <span class="kpi-meta">Vigentes hoy</span>
           </div>
-          <div class="kpi-card tone-amber">
-            <span class="kpi-label">Suscripciones activas</span>
-            <strong class="kpi-value" id="kpiActiveSubs">--</strong>
-            <span class="kpi-meta">active / lifetime</span>
-          </div>
-          <div class="kpi-card tone-red">
-            <span class="kpi-label">Suscripciones expiradas</span>
-            <strong class="kpi-value" id="kpiExpiredSubs">--</strong>
-            <span class="kpi-meta">estado expired</span>
-          </div>
-          <div class="kpi-card tone-violet">
-            <span class="kpi-label">Suspendidas</span>
-            <strong class="kpi-value" id="kpiSuspendedSubs">--</strong>
-            <span class="kpi-meta">suspended</span>
-          </div>
-          <div class="kpi-card tone-indigo">
-            <span class="kpi-label">Pagos pendientes</span>
-            <strong class="kpi-value" id="kpiPendingPayments">--</strong>
-            <span class="kpi-meta">status pending</span>
-          </div>
-          <div class="kpi-card tone-green">
-            <span class="kpi-label">Ingreso estimado</span>
-            <strong class="kpi-value" id="kpiMonthlyRevenue">--</strong>
-            <span class="kpi-meta" id="kpiCollectedMeta">Cobrado este mes</span>
-          </div>
         </div>
         <div class="dash-status-bar">
           <strong id="dashStatusText">Cargando datos...</strong>
           <span class="status-pill"><span class="status-dot"></span> <span id="dashUpdatedAt">Sincronizando</span></span>
-        </div>
-        <div class="dash-section">
-          <div class="dash-section-head">
-            <div>
-              <h2>Clientes cerca de expiracion</h2>
-              <p>Suscripciones que vencen en los proximos 15 dias.</p>
-            </div>
-          </div>
-          <div id="nearExpWrap" class="table-shell"><div class="empty">Cargando...</div></div>
-        </div>
-        <div class="dash-section">
-          <div class="dash-section-head">
-            <div>
-              <h2>Ingresos por producto / proyecto</h2>
-              <p>Estimado mensual normalizado por planes activos.</p>
-            </div>
-          </div>
-          <div id="revenueByOwnershipWrap" class="table-shell"><div class="empty">Cargando...</div></div>
-        </div>
-        <div class="dash-section">
-          <div class="dash-section-head">
-            <div>
-              <h2>Mantenimiento de suscripciones</h2>
-              <p>Detecta y expira suscripciones vencidas. Bloquea licencias vinculadas.</p>
-            </div>
-            <button id="maintenanceBtn" class="btn btn-warning" type="button">Ejecutar mantenimiento</button>
-          </div>
-          <div id="maintenanceResult" hidden></div>
         </div>
       </div>
     </div>
@@ -219,14 +166,13 @@
       _sid=await AdminCommon.ensureAuth({userNameElId:'userName'});
       if(!_sid)return;
       document.getElementById('refreshBtn').addEventListener('click',loadAll);
-      document.getElementById('maintenanceBtn').addEventListener('click',runMaintenance);
       await loadAll();
     }
     async function loadAll(){
       document.getElementById('refreshBtn').disabled=true;
       setText('dashStatusText','Actualizando...');
       try{
-        await Promise.all([loadLicenseKPIs(),loadSaasKPIs()]);
+        await loadLicenseKPIs();
         setText('dashUpdatedAt','Actualizado '+new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'}));
         showMsg('','');
       }catch(e){
@@ -251,59 +197,6 @@
       setText('kpiLicensesMeta','FULL '+fmtNum(fullLicenses)+' \u00b7 DEMO '+fmtNum(demoLicenses));
       setText('kpiActiveLicenses',fmtNum(activeLicenses));
       setText('dashStatusText',fmtNum(customers)+' clientes \u00b7 '+fmtNum(licenses)+' licencias \u00b7 Top: '+topProject.name);
-    }
-    async function loadSaasKPIs(){
-      var res=await AdminCommon.adminFetchJson('/api/admin/saas-dashboard',{sessionId:_sid});
-      var d=res.data;
-      setText('kpiActiveSubs',fmtNum(d.active_subscriptions));
-      setText('kpiExpiredSubs',fmtNum(d.expired_subscriptions));
-      setText('kpiSuspendedSubs',fmtNum(d.suspended_subscriptions));
-      setText('kpiPendingPayments',fmtNum(d.pending_payments));
-      setText('kpiMonthlyRevenue',fmtCur(d.monthly_revenue_estimate));
-      setText('kpiCollectedMeta','Cobrado mes: '+fmtCur(d.payments_collected_this_month));
-      renderNearExpiration(d.clients_near_expiration||[]);
-      renderRevenueByOwnership(d.revenue_by_product_or_project||[]);
-    }
-    function renderNearExpiration(rows){
-      var wrap=document.getElementById('nearExpWrap');
-      if(!rows.length){wrap.innerHTML='<div class="empty">Sin clientes proximos a expirar en los proximos 15 dias.</div>';return;}
-      wrap.innerHTML='<table><thead><tr><th>Cliente</th><th>Plan</th><th>Estado</th><th>Vence</th><th></th></tr></thead><tbody>'
-        +rows.map(function(sub){return'<tr><td><div>'+esc(sub.company_name||'-')+'</div><div class="muted mono">'+esc(sub.company_id||'')+'</div></td>'
-          +'<td><div>'+esc(sub.plan_name||'-')+'</div><div class="muted">'+esc(sub.product_name||sub.project_name||'')+'</div></td>'
-          +'<td><span class="chip '+esc(String(sub.status||'').toLowerCase())+'">'+esc(sub.status||'-')+'</span></td>'
-          +'<td>'+fmtDate(sub.end_date)+'</td>'
-          +'<td><a href="customer-detail.html?id='+esc(sub.company_id)+'" class="btn btn-secondary" style="padding:5px 10px;font-size:.78rem;">Ver</a></td>'
-          +'</tr>';}).join('')+'</tbody></table>';
-    }
-    function renderRevenueByOwnership(rows){
-      var wrap=document.getElementById('revenueByOwnershipWrap');
-      if(!rows.length){wrap.innerHTML='<div class="empty">Sin datos de ingresos por producto/proyecto.</div>';return;}
-      wrap.innerHTML='<table><thead><tr><th>Producto / Proyecto</th><th>Tipo</th><th>Suscripciones</th><th>Estimado mensual</th></tr></thead><tbody>'
-        +rows.map(function(r){return'<tr><td>'+esc(r.product_name||r.project_name||'-')+'</td><td>'+esc(r.ownership_type||'-')+'</td><td>'+fmtNum(r.subscription_count)+'</td><td>'+fmtCur(r.monthly_estimate)+'</td></tr>';}).join('')+'</tbody></table>';
-    }
-    async function runMaintenance(){
-      var btn=document.getElementById('maintenanceBtn');
-      btn.disabled=true; btn.textContent='Ejecutando...';
-      var wrap=document.getElementById('maintenanceResult');
-      wrap.hidden=true; wrap.innerHTML='';
-      try{
-        var res=await AdminCommon.adminFetchJson('/api/admin/subscriptions/run-maintenance',{sessionId:_sid,method:'POST'});
-        var d=res.data;
-        wrap.hidden=false;
-        wrap.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;">'
-          +'<span class="chip expired">'+esc(d.expired_count||0)+' expiradas</span>'
-          +'<span class="chip past_due">'+esc(d.past_due_count||0)+' en mora</span>'
-          +'<span class="chip cancelled">'+esc(d.skipped_count||0)+' omitidas</span>'
-          +'<span class="chip suspended">'+esc(d.licenses_blocked_count||0)+' licencias bloqueadas</span>'
-          +'<span class="muted" style="font-size:.76rem;align-self:center;">de '+esc(d.candidates_checked||0)+' candidatas</span>'
-          +'</div>';
-        showMsg(res.message||'Mantenimiento completado.','success');
-        await loadSaasKPIs();
-      }catch(e){
-        showMsg(e&&e.message||'Error en mantenimiento','error');
-      }finally{
-        btn.disabled=false; btn.textContent='Ejecutar mantenimiento';
-      }
     }
   </script>
 </body>

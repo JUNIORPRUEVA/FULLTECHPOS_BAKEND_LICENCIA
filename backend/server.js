@@ -50,13 +50,8 @@ const billingPortalRoutes = require('./routes/billingPortalRoutes');
 const licenseValidationRoutes = require('./routes/licenseValidationRoutes');
 const businessesRoutes = require('./routes/businessesRoutes');
 const adminProductsRoutes = require('./routes/adminProductsRoutes');
-const adminProductPlansRoutes = require('./routes/adminProductPlansRoutes');
-const adminSubscriptionsRoutes = require('./routes/adminSubscriptionsRoutes');
-const adminPaymentsRoutes = require('./routes/adminPaymentsRoutes');
 const adminPlatformUsersRoutes = require('./routes/adminPlatformUsersRoutes');
 const adminRolesRoutes = require('./routes/adminRolesRoutes');
-const adminSaasDashboardRoutes = require('./routes/adminSaasDashboardRoutes');
-const adminMaintenanceRoutes = require('./routes/adminMaintenanceRoutes');
 const adminStoreSettingsRoutes = require('./routes/adminStoreSettingsRoutes');
 const adminSupportResetRoutes = require('./routes/adminSupportResetRoutes');
 const adminSupportMessageConfigRoutes = require('./routes/adminSupportMessageConfigRoutes');
@@ -64,7 +59,6 @@ const storePublicRoutes = require('./routes/storePublicRoutes');
 const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const supportRequestRoutes = require('./routes/supportRequestRoutes');
-const { startDailySubscriptionMaintenanceJob } = require('./services/subscriptionSchedulerService');
 
 // Módulos opcionales (solo cuando se usa el backend completo)
 const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
@@ -399,13 +393,8 @@ app.use('/api/public', publicAssetsRoutes);
 // Admin APIs (protected by x-session-id)
 app.use('/api/admin', adminProductsRoutes);
 app.use('/api/admin', adminStoreSettingsRoutes);
-app.use('/api/admin/product-plans', adminProductPlansRoutes);
-app.use('/api/admin/subscriptions', adminSubscriptionsRoutes);
-app.use('/api/admin/payments', adminPaymentsRoutes);
 app.use('/api/admin/platform-users', adminPlatformUsersRoutes);
 app.use('/api/admin/roles', adminRolesRoutes);
-app.use('/api/admin/saas-dashboard', adminSaasDashboardRoutes);
-app.use('/api/admin/subscriptions', adminMaintenanceRoutes);
 app.use('/api/admin/support-reset', adminSupportResetRoutes);
 app.use('/api/admin/support-message-config', adminSupportMessageConfigRoutes);
 
@@ -783,7 +772,6 @@ async function startServer() {
     console.log(`   Admin Panel: http://localhost:${ADMIN_PORT}/admin/login.html`);
     console.log(`   API: http://localhost:${ADMIN_PORT}/api`);
     console.log(`   Landing Pública: http://localhost:${ADMIN_PORT}/\n`);
-    startDailySubscriptionMaintenanceJob();
   });
 }
 

@@ -213,7 +213,7 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
                     ),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
-                      value: _selectedCustomerId,
+                      initialValue: _selectedCustomerId,
                       isExpanded: true,
                       items: widget.customers
                           .map(
@@ -246,7 +246,7 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
                     ),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
-                      value: _selectedProjectId,
+                      initialValue: _selectedProjectId,
                       isExpanded: true,
                       items: widget.projects
                           .where((p) => p.isActive)
@@ -332,7 +332,7 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
                     ),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
-                      value: _tipo,
+                      initialValue: _tipo,
                       items: const [
                         DropdownMenuItem(value: 'FULL', child: Text('FULL')),
                         DropdownMenuItem(value: 'DEMO', child: Text('DEMO')),

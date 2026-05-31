@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
@@ -111,6 +112,7 @@ class _LicensesPageState extends State<LicensesPage> {
             (l.projectName ?? '').toLowerCase().contains(q) ||
             (l.businessId ?? '').toLowerCase().contains(q) ||
             (l.customerId ?? '').toLowerCase().contains(q) ||
+            (l.customerName ?? '').toLowerCase().contains(q) ||
             (l.licenseType ?? '').toLowerCase().contains(q);
       }).toList();
     }
@@ -289,6 +291,11 @@ class _LicensesPageState extends State<LicensesPage> {
     }
   }
 
+  void _viewCustomer(String customerId) {
+    // Navegar al detalle del cliente específico
+    context.go('/admin/clientes?customerId=$customerId');
+  }
+
   Future<void> _openDetailMobile(License license) async {
     await showDialog<void>(
       context: context,
@@ -309,6 +316,9 @@ class _LicensesPageState extends State<LicensesPage> {
             Navigator.of(context).pop();
             await _deleteSelected();
           },
+          onViewCustomer: license.customerId != null
+              ? () => _viewCustomer(license.customerId!)
+              : null,
         ),
       ),
     );
@@ -555,6 +565,9 @@ class _LicensesPageState extends State<LicensesPage> {
                     () => _licensesService.extendDays(_selected!.id, d),
                   ),
                   onDelete: _deleteSelected,
+                  onViewCustomer: _selected!.customerId != null
+                      ? () => _viewCustomer(_selected!.customerId!)
+                      : null,
                 ),
             ],
           );
