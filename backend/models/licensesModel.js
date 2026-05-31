@@ -53,17 +53,31 @@ async function createLicenseWithKey({
   const normalizedLicenseType = String(license_type || 'SUSCRIPCION').trim().toUpperCase() === 'PERMANENTE'
     ? 'PERMANENTE'
     : 'SUSCRIPCION';
-  try {
-    const result = await pool.query(
-      `INSERT INTO licenses (project_id, customer_id, license_key, tipo, license_type, dias_validez, max_dispositivos, estado, notas)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDIENTE', $8)
-       RETURNING *`,
-      [project_id, customer_id || null, license_key, tipo, normalizedLicenseType, dias_validez, max_dispositivos, notas || null]
-    );
-    return result.rows[0];
-  } catch (e) {
-    // Backward compatibility: old schema without projects
-    if (isPgMissingColumnOrTable(e)) {
+
+  // Intentar con schema completo primero, luego degradar si faltan columnas
+  const attempts = [
+    // Attempt 1: schema completo con project_id y license_type
+    async () => {
+      const result = await pool.query(
+        `INSERT INTO licenses (project_id, customer_id, license_key, tipo, license_type, dias_validez, max_dispositivos, estado, notas)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDIENTE', $8)
+         RETURNING *`,
+        [project_id, customer_id || null, license_key, tipo, normalizedLicenseType, dias_validez, max_dispositivos, notas || null]
+      );
+      return result.rows[0];
+    },
+    // Attempt 2: sin license_type
+    async () => {
+      const result = await pool.query(
+        `INSERT INTO licenses (project_id, customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
+         VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7)
+         RETURNING *`,
+        [project_id, customer_id || null, license_key, tipo, dias_validez, max_dispositivos, notas || null]
+      );
+      return result.rows[0];
+    },
+    // Attempt 3: sin project_id ni license_type (schema legacy)
+    async () => {
       const result = await pool.query(
         `INSERT INTO licenses (customer_id, license_key, tipo, dias_validez, max_dispositivos, estado, notas)
          VALUES ($1, $2, $3, $4, $5, 'PENDIENTE', $6)
@@ -72,8 +86,27 @@ async function createLicenseWithKey({
       );
       return result.rows[0];
     }
-    throw e;
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      return await attempt();
+    } catch (e) {
+      // Si es error de columna faltante, intentar siguiente schema
+      if (isPgMissingColumnOrTable(e)) {
+        continue;
+      }
+      // Si es unique violation (license_key duplicado), propagar para que el caller reintente
+      if (e && e.code === '23505') {
+        throw e;
+      }
+      // Para cualquier otro error, propagar
+      throw e;
+    }
   }
+
+  // Si todos los intentos fallaron por schema, lanzar el último error
+  throw new Error('No se pudo insertar la licencia: schema de base de datos incompatible');
 }
 
 async function listLicenses({ limit, offset, project_id, customer_id, tipo, estado, excludeEstados }) {
@@ -344,8 +377,8 @@ async function updateLicense(licenseId, patch) {
     const nextCustomerId = patch.customer_id != null ? patch.customer_id : current.customer_id;
     const nextProjectId = patch.project_id != null ? patch.project_id : current.project_id;
     const nextTipo = patch.tipo != null ? patch.tipo : current.tipo;
-    const nextDias = patch.dias_validez != null ? patch.dias_validez : current.dias_validez;
-    const nextMax = patch.max_dispositivos != null ? patch.max_dispositivos : current.max_dispositivos;
+    const nextDias = patch.dias_validez != null ? patch.dias_validez : (current.dias_validez || 30);
+    const nextMax = patch.max_dispositivos != null ? patch.max_dispositivos : (current.max_dispositivos || 1);
     const nextNotas = patch.notas !== undefined ? patch.notas : current.notas;
     const nextEstado = patch.estado != null ? patch.estado : current.estado;
     const nextLicenseType = patch.license_type != null
@@ -373,35 +406,118 @@ async function updateLicense(licenseId, patch) {
       }
     }
 
-    const updRes = await client.query(
-      `UPDATE licenses
-       SET customer_id = $2,
-           project_id = $3,
-           tipo = $4,
-           dias_validez = $5,
-           max_dispositivos = $6,
-           estado = $7,
-           notas = $8,
-           fecha_inicio = $9,
-           fecha_fin = $10,
-           expires_at = $10,
-           license_type = $11
-       WHERE id = $1
-       RETURNING *`,
-      [
-        licenseId,
-        nextCustomerId,
-        nextProjectId,
-        nextTipo,
-        Number(nextDias),
-        Number(nextMax),
-        nextEstado,
-        nextNotas,
-        nextFechaInicio,
-        nextFechaFin,
-        nextLicenseType
-      ]
-    );
+    // Intentar UPDATE con schema completo, degradar si faltan columnas
+    const updateAttempts = [
+      // Attempt 1: schema completo con license_type
+      async () => {
+        return await client.query(
+          `UPDATE licenses
+           SET customer_id = $2,
+               project_id = $3,
+               tipo = $4,
+               dias_validez = $5,
+               max_dispositivos = $6,
+               estado = $7,
+               notas = $8,
+               fecha_inicio = $9,
+               fecha_fin = $10,
+               expires_at = $10,
+               license_type = $11
+           WHERE id = $1
+           RETURNING *`,
+          [
+            licenseId,
+            nextCustomerId,
+            nextProjectId,
+            nextTipo,
+            Number(nextDias),
+            Number(nextMax),
+            nextEstado,
+            nextNotas,
+            nextFechaInicio,
+            nextFechaFin,
+            nextLicenseType
+          ]
+        );
+      },
+      // Attempt 2: sin license_type
+      async () => {
+        return await client.query(
+          `UPDATE licenses
+           SET customer_id = $2,
+               project_id = $3,
+               tipo = $4,
+               dias_validez = $5,
+               max_dispositivos = $6,
+               estado = $7,
+               notas = $8,
+               fecha_inicio = $9,
+               fecha_fin = $10,
+               expires_at = $10
+           WHERE id = $1
+           RETURNING *`,
+          [
+            licenseId,
+            nextCustomerId,
+            nextProjectId,
+            nextTipo,
+            Number(nextDias),
+            Number(nextMax),
+            nextEstado,
+            nextNotas,
+            nextFechaInicio,
+            nextFechaFin
+          ]
+        );
+      },
+      // Attempt 3: sin project_id ni license_type
+      async () => {
+        return await client.query(
+          `UPDATE licenses
+           SET customer_id = $2,
+               tipo = $3,
+               dias_validez = $4,
+               max_dispositivos = $5,
+               estado = $6,
+               notas = $7,
+               fecha_inicio = $8,
+               fecha_fin = $9,
+               expires_at = $9
+           WHERE id = $1
+           RETURNING *`,
+          [
+            licenseId,
+            nextCustomerId,
+            nextTipo,
+            Number(nextDias),
+            Number(nextMax),
+            nextEstado,
+            nextNotas,
+            nextFechaInicio,
+            nextFechaFin
+          ]
+        );
+      }
+    ];
+
+    let updRes = null;
+    let lastUpdateError = null;
+    for (const attempt of updateAttempts) {
+      try {
+        updRes = await attempt();
+        break;
+      } catch (e) {
+        lastUpdateError = e;
+        if (isPgMissingColumnOrTable(e)) {
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    if (!updRes) {
+      throw lastUpdateError || new Error('No se pudo actualizar la licencia');
+    }
 
     if (ACTIVATION_BLOCKING_LICENSE_STATES.has(String(nextEstado).toUpperCase())) {
       await activationsModel.blockActivationsForLicense(licenseId, { client });
@@ -436,7 +552,13 @@ async function activateLicenseManually(licenseId) {
 
     let fecha_inicio = license.fecha_inicio;
     let fecha_fin = license.fecha_fin;
-    const licenseType = String(license.license_type || 'SUSCRIPCION').trim().toUpperCase();
+    // Intentar leer license_type, si no existe la columna, asumir SUSCRIPCION
+    let licenseType = 'SUSCRIPCION';
+    try {
+      licenseType = String(license.license_type || 'SUSCRIPCION').trim().toUpperCase();
+    } catch (_) {
+      licenseType = 'SUSCRIPCION';
+    }
 
     const fechaFinMs = fecha_fin ? new Date(fecha_fin).getTime() : NaN;
     const isFechaFinValid = Number.isFinite(fechaFinMs);
@@ -452,16 +574,49 @@ async function activateLicenseManually(licenseId) {
       fecha_fin = new Date(now.getTime() + days * msPerDay);
     }
 
-    const updRes = await client.query(
-      `UPDATE licenses
-      SET estado = 'ACTIVA', fecha_inicio = $2, fecha_fin = $3, expires_at = $3
-       WHERE id = $1
-       RETURNING *`,
-      [licenseId, fecha_inicio, fecha_fin]
-    );
+    // Intentar UPDATE con expires_at, degradar si no existe la columna
+    const activateAttempts = [
+      async () => {
+        return await client.query(
+          `UPDATE licenses
+          SET estado = 'ACTIVA', fecha_inicio = $2, fecha_fin = $3, expires_at = $3
+           WHERE id = $1
+           RETURNING *`,
+          [licenseId, fecha_inicio, fecha_fin]
+        );
+      },
+      async () => {
+        return await client.query(
+          `UPDATE licenses
+          SET estado = 'ACTIVA', fecha_inicio = $2, fecha_fin = $3
+           WHERE id = $1
+           RETURNING *`,
+          [licenseId, fecha_inicio, fecha_fin]
+        );
+      }
+    ];
+
+    let activateRes = null;
+    let lastActivateError = null;
+    for (const attempt of activateAttempts) {
+      try {
+        activateRes = await attempt();
+        break;
+      } catch (e) {
+        lastActivateError = e;
+        if (isPgMissingColumnOrTable(e)) {
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    if (!activateRes) {
+      throw lastActivateError || new Error('No se pudo activar la licencia');
+    }
 
     await client.query('COMMIT');
-    return updRes.rows[0];
+    return activateRes.rows[0];
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;
@@ -498,19 +653,55 @@ async function extendLicenseDays(licenseId, extraDays) {
     }
 
     const now = new Date();
-    if (String(license.license_type || '').trim().toUpperCase() === 'PERMANENTE') {
-      const updRes = await client.query(
-        `UPDATE licenses
-         SET estado = 'ACTIVA',
-             fecha_fin = NULL,
-             expires_at = NULL
-         WHERE id = $1
-         RETURNING *`,
-        [licenseId]
-      );
+    // Intentar leer license_type, si no existe la columna, asumir SUSCRIPCION
+    let licenseTypeForExtend = 'SUSCRIPCION';
+    try {
+      licenseTypeForExtend = String(license.license_type || 'SUSCRIPCION').trim().toUpperCase();
+    } catch (_) {
+      licenseTypeForExtend = 'SUSCRIPCION';
+    }
+    if (licenseTypeForExtend === 'PERMANENTE') {
+      // Intentar con expires_at, degradar si no existe
+      const permAttempts = [
+        async () => {
+          return await client.query(
+            `UPDATE licenses
+             SET estado = 'ACTIVA',
+                 fecha_fin = NULL,
+                 expires_at = NULL
+             WHERE id = $1
+             RETURNING *`,
+            [licenseId]
+          );
+        },
+        async () => {
+          return await client.query(
+            `UPDATE licenses
+             SET estado = 'ACTIVA',
+                 fecha_fin = NULL
+             WHERE id = $1
+             RETURNING *`,
+            [licenseId]
+          );
+        }
+      ];
 
+      let permRes = null;
+      let permError = null;
+      for (const attempt of permAttempts) {
+        try {
+          permRes = await attempt();
+          break;
+        } catch (e) {
+          permError = e;
+          if (isPgMissingColumnOrTable(e)) continue;
+          throw e;
+        }
+      }
+
+      if (!permRes) throw permError || new Error('No se pudo actualizar licencia permanente');
       await client.query('COMMIT');
-      return updRes.rows[0] || null;
+      return permRes.rows[0] || null;
     }
 
     // Si aún no se ha iniciado (PENDIENTE sin fecha_inicio), solo aumentamos dias_validez.
@@ -539,19 +730,49 @@ async function extendLicenseDays(licenseId, extraDays) {
     // Si estaba vencida y ahora la fecha_fin queda en el futuro, reactivar.
     const nextEstado = license.estado === 'VENCIDA' ? 'ACTIVA' : license.estado;
 
-    const updRes = await client.query(
-      `UPDATE licenses
-       SET fecha_fin = $2,
-           expires_at = $2,
-           dias_validez = $3,
-           estado = $4
-       WHERE id = $1
-       RETURNING *`,
-      [licenseId, nextFin, nextDiasValidez, nextEstado]
-    );
+    // Intentar UPDATE con expires_at, degradar si no existe
+    const extendAttempts = [
+      async () => {
+        return await client.query(
+          `UPDATE licenses
+           SET fecha_fin = $2,
+               expires_at = $2,
+               dias_validez = $3,
+               estado = $4
+           WHERE id = $1
+           RETURNING *`,
+          [licenseId, nextFin, nextDiasValidez, nextEstado]
+        );
+      },
+      async () => {
+        return await client.query(
+          `UPDATE licenses
+           SET fecha_fin = $2,
+               dias_validez = $3,
+               estado = $4
+           WHERE id = $1
+           RETURNING *`,
+          [licenseId, nextFin, nextDiasValidez, nextEstado]
+        );
+      }
+    ];
 
+    let extendRes = null;
+    let extendError = null;
+    for (const attempt of extendAttempts) {
+      try {
+        extendRes = await attempt();
+        break;
+      } catch (e) {
+        extendError = e;
+        if (isPgMissingColumnOrTable(e)) continue;
+        throw e;
+      }
+    }
+
+    if (!extendRes) throw extendError || new Error('No se pudo extender la licencia');
     await client.query('COMMIT');
-    return updRes.rows[0] || null;
+    return extendRes.rows[0] || null;
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;

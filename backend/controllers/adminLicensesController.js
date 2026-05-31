@@ -21,20 +21,38 @@ function parsePagination(req) {
 
 async function createLicense(req, res) {
   try {
-    const { customer_id, tipo, license_type, dias_validez, max_dispositivos, notas, project_id, project_code, auto_activate, estado } = req.body || {};
+    // ==========================================
+    // LOG: Raw request body completo
+    // ==========================================
+    console.log('[CREATE_LICENSE] BODY:', JSON.stringify(req.body, null, 2));
+    console.log('[CREATE_LICENSE] USER:', req.user || req.admin || null);
 
     // ==========================================
-    // LOG: Payload recibido
+    // Normalización flexible de campos
     // ==========================================
-    console.log('[createLicense] Payload recibido:', JSON.stringify({
+    const customer_id = req.body.customer_id || req.body.clientId || req.body.customerId;
+    const project_id = req.body.project_id || req.body.projectId;
+    const project_code = req.body.project_code || req.body.projectCode;
+    const tipo = req.body.tipo || req.body.type;
+    const license_type = req.body.license_type || req.body.licenseType || 'SUSCRIPCION';
+    const dias_validez = Number(req.body.dias_validez || req.body.validityDays || req.body.days || 0);
+    const max_dispositivos = Number(req.body.max_dispositivos || req.body.maxDevices || req.body.deviceLimit || 1);
+    const notas = req.body.notas || req.body.notes || null;
+    const auto_activate = req.body.auto_activate ?? req.body.autoActivate ?? req.body.activar_automaticamente ?? false;
+    const estado = req.body.estado || req.body.status || null;
+
+    // ==========================================
+    // LOG: Valores normalizados
+    // ==========================================
+    console.log('[CREATE_LICENSE] normalized:', JSON.stringify({
       customer_id,
+      project_id,
+      project_code,
       tipo,
       license_type,
       dias_validez,
       max_dispositivos,
       notas: notas ? '(presente)' : null,
-      project_id,
-      project_code,
       auto_activate,
       estado
     }));
@@ -202,15 +220,43 @@ async function createLicense(req, res) {
       } catch (e) {
         // 23505 = unique_violation
         if (e && e.code === '23505') continue;
-        console.error('[createLicense] Error DB:', e);
-        return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+        console.error('[CREATE_LICENSE] FATAL ERROR:', {
+          message: e.message,
+          stack: e.stack,
+          code: e.code,
+          detail: e.detail,
+          constraint: e.constraint,
+          table: e.table,
+          column: e.column
+        });
+        return res.status(500).json({
+          ok: false,
+          message: 'Error interno del servidor',
+          error: e.message,
+          code: e.code || null,
+          detail: e.detail || null,
+          constraint: e.constraint || null
+        });
       }
     }
 
     return res.status(500).json({ ok: false, message: 'Error interno del servidor: no se pudo generar una license_key única' });
   } catch (error) {
-    console.error('[createLicense] Error inesperado:', error);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+    console.error('[CREATE_LICENSE] FATAL ERROR (outer):', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint
+    });
+    return res.status(500).json({
+      ok: false,
+      message: 'Error interno del servidor',
+      error: error.message,
+      code: error.code || null,
+      detail: error.detail || null,
+      constraint: error.constraint || null
+    });
   }
 }
 
