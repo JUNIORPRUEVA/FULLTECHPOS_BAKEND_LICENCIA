@@ -333,10 +333,23 @@ class _LicenseFormPanelState extends State<LicenseFormPanel> {
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
                       initialValue: _tipo,
-                      items: const [
-                        DropdownMenuItem(value: 'FULL', child: Text('FULL')),
-                        DropdownMenuItem(value: 'DEMO', child: Text('DEMO')),
-                      ],
+                      items: () {
+                        const baseItems = [
+                          DropdownMenuItem(value: 'FULL', child: Text('FULL')),
+                          DropdownMenuItem(value: 'DEMO', child: Text('DEMO')),
+                        ];
+                        // Si _tipo no está en la lista base, lo agregamos para evitar el error de aserción
+                        if (_tipo != 'FULL' && _tipo != 'DEMO') {
+                          return [
+                            ...baseItems,
+                            DropdownMenuItem(
+                              value: _tipo,
+                              child: Text(_tipo),
+                            ),
+                          ];
+                        }
+                        return baseItems;
+                      }(),
                       onChanged:
                           isDisabled ? null : (v) => setState(() => _tipo = v ?? 'FULL'),
                       decoration: const InputDecoration(),

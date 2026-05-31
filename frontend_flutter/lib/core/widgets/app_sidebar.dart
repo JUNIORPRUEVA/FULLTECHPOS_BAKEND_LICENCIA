@@ -34,19 +34,14 @@ const List<AppSidebarItem> sidebarItems = [
     route: '/admin/licencias',
   ),
   AppSidebarItem(
-    label: 'Activaciones',
-    icon: Icons.devices_other_outlined,
-    route: '/admin/activaciones',
-  ),
-  AppSidebarItem(
     label: 'Proyectos',
     icon: Icons.folder_copy_outlined,
     route: '/admin/proyectos',
   ),
   AppSidebarItem(
-    label: 'Productos',
-    icon: Icons.inventory_2_outlined,
-    route: '/admin/productos',
+    label: 'Pagos',
+    icon: Icons.payments_outlined,
+    route: '/admin/pagos',
   ),
 ];
 

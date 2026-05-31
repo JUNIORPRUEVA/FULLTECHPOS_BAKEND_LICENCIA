@@ -1585,6 +1585,45 @@ const projectResourceConfig = CloudResourceConfig(
   ),
 );
 
+const paymentResourceConfig = CloudResourceConfig(
+  title: 'Pagos',
+  icon: Icons.payments_outlined,
+  endpoint: '/api/admin/payments',
+  listKey: 'payments',
+  searchKeys: ['paypal_order_id', 'description', 'customer_name'],
+  filterParam: 'status',
+  filterOptions: [
+    ResourceFilterOption('Todos', null),
+    ResourceFilterOption('Completados', 'COMPLETED'),
+    ResourceFilterOption('Creados', 'CREATED'),
+    ResourceFilterOption('Fallidos', 'FAILED'),
+    ResourceFilterOption('Reembolsados', 'REFUNDED'),
+  ],
+  fields: [
+    ResourceField('customer_name', 'Cliente'),
+    ResourceField('amount', 'Monto'),
+    ResourceField('currency', 'Moneda'),
+    ResourceField('status', 'Estado', badge: true),
+    ResourceField('created_at', 'Fecha'),
+  ],
+  detailFields: [
+    ResourceField('id', 'ID'),
+    ResourceField('paypal_order_id', 'PayPal Order ID'),
+    ResourceField('customer_name', 'Cliente'),
+    ResourceField('customer_id', 'Customer ID'),
+    ResourceField('amount', 'Monto'),
+    ResourceField('currency', 'Moneda'),
+    ResourceField('status', 'Estado'),
+    ResourceField('order_type', 'Tipo'),
+    ResourceField('description', 'Descripción'),
+    ResourceField('subscription_id', 'Suscripción'),
+    ResourceField('license_id', 'Licencia'),
+    ResourceField('captured_at', 'Capturado'),
+    ResourceField('created_at', 'Creado'),
+    ResourceField('updated_at', 'Actualizado'),
+  ],
+);
+
 const userResourceConfig = CloudResourceConfig(
   title: 'Usuarios del sistema',
   icon: Icons.admin_panel_settings_outlined,

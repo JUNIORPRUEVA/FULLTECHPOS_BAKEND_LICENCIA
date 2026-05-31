@@ -43,6 +43,7 @@ const adminLicensesRoutes = require('./routes/adminLicensesRoutes');
 const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
+const adminPaymentsRoutes = require('./routes/adminPaymentsRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const activationsRoutes = require('./routes/activationsRoutes');
 const paypalRoutes = require('./routes/paypalRoutes');
@@ -470,6 +471,7 @@ app.use('/api/admin/licenses', adminLicensesRoutes);
 app.use('/api/admin/license-config', adminLicenseConfigRoutes);
 app.use('/api/admin/activations', adminActivationsRoutes);
 app.use('/api/admin/projects', adminProjectsRoutes);
+app.use('/api/admin/payments', adminPaymentsRoutes);
 
 // APP ESCRITORIO
 // Rate limit public endpoints: 120 req/min per IP (generous for POS apps,
