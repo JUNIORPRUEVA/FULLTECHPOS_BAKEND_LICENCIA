@@ -108,9 +108,32 @@ async function blockActivation(req, res) {
   }
 }
 
+async function activateActivation(req, res) {
+  try {
+    const activationId = req.params.id;
+    const updated = await activationsModel.updateStatus(activationId, 'ACTIVE');
+    if (!updated) {
+      return res.status(404).json({ ok: false, message: 'Activación no encontrada' });
+    }
+
+    await auditLogService.log({
+      target_type: 'activation',
+      target_id: updated.id,
+      action: 'activation.activate_admin',
+      after_data: { status: updated.status }
+    }, { req });
+
+    return res.json({ ok: true, activation: updated });
+  } catch (error) {
+    console.error('admin activateActivation error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   listActivations,
   getActivation,
   revokeActivation,
-  blockActivation
+  blockActivation,
+  activateActivation
 };

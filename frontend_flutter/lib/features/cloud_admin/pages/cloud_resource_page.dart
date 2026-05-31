@@ -1526,6 +1526,12 @@ const activationResourceConfig = CloudResourceConfig(
   ],
   rowActions: [
     ResourceAction(
+      label: 'Activar',
+      icon: Icons.check_circle_outline_rounded,
+      method: ResourceActionMethod.post,
+      path: '/api/admin/activations/:id/activate',
+    ),
+    ResourceAction(
       label: 'Bloquear',
       icon: Icons.lock_outline_rounded,
       method: ResourceActionMethod.post,

@@ -29,4 +29,9 @@ router.patch('/:id/revocar', isAdmin, (req, res, next) => {
   Promise.resolve(adminActivationsController.revokeActivation(req, res)).catch(next);
 });
 
+// POST /api/admin/activations/:id/activate
+router.post('/:id/activate', isAdmin, (req, res, next) => {
+  Promise.resolve(adminActivationsController.activateActivation(req, res)).catch(next);
+});
+
 module.exports = router;
