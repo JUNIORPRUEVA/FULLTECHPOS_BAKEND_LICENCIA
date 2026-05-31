@@ -23,6 +23,32 @@ async function createLicense(req, res) {
   try {
     const { customer_id, tipo, license_type, dias_validez, max_dispositivos, notas, project_id, project_code, auto_activate, estado } = req.body || {};
 
+    // ==========================================
+    // LOG: Payload recibido
+    // ==========================================
+    console.log('[createLicense] Payload recibido:', JSON.stringify({
+      customer_id,
+      tipo,
+      license_type,
+      dias_validez,
+      max_dispositivos,
+      notas: notas ? '(presente)' : null,
+      project_id,
+      project_code,
+      auto_activate,
+      estado
+    }));
+
+    // ==========================================
+    // Validación: project_id o project_code requerido
+    // ==========================================
+    if (!project_id && !project_code) {
+      return res.status(400).json({
+        ok: false,
+        message: 'project_id o project_code es requerido. Selecciona un proyecto.'
+      });
+    }
+
     let project = null;
     if (project_id) {
       if (!isUuid(project_id)) {
@@ -31,17 +57,25 @@ async function createLicense(req, res) {
       project = await projectsModel.getProjectById(String(project_id).trim());
     } else if (project_code) {
       project = await projectsModel.getProjectByCode(String(project_code));
-    } else {
-      project = await projectsModel.getDefaultProject();
     }
 
     if (!project) {
       return res.status(400).json({
         ok: false,
-        message: 'No existe un proyecto por defecto ni proyectos registrados. Crea un proyecto antes de generar licencias.'
+        message: 'El proyecto seleccionado no existe. Verifica que el proyecto esté registrado.'
       });
     }
 
+    // LOG: Proyecto seleccionado
+    console.log('[createLicense] Proyecto seleccionado:', JSON.stringify({
+      id: project.id,
+      code: project.code,
+      name: project.name
+    }));
+
+    // ==========================================
+    // Validación: customer_id requerido
+    // ==========================================
     if (!customer_id || !String(customer_id).trim()) {
       return res.status(400).json({ ok: false, message: 'customer_id es requerido' });
     }
@@ -55,37 +89,50 @@ async function createLicense(req, res) {
       return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
     }
 
+    // LOG: Cliente seleccionado
+    console.log('[createLicense] Cliente seleccionado:', JSON.stringify({
+      id: customer.id,
+      nombre_negocio: customer.nombre_negocio,
+      business_id: customer.business_id
+    }));
+
+    // ==========================================
+    // Validación: tipo
+    // ==========================================
     const tipoUpper = String(tipo || '').toUpperCase();
     if (tipoUpper !== 'DEMO' && tipoUpper !== 'FULL') {
       return res.status(400).json({ ok: false, message: "tipo debe ser 'DEMO' o 'FULL'" });
     }
 
+    // ==========================================
+    // Validación: license_type
+    // ==========================================
     const licenseType = String(license_type || 'SUSCRIPCION').trim().toUpperCase();
     if (!['PERMANENTE', 'SUSCRIPCION'].includes(licenseType)) {
       return res.status(400).json({ ok: false, message: "license_type debe ser 'PERMANENTE' o 'SUSCRIPCION'" });
     }
 
-    // Obtener configuración de licencias para usar como valores por defecto
+    // ==========================================
+    // Obtener configuración de licencias
+    // ==========================================
     const config = await licenseConfigService.getLicenseConfig();
 
-    // Determinar dias_validez: si no viene en el body, usar el del config
+    // Determinar dias_validez
     let dias = Number(dias_validez);
     if (!Number.isFinite(dias) || dias <= 0) {
-      // Si no viene o es inválido, usar el default del config según el tipo
       dias = tipoUpper === 'DEMO' ? config.demo_dias_validez : config.full_dias_validez;
     }
 
-    // Determinar max_dispositivos: si no viene en el body, usar el del config
+    // Determinar max_dispositivos
     let maxDisp = Number(max_dispositivos);
     if (!Number.isFinite(maxDisp) || maxDisp <= 0) {
-      // Si no viene o es inválido, usar el default del config según el tipo
       maxDisp = tipoUpper === 'DEMO' ? config.demo_max_dispositivos : config.full_max_dispositivos;
     }
 
     // FULLPOS: siempre 1 dispositivo
     maxDisp = 1;
 
-    // Validación final de los valores (ya sean del body o del config)
+    // Validación final
     if (!Number.isFinite(dias) || dias <= 0) {
       return res.status(400).json({ ok: false, message: 'dias_validez debe ser un número entero > 0' });
     }
@@ -93,7 +140,9 @@ async function createLicense(req, res) {
       return res.status(400).json({ ok: false, message: 'max_dispositivos debe ser un número entero > 0' });
     }
 
+    // ==========================================
     // Generar license_key único con reintentos
+    // ==========================================
     for (let i = 0; i < 6; i++) {
       const key = generateLicenseKey(tipoUpper);
       try {
@@ -108,6 +157,17 @@ async function createLicense(req, res) {
           notas: notas ? String(notas) : null
         });
 
+        // LOG: Licencia generada
+        console.log('[createLicense] Licencia generada:', JSON.stringify({
+          id: license.id,
+          license_key: license.license_key,
+          project_id: license.project_id,
+          customer_id: license.customer_id,
+          tipo: license.tipo,
+          dias_validez: license.dias_validez,
+          estado: license.estado
+        }));
+
         const autoActivate =
           auto_activate === true ||
           String(auto_activate || '').trim() === '1' ||
@@ -119,6 +179,14 @@ async function createLicense(req, res) {
         }
 
         const activated = await licensesModel.updateLicense(license.id, { estado: 'ACTIVA' });
+
+        // LOG: Activación
+        console.log('[createLicense] Licencia activada automáticamente:', JSON.stringify({
+          id: activated.id,
+          estado: activated.estado,
+          fecha_inicio: activated.fecha_inicio,
+          fecha_fin: activated.fecha_fin
+        }));
 
         try {
           const biz = String(customer?.business_id || '').trim();
@@ -134,14 +202,14 @@ async function createLicense(req, res) {
       } catch (e) {
         // 23505 = unique_violation
         if (e && e.code === '23505') continue;
-        console.error('createLicense db error:', e);
+        console.error('[createLicense] Error DB:', e);
         return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
       }
     }
 
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor: no se pudo generar una license_key única' });
   } catch (error) {
-    console.error('createLicense error:', error);
+    console.error('[createLicense] Error inesperado:', error);
     return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
   }
 }

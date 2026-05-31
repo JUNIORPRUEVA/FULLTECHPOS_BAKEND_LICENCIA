@@ -31,9 +31,7 @@ class _CustomersPageState extends State<CustomersPage> {
   @override
   void initState() {
     super.initState();
-    _service = CustomersService(
-      sessionManager: context.read<SessionManager>(),
-    );
+    _service = CustomersService(sessionManager: context.read<SessionManager>());
     _future = _service.listCustomers();
   }
 
@@ -79,7 +77,9 @@ class _CustomersPageState extends State<CustomersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar cliente'),
-        content: Text('¿Eliminar a "${c.nombreNegocio}"? Esta acción no se puede deshacer.'),
+        content: Text(
+          '¿Eliminar a "${c.nombreNegocio}"? Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -87,7 +87,10 @@ class _CustomersPageState extends State<CustomersPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -99,15 +102,15 @@ class _CustomersPageState extends State<CustomersPage> {
       if (mounted) {
         setState(() => _selected = null);
         _refresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cliente eliminado')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Cliente eliminado')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -122,6 +125,7 @@ class _CustomersPageState extends State<CustomersPage> {
           width: double.infinity,
           onClose: () => Navigator.of(context).pop(),
           onDelete: () => _deleteCustomer(customer),
+          onUpdated: _refresh,
         ),
       ),
     );
@@ -161,7 +165,8 @@ class _CustomersPageState extends State<CustomersPage> {
                       decoration: const BoxDecoration(
                         color: AppColors.surface,
                         border: Border(
-                            bottom: BorderSide(color: AppColors.border)),
+                          bottom: BorderSide(color: AppColors.border),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -171,29 +176,32 @@ class _CustomersPageState extends State<CustomersPage> {
                               height: 34,
                               child: TextField(
                                 controller: _searchCtrl,
-                                onChanged: (v) =>
-                                    setState(() => _query = v),
+                                onChanged: (v) => setState(() => _query = v),
                                 style: const TextStyle(fontSize: 13),
                                 decoration: InputDecoration(
                                   hintText: 'Buscar cliente...',
                                   prefixIcon: const Icon(
-                                      Icons.search_rounded,
-                                      size: 16),
+                                    Icons.search_rounded,
+                                    size: 16,
+                                  ),
                                   contentPadding: EdgeInsets.zero,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(6),
                                     borderSide: const BorderSide(
-                                        color: AppColors.border),
+                                      color: AppColors.border,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(6),
                                     borderSide: const BorderSide(
-                                        color: AppColors.border),
+                                      color: AppColors.border,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(6),
                                     borderSide: const BorderSide(
-                                        color: AppColors.primary),
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -202,14 +210,33 @@ class _CustomersPageState extends State<CustomersPage> {
                           const SizedBox(width: AppSpacing.sm),
                           PopupMenuButton<String>(
                             tooltip: 'Filtro licencia',
-                            onSelected: (v) => setState(() => _licenseFilter = v),
+                            onSelected: (v) =>
+                                setState(() => _licenseFilter = v),
                             itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'TODOS', child: Text('Todas las licencias')),
-                              PopupMenuItem(value: 'ACTIVA', child: Text('Licencia activa')),
-                              PopupMenuItem(value: 'VENCIDA', child: Text('Licencia vencida')),
-                              PopupMenuItem(value: 'BLOQUEADA', child: Text('Licencia bloqueada')),
-                              PopupMenuItem(value: 'PENDIENTE', child: Text('Licencia pendiente')),
-                              PopupMenuItem(value: 'SIN_LICENCIA', child: Text('Sin licencia')),
+                              PopupMenuItem(
+                                value: 'TODOS',
+                                child: Text('Todas las licencias'),
+                              ),
+                              PopupMenuItem(
+                                value: 'ACTIVA',
+                                child: Text('Licencia activa'),
+                              ),
+                              PopupMenuItem(
+                                value: 'VENCIDA',
+                                child: Text('Licencia vencida'),
+                              ),
+                              PopupMenuItem(
+                                value: 'BLOQUEADA',
+                                child: Text('Licencia bloqueada'),
+                              ),
+                              PopupMenuItem(
+                                value: 'PENDIENTE',
+                                child: Text('Licencia pendiente'),
+                              ),
+                              PopupMenuItem(
+                                value: 'SIN_LICENCIA',
+                                child: Text('Sin licencia'),
+                              ),
                             ],
                             icon: const Icon(Icons.more_vert_rounded, size: 18),
                           ),
@@ -256,7 +283,7 @@ class _CustomersPageState extends State<CustomersPage> {
                             )
                           : ListView.separated(
                               itemCount: filtered.length,
-                                  separatorBuilder: (context, _) =>
+                              separatorBuilder: (context, _) =>
                                   const Divider(height: 1),
                               itemBuilder: (_, i) {
                                 final c = filtered[i];
@@ -285,6 +312,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   customer: _selected!,
                   onClose: () => setState(() => _selected = null),
                   onDelete: () => _deleteCustomer(_selected!),
+                  onUpdated: _refresh,
                 ),
             ],
           );

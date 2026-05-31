@@ -9,7 +9,9 @@ import '../../../core/widgets/loading_view.dart';
 import '../../customers/models/customer.dart';
 import '../../customers/services/customers_service.dart';
 import '../models/license.dart';
+import '../models/project.dart';
 import '../services/licenses_service.dart';
+import '../services/projects_service.dart';
 import '../widgets/license_detail_panel.dart';
 import '../widgets/license_form_panel.dart';
 import '../widgets/license_list_item.dart';
@@ -24,9 +26,12 @@ class LicensesPage extends StatefulWidget {
 class _LicensesPageState extends State<LicensesPage> {
   late final LicensesService _licensesService;
   late final CustomersService _customersService;
+  late final ProjectsService _projectsService;
 
   late Future<List<License>> _licensesFuture;
   List<Customer> _customers = [];
+  List<Project> _projects = [];
+  bool _projectsLoading = false;
 
   final _searchCtrl = TextEditingController();
   String _query = '';
@@ -45,8 +50,10 @@ class _LicensesPageState extends State<LicensesPage> {
     final session = context.read<SessionManager>();
     _licensesService = LicensesService(sessionManager: session);
     _customersService = CustomersService(sessionManager: session);
+    _projectsService = ProjectsService(sessionManager: session);
     _licensesFuture = _licensesService.listLicenses();
     _loadCustomers();
+    _loadProjects();
   }
 
   @override
@@ -60,6 +67,22 @@ class _LicensesPageState extends State<LicensesPage> {
       final customers = await _customersService.listCustomers(limit: 100);
       if (mounted) setState(() => _customers = customers);
     } catch (_) {}
+  }
+
+  Future<void> _loadProjects() async {
+    setState(() => _projectsLoading = true);
+    try {
+      final projects = await _projectsService.listProjects();
+      if (mounted) {
+        setState(() {
+          _projects = projects;
+          _projectsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _projectsLoading = false);
+      debugPrint('Error loading projects: $e');
+    }
   }
 
   void _refresh() {
@@ -98,14 +121,14 @@ class _LicensesPageState extends State<LicensesPage> {
   Future<void> _createLicense(LicenseFormValues values) async {
     setState(() => _creating = true);
     try {
-      final body = {
+      final body = <String, dynamic>{
         'customer_id': values.customerId,
+        'project_id': values.projectId,
         'tipo': values.tipo,
         'dias_validez': values.diasValidez,
         'max_dispositivos': 1,
         'auto_activate': values.autoActivate,
       };
-      if (values.projectCode != null) body['project_code'] = values.projectCode!;
       if (values.notas != null) body['notas'] = values.notas!;
 
       await _licensesService.createLicense(body);
@@ -135,12 +158,12 @@ class _LicensesPageState extends State<LicensesPage> {
 
     setState(() => _creating = true);
     try {
-      final body = {
+      final body = <String, dynamic>{
         'customer_id': values.customerId,
         'tipo': values.tipo,
         'dias_validez': values.diasValidez,
       };
-      if (values.projectCode != null) body['project_code'] = values.projectCode!;
+      if (values.projectId != null) body['project_id'] = values.projectId!;
       if (values.notas != null) body['notas'] = values.notas!;
 
       await _licensesService.updateLicense(selected.id, body);
@@ -180,12 +203,18 @@ class _LicensesPageState extends State<LicensesPage> {
       builder: (ctx) => Dialog.fullscreen(
         child: LicenseFormPanel(
           customers: _customers,
+          projects: _projects,
           loading: _creating,
+          projectsLoading: _projectsLoading,
           initialValues: LicenseFormValues(
             customerId: license.customerId ?? '',
-            tipo: license.licenseType ?? 'FULL',
-            diasValidez: int.tryParse(license.raw?['dias_validez']?.toString() ?? '') ?? 30,
+            projectId: license.projectId,
             projectCode: license.raw?['project_code']?.toString(),
+            projectName: license.projectName,
+            tipo: license.licenseType ?? 'FULL',
+            diasValidez:
+                int.tryParse(license.raw?['dias_validez']?.toString() ?? '') ??
+                    30,
             notas: license.notes,
             autoActivate: false,
           ),
@@ -210,7 +239,8 @@ class _LicensesPageState extends State<LicensesPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar licencia'),
-        content: const Text('¿Eliminar esta licencia? Esta acción no se puede deshacer.'),
+        content: const Text(
+            '¿Eliminar esta licencia? Esta acción no se puede deshacer.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -218,7 +248,8 @@ class _LicensesPageState extends State<LicensesPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar', style: TextStyle(color: AppColors.error)),
+            child: const Text('Eliminar',
+                style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -252,7 +283,8 @@ class _LicensesPageState extends State<LicensesPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -294,7 +326,8 @@ class _LicensesPageState extends State<LicensesPage> {
             return const LoadingView(message: 'Cargando licencias...');
           }
           if (snapshot.hasError) {
-            return ErrorView(message: snapshot.error.toString(), onRetry: _refresh);
+            return ErrorView(
+                message: snapshot.error.toString(), onRetry: _refresh);
           }
 
           final all = snapshot.data ?? [];
@@ -305,6 +338,7 @@ class _LicensesPageState extends State<LicensesPage> {
               Expanded(
                 child: Column(
                   children: [
+                    // Top bar
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
@@ -312,7 +346,8 @@ class _LicensesPageState extends State<LicensesPage> {
                       ),
                       decoration: const BoxDecoration(
                         color: AppColors.surface,
-                        border: Border(bottom: BorderSide(color: AppColors.border)),
+                        border:
+                            Border(bottom: BorderSide(color: AppColors.border)),
                       ),
                       child: Row(
                         children: [
@@ -325,19 +360,23 @@ class _LicensesPageState extends State<LicensesPage> {
                                 style: const TextStyle(fontSize: 13),
                                 decoration: InputDecoration(
                                   hintText: 'Buscar licencia...',
-                                  prefixIcon: const Icon(Icons.search_rounded, size: 16),
+                                  prefixIcon:
+                                      const Icon(Icons.search_rounded, size: 16),
                                   contentPadding: EdgeInsets.zero,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(color: AppColors.border),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.border),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(color: AppColors.border),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.border),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(color: AppColors.primary),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.primary),
                                   ),
                                 ),
                               ),
@@ -345,22 +384,35 @@ class _LicensesPageState extends State<LicensesPage> {
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           IconButton(
-                            icon: const Icon(Icons.more_vert_rounded, size: 18),
+                            icon:
+                                const Icon(Icons.more_vert_rounded, size: 18),
                             tooltip: 'Filtros',
                             onPressed: () async {
-                              final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+                              final overlay = Overlay.of(context)
+                                  .context
+                                  .findRenderObject() as RenderBox;
                               final selected = await showMenu<String>(
                                 context: context,
                                 position: RelativeRect.fromRect(
-                                  Rect.fromLTWH(overlay.size.width - 160, 100, 100, 100),
+                                  Rect.fromLTWH(
+                                      overlay.size.width - 160, 100, 100, 100),
                                   Offset.zero & overlay.size,
                                 ),
                                 items: const [
-                                  PopupMenuItem(value: 'TODAS', child: Text('Todas')),
-                                  PopupMenuItem(value: 'ACTIVA', child: Text('Activa')),
-                                  PopupMenuItem(value: 'PENDIENTE', child: Text('Inactiva/Pendiente')),
-                                  PopupMenuItem(value: 'VENCIDA', child: Text('Vencida')),
-                                  PopupMenuItem(value: 'DEMO', child: Text('Demo')),
+                                  PopupMenuItem(
+                                      value: 'TODAS',
+                                      child: Text('Todas')),
+                                  PopupMenuItem(
+                                      value: 'ACTIVA',
+                                      child: Text('Activa')),
+                                  PopupMenuItem(
+                                      value: 'PENDIENTE',
+                                      child: Text('Inactiva/Pendiente')),
+                                  PopupMenuItem(
+                                      value: 'VENCIDA',
+                                      child: Text('Vencida')),
+                                  PopupMenuItem(
+                                      value: 'DEMO', child: Text('Demo')),
                                 ],
                               );
                               if (selected != null) {
@@ -387,23 +439,29 @@ class _LicensesPageState extends State<LicensesPage> {
                         ],
                       ),
                     ),
+                    // Info bar
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md, vertical: 6),
                       color: AppColors.surfaceVariant,
                       child: Row(
                         children: [
                           Text(
                             '${licenses.length} licencia${licenses.length != 1 ? 's' : ''}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary),
                           ),
                           const SizedBox(width: 10),
                           Text(
                             'Filtro: ${_estadoFiltro == 'TODAS' ? 'Todas' : _estadoFiltro}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textMuted),
                           ),
                         ],
                       ),
                     ),
+                    // List
                     Expanded(
                       child: licenses.isEmpty
                           ? const EmptyState(
@@ -413,7 +471,8 @@ class _LicensesPageState extends State<LicensesPage> {
                             )
                           : ListView.separated(
                               itemCount: licenses.length,
-                              separatorBuilder: (context, _) => const Divider(height: 1),
+                              separatorBuilder: (context, _) =>
+                                  const Divider(height: 1),
                               itemBuilder: (_, i) {
                                 final license = licenses[i];
                                 return LicenseListItem(
@@ -437,22 +496,33 @@ class _LicensesPageState extends State<LicensesPage> {
                   ],
                 ),
               ),
+              // Desktop panels
               if (_isDesktop && _showCreatePanel)
                 LicenseFormPanel(
                   customers: _customers,
+                  projects: _projects,
                   loading: _creating,
+                  projectsLoading: _projectsLoading,
                   onSubmit: _createLicense,
                   onClose: () => setState(() => _showCreatePanel = false),
                 ),
               if (_isDesktop && _editingLicense && _selected != null)
                 LicenseFormPanel(
                   customers: _customers,
+                  projects: _projects,
                   loading: _creating,
+                  projectsLoading: _projectsLoading,
                   initialValues: LicenseFormValues(
                     customerId: _selected!.customerId ?? '',
+                    projectId: _selected!.projectId,
+                    projectCode:
+                        _selected!.raw?['project_code']?.toString(),
+                    projectName: _selected!.projectName,
                     tipo: _selected!.licenseType ?? 'FULL',
-                    diasValidez: int.tryParse(_selected!.raw?['dias_validez']?.toString() ?? '') ?? 30,
-                    projectCode: _selected!.raw?['project_code']?.toString(),
+                    diasValidez: int.tryParse(
+                            _selected!.raw?['dias_validez']?.toString() ??
+                                '') ??
+                        30,
                     notas: _selected!.notes,
                     autoActivate: false,
                   ),
@@ -461,7 +531,10 @@ class _LicensesPageState extends State<LicensesPage> {
                   onSubmit: _updateLicense,
                   onClose: () => setState(() => _editingLicense = false),
                 ),
-              if (_isDesktop && !_showCreatePanel && !_editingLicense && _selected != null)
+              if (_isDesktop &&
+                  !_showCreatePanel &&
+                  !_editingLicense &&
+                  _selected != null)
                 LicenseDetailPanel(
                   key: ValueKey(_selected!.id),
                   license: _selected!,

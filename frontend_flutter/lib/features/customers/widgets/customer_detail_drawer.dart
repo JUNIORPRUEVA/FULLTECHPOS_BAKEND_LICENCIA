@@ -11,6 +11,7 @@ class CustomerDetailDrawer extends StatelessWidget {
   final Customer customer;
   final VoidCallback onClose;
   final VoidCallback? onDelete;
+  final VoidCallback? onUpdated;
   final double width;
 
   const CustomerDetailDrawer({
@@ -18,6 +19,7 @@ class CustomerDetailDrawer extends StatelessWidget {
     required this.customer,
     required this.onClose,
     this.onDelete,
+    this.onUpdated,
     this.width = AppSpacing.detailPanelWidth,
   });
 
@@ -89,51 +91,55 @@ class CustomerDetailDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   // Fields
-                  _DetailSection(title: 'Información del cliente', children: [
-                    _DetailRow(
-                      label: 'Negocio',
-                      value: customer.nombreNegocio,
-                    ),
-                    if (customer.contactoNombre != null)
+                  _DetailSection(
+                    title: 'Información del cliente',
+                    children: [
                       _DetailRow(
-                        label: 'Contacto',
-                        value: customer.contactoNombre!,
+                        label: 'Negocio',
+                        value: customer.nombreNegocio,
                       ),
-                    if (customer.contactoTelefono != null)
-                      _DetailRow(
-                        label: 'Teléfono',
-                        value: customer.contactoTelefono!,
-                      ),
-                    if (customer.contactoEmail != null)
-                      _DetailRow(
-                        label: 'Email',
-                        value: customer.contactoEmail!,
-                      ),
-                    if (customer.rolNegocio != null)
-                      _DetailRow(
-                        label: 'Rol',
-                        value: customer.rolNegocio!,
-                      ),
-                  ]),
+                      if (customer.contactoNombre != null)
+                        _DetailRow(
+                          label: 'Contacto',
+                          value: customer.contactoNombre!,
+                        ),
+                      if (customer.contactoTelefono != null)
+                        _DetailRow(
+                          label: 'Teléfono',
+                          value: customer.contactoTelefono!,
+                        ),
+                      if (customer.contactoEmail != null)
+                        _DetailRow(
+                          label: 'Email',
+                          value: customer.contactoEmail!,
+                        ),
+                      if (customer.rolNegocio != null)
+                        _DetailRow(label: 'Rol', value: customer.rolNegocio!),
+                    ],
+                  ),
                   const SizedBox(height: AppSpacing.md),
-                  _DetailSection(title: 'IDs del sistema', children: [
-                    _DetailRow(
-                      label: 'Client ID',
-                      value: customer.id,
-                      mono: true,
-                    ),
-                    _DetailRow(
-                      label: 'Business ID',
-                      value: customer.businessId ?? '—',
-                      mono: true,
-                    ),
-                    if (customer.createdAt != null)
+                  _DetailSection(
+                    title: 'IDs del sistema',
+                    children: [
                       _DetailRow(
-                        label: 'Registro',
-                        value: DateFormat('dd/MM/yyyy HH:mm')
-                            .format(customer.createdAt!.toLocal()),
+                        label: 'Client ID',
+                        value: customer.id,
+                        mono: true,
                       ),
-                  ]),
+                      _DetailRow(
+                        label: 'Business ID',
+                        value: customer.businessId ?? '—',
+                        mono: true,
+                      ),
+                      if (customer.createdAt != null)
+                        _DetailRow(
+                          label: 'Registro',
+                          value: DateFormat(
+                            'dd/MM/yyyy HH:mm',
+                          ).format(customer.createdAt!.toLocal()),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   // Actions
                   const Text(
@@ -159,7 +165,7 @@ class CustomerDetailDrawer extends StatelessWidget {
                   _ActionButton(
                     label: 'Asignar Business ID',
                     icon: Icons.link_rounded,
-                    onTap: () {},
+                    onTap: () => _openEditDialog(context),
                   ),
                   _ActionButton(
                     label: 'Token reset',
@@ -199,10 +205,17 @@ class CustomerDetailDrawer extends StatelessWidget {
 
   Future<void> _openEditDialog(BuildContext context) async {
     final nameCtrl = TextEditingController(text: customer.nombreNegocio);
-    final contactNameCtrl = TextEditingController(text: customer.contactoNombre ?? '');
-    final phoneCtrl = TextEditingController(text: customer.contactoTelefono ?? '');
+    final contactNameCtrl = TextEditingController(
+      text: customer.contactoNombre ?? '',
+    );
+    final phoneCtrl = TextEditingController(
+      text: customer.contactoTelefono ?? '',
+    );
     final emailCtrl = TextEditingController(text: customer.contactoEmail ?? '');
     final roleCtrl = TextEditingController(text: customer.rolNegocio ?? '');
+    final businessIdCtrl = TextEditingController(
+      text: customer.businessId ?? '',
+    );
 
     final formKey = GlobalKey<FormState>();
 
@@ -221,33 +234,68 @@ class CustomerDetailDrawer extends StatelessWidget {
               children: [
                 TextFormField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre del negocio'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre del negocio',
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Requerido' : null,
                 ),
-                TextFormField(controller: contactNameCtrl, decoration: const InputDecoration(labelText: 'Contacto')),
-                TextFormField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Teléfono'), validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null),
-                TextFormField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
-                TextFormField(controller: roleCtrl, decoration: const InputDecoration(labelText: 'Rol')),
+                TextFormField(
+                  controller: contactNameCtrl,
+                  decoration: const InputDecoration(labelText: 'Contacto'),
+                ),
+                TextFormField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Teléfono'),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                ),
+                TextFormField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+                TextFormField(
+                  controller: roleCtrl,
+                  decoration: const InputDecoration(labelText: 'Rol'),
+                ),
+                TextFormField(
+                  controller: businessIdCtrl,
+                  decoration: const InputDecoration(labelText: 'Business ID'),
+                ),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
               try {
                 await service.updateCustomer(customer.id, {
                   'nombre_negocio': nameCtrl.text.trim(),
-                  'contacto_nombre': contactNameCtrl.text.trim().isEmpty ? null : contactNameCtrl.text.trim(),
+                  'contacto_nombre': contactNameCtrl.text.trim().isEmpty
+                      ? null
+                      : contactNameCtrl.text.trim(),
                   'contacto_telefono': phoneCtrl.text.trim(),
-                  'contacto_email': emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                  'rol_negocio': roleCtrl.text.trim().isEmpty ? null : roleCtrl.text.trim(),
+                  'contacto_email': emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                  'rol_negocio': roleCtrl.text.trim().isEmpty
+                      ? null
+                      : roleCtrl.text.trim(),
+                  'business_id': businessIdCtrl.text.trim().isEmpty
+                      ? null
+                      : businessIdCtrl.text.trim(),
                 });
                 Navigator.pop(ctx, true);
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                ScaffoldMessenger.of(
+                  ctx,
+                ).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Guardar'),
@@ -257,8 +305,20 @@ class CustomerDetailDrawer extends StatelessWidget {
     );
 
     if (ok == true) {
-      // refresh by navigating back to parent or closing drawer then re-open could be handled by caller
-      showDialog<void>(context: context, builder: (_) => AlertDialog(title: const Text('Guardado'), content: const Text('Cliente actualizado correctamente.'), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))]));
+      await showDialog<void>(
+        context: context,
+        builder: (alertContext) => AlertDialog(
+          title: const Text('Guardado'),
+          content: const Text('Cliente actualizado correctamente.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(alertContext),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      if (onUpdated != null) onUpdated!();
     }
   }
 }
@@ -374,13 +434,7 @@ class _ActionButton extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: color),
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                color: color,
-              ),
-            ),
+            Text(label, style: TextStyle(fontSize: 13, color: color)),
           ],
         ),
       ),
