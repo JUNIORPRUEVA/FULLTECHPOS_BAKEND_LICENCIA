@@ -46,16 +46,16 @@ const List<AppSidebarItem> sidebarItems = [
 ];
 
 const List<AppSidebarItem> settingsSidebarItems = [
-  AppSidebarItem(
-    label: 'Configuración licencias',
-    icon: Icons.tune_rounded,
-    route: '/admin/configuracion-licencias',
-  ),
-  AppSidebarItem(
-    label: 'Configuración tienda',
-    icon: Icons.store_outlined,
-    route: '/admin/configuracion-tienda',
-  ),
+  // AppSidebarItem(
+  //   label: 'Configuración licencias',
+  //   icon: Icons.tune_rounded,
+  //   route: '/admin/configuracion-licencias',
+  // ),
+  // AppSidebarItem(
+  //   label: 'Configuración tienda',
+  //   icon: Icons.store_outlined,
+  //   route: '/admin/configuracion-tienda',
+  // ),
   AppSidebarItem(
     label: 'Usuarios del sistema',
     icon: Icons.admin_panel_settings_outlined,

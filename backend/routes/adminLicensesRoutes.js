@@ -1,8 +1,14 @@
 const express = require('express');
 const isAdmin = require('../middleware/isAdmin');
 const adminLicensesController = require('../controllers/adminLicensesController');
+const adminLicensePaymentsController = require('../controllers/adminLicensePaymentsController');
 
 const router = express.Router();
+
+// POST /api/admin/licenses/demo
+router.post('/demo', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensePaymentsController.createDemoLicense(req, res)).catch(next);
+});
 
 // POST /api/admin/licenses
 router.post('/', isAdmin, (req, res, next) => {

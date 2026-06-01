@@ -8,17 +8,17 @@ final CloudResourceConfig projectResourceConfig = CloudResourceConfig(
   endpoint: '/api/admin/projects',
   listKey: 'projects',
   fields: const [
-    ResourceField('nombre', 'Nombre'),
-    ResourceField('codigo', 'Código'),
+    ResourceField('name', 'Nombre'),
+    ResourceField('code', 'Código'),
     ResourceField('monthly_price', 'Precio/mes'),
     ResourceField('currency', 'Moneda'),
     ResourceField('is_active', 'Activo', badge: true),
   ],
   detailFields: const [
     ResourceField('id', 'ID'),
-    ResourceField('nombre', 'Nombre'),
-    ResourceField('codigo', 'Código'),
-    ResourceField('descripcion', 'Descripción'),
+    ResourceField('name', 'Nombre'),
+    ResourceField('code', 'Código'),
+    ResourceField('description', 'Descripción'),
     ResourceField('monthly_price', 'Precio mensual'),
     ResourceField('currency', 'Moneda'),
     ResourceField('demo_days', 'Días demo'),
@@ -29,7 +29,7 @@ final CloudResourceConfig projectResourceConfig = CloudResourceConfig(
     ResourceField('created_at', 'Creado'),
     ResourceField('updated_at', 'Actualizado'),
   ],
-  searchKeys: ['nombre', 'codigo'],
+  searchKeys: ['name', 'code'],
 );
 
 /// Configuración para la página de Usuarios del sistema

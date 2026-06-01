@@ -49,8 +49,8 @@ async function createPaymentOrder({
 async function getPaymentOrderById(id) {
   const res = await pool.query(
     `SELECT lpo.*,
-            c.nombre_negocio AS customer_name,
-            c.email AS customer_email,
+            COALESCE(c.nombre_negocio, c.contacto_nombre, c.contacto_email, 'Cliente sin nombre') AS customer_name,
+            c.contacto_email AS customer_email,
             p.code AS project_code,
             p.name AS project_name
      FROM license_payment_orders lpo
@@ -68,8 +68,8 @@ async function getPaymentOrderById(id) {
 async function getPaymentOrderByProviderOrderId(providerOrderId) {
   const res = await pool.query(
     `SELECT lpo.*,
-            c.nombre_negocio AS customer_name,
-            c.email AS customer_email,
+            COALESCE(c.nombre_negocio, c.contacto_nombre, c.contacto_email, 'Cliente sin nombre') AS customer_name,
+            c.contacto_email AS customer_email,
             p.code AS project_code,
             p.name AS project_name
      FROM license_payment_orders lpo
@@ -137,8 +137,8 @@ async function listPaymentOrders({ limit, offset, status, project_id, customer_i
   const dataParams = [...params, limit, offset];
   const dataRes = await pool.query(
     `SELECT lpo.*,
-            c.nombre_negocio AS customer_name,
-            c.email AS customer_email,
+            COALESCE(c.nombre_negocio, c.contacto_nombre, c.contacto_email, 'Cliente sin nombre') AS customer_name,
+            c.contacto_email AS customer_email,
             p.code AS project_code,
             p.name AS project_name
      FROM license_payment_orders lpo

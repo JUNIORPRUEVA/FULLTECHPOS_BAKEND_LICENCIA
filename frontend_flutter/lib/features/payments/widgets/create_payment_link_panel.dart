@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../customers/models/customer.dart';
 import '../../customers/services/customers_service.dart';
 import '../../licenses/services/projects_service.dart';
 import '../../licenses/models/project.dart';
@@ -27,7 +30,7 @@ class _CreatePaymentLinkPanelState extends State<CreatePaymentLinkPanel> {
   bool _loadingProjects = false;
 
   // Dropdown data
-  List<Map<String, dynamic>> _customers = [];
+  List<Customer> _customers = [];
   List<Project> _projects = [];
 
   // Selected values
@@ -63,15 +66,15 @@ class _CreatePaymentLinkPanelState extends State<CreatePaymentLinkPanel> {
   Future<void> _loadCustomers() async {
     setState(() => _loadingCustomers = true);
     try {
-      final session = DefaultAssetBundle.of(context);
-      // Usar el servicio de clientes
-      final customersService = CustomersService(
-        sessionManager: context.findAncestorWidgetOfExactType() as dynamic,
-      );
-      // Como no tenemos acceso directo, hacemos una llamada simple
-      // En producción, inyectar el servicio
-      setState(() => _loadingCustomers = false);
+      final session = context.read<SessionManager>();
+      final customersService = CustomersService(sessionManager: session);
+      final customers = await customersService.listCustomers(limit: 100);
+      setState(() {
+        _customers = customers;
+        _loadingCustomers = false;
+      });
     } catch (e) {
+      debugPrint('Error loading customers: $e');
       setState(() => _loadingCustomers = false);
     }
   }
@@ -79,12 +82,15 @@ class _CreatePaymentLinkPanelState extends State<CreatePaymentLinkPanel> {
   Future<void> _loadProjects() async {
     setState(() => _loadingProjects = true);
     try {
-      final projectsService = ProjectsService(
-        sessionManager: context.findAncestorWidgetOfExactType() as dynamic,
-      );
-      // En producción, inyectar el servicio
-      setState(() => _loadingProjects = false);
+      final session = context.read<SessionManager>();
+      final projectsService = ProjectsService(sessionManager: session);
+      final projects = await projectsService.listProjects();
+      setState(() {
+        _projects = projects;
+        _loadingProjects = false;
+      });
     } catch (e) {
+      debugPrint('Error loading projects: $e');
       setState(() => _loadingProjects = false);
     }
   }
@@ -205,11 +211,17 @@ class _CreatePaymentLinkPanelState extends State<CreatePaymentLinkPanel> {
           DropdownButtonFormField<String>(
             value: _selectedCustomerId,
             decoration: _inputDecoration(),
+            isExpanded: true,
             items: _customers.map((c) {
-              final name = c['nombre_negocio'] ?? c['contacto_nombre'] ?? c['contacto_email'] ?? 'Cliente';
-              return DropdownMenuItem(
-                value: c['id'],
-                child: Text(name, style: const TextStyle(color: Colors.white)),
+              final name = c.nombreNegocio ??
+                  c.contactoNombre ??
+                  c.contactoEmail ??
+                  'Cliente sin nombre';
+              return DropdownMenuItem<String>(
+                value: c.id,
+                child: Text(name,
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis),
               );
             }).toList(),
             onChanged: (v) => setState(() => _selectedCustomerId = v),
@@ -224,11 +236,13 @@ class _CreatePaymentLinkPanelState extends State<CreatePaymentLinkPanel> {
           DropdownButtonFormField<String>(
             value: _selectedProjectId,
             decoration: _inputDecoration(),
+            isExpanded: true,
             items: _projects.map((p) {
-              return DropdownMenuItem(
+              return DropdownMenuItem<String>(
                 value: p.id,
                 child: Text('${p.name} (${p.code})',
-                    style: const TextStyle(color: Colors.white)),
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis),
               );
             }).toList(),
             onChanged: _onProjectChanged,

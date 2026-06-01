@@ -993,7 +993,7 @@ async function activateOrExtendPaidLicense({ customerId, projectId, months, paym
           `UPDATE licenses
            SET
              estado = 'ACTIVA',
-             fecha_inicio = COALESCE(fecha_inicio, $2::timestamp),
+             fecha_inicio = $2::timestamp,
              fecha_fin = $3::timestamp,
              expires_at = $4::timestamptz,
              dias_validez = $5,

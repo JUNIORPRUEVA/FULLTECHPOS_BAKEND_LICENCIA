@@ -64,24 +64,24 @@ class AppRouter {
               path: '/admin/licencias',
               builder: (context, state) => const LicensesPage(),
             ),
-            GoRoute(
-              path: '/admin/configuracion-licencias',
-              builder: (context, state) => const CloudLicenseConfigPage(),
-            ),
+            // GoRoute(
+            //   path: '/admin/configuracion-licencias',
+            //   builder: (context, state) => const CloudLicenseConfigPage(),
+            // ),
             GoRoute(
               path: '/admin/proyectos',
               builder: (context, state) =>
-                  const CloudResourcePage(config: projectResourceConfig),
+                  CloudResourcePage(config: projectResourceConfig),
             ),
             GoRoute(
               path: '/admin/usuarios',
               builder: (context, state) =>
-                  const CloudResourcePage(config: userResourceConfig),
+                  CloudResourcePage(config: userResourceConfig),
             ),
-            GoRoute(
-              path: '/admin/configuracion-tienda',
-              builder: (context, state) => const CloudStoreSettingsPage(),
-            ),
+            // GoRoute(
+            //   path: '/admin/configuracion-tienda',
+            //   builder: (context, state) => const CloudStoreSettingsPage(),
+            // ),
             GoRoute(
               path: '/admin/pagos',
               builder: (context, state) => const PaymentsPage(),
@@ -100,14 +100,10 @@ class AppRouter {
         return 'Clientes';
       case '/admin/licencias':
         return 'Licencias';
-      case '/admin/configuracion-licencias':
-        return 'Configuración licencias';
       case '/admin/proyectos':
         return 'Proyectos';
       case '/admin/usuarios':
         return 'Usuarios del sistema';
-      case '/admin/configuracion-tienda':
-        return 'Configuración tienda';
       case '/admin/pagos':
         return 'Pagos';
       default:

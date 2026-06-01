@@ -74,7 +74,7 @@ async function updateBillingSettings(req, res) {
       if (!Number.isFinite(price) || price < 0) {
         return res.status(400).json({ ok: false, message: 'monthly_price no puede ser negativo' });
       }
-      if (body.is_paid_project !== false && price <= 0) {
+      if (body.is_paid_project === true && price <= 0) {
         return res.status(400).json({ ok: false, message: 'Si el proyecto requiere pago, monthly_price debe ser mayor que 0' });
       }
     }
