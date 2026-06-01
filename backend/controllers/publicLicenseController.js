@@ -577,7 +577,19 @@ async function startDemo(req, res) {
 
       return res.status(201).json({
         success: true,
+        valid: true,
+        status: 'DEMO_ACTIVE',
+        reason: null,
         message: `Demo iniciada por ${demoDays} días`,
+        license_key: license.license_key,
+        project_code: project.code,
+        expires_at: license.fecha_fin,
+        days_remaining: demoDays,
+        max_devices: license.max_dispositivos,
+        demo_active: true,
+        payment_required: false,
+        customer_id: customer.id,
+        project_id: project.id,
         license: {
           license_key: license.license_key,
           project_code: project.code,
