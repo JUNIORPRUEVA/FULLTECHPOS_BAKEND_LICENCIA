@@ -6,7 +6,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../../core/widgets/error_view.dart';
 import '../services/dashboard_service.dart';
-import 'package:intl/intl.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -62,8 +61,6 @@ class _DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFmt = NumberFormat.currency(locale: 'es', symbol: '\$');
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -115,85 +112,34 @@ class _DashboardContent extends StatelessWidget {
               return _StatsGrid(
                 columns: columns,
                 stats: stats,
-                currencyFmt: currencyFmt,
               );
             },
           ),
           const SizedBox(height: AppSpacing.lg),
+          // License breakdown section
           _SectionTitle(title: 'Licencias'),
           const SizedBox(height: AppSpacing.sm),
           _MetricBreakdown(
             rows: [
-              _MetricRow(
-                'Total licencias',
-                stats.totalLicenses,
-                AppColors.textPrimary,
-              ),
+              _MetricRow('Total licencias', stats.totalLicenses, AppColors.textPrimary),
               _MetricRow('Activas', stats.activeLicenses, AppColors.success),
-              _MetricRow(
-                'Pendientes',
-                stats.pendingLicenses,
-                AppColors.warning,
-              ),
+              _MetricRow('Pendientes', stats.pendingLicenses, AppColors.warning),
               _MetricRow('Vencidas', stats.expiredLicenses, AppColors.error),
               _MetricRow('Bloqueadas', stats.blockedLicenses, AppColors.error),
-              _MetricRow('Demo', stats.demoLicenses, AppColors.primary),
-              _MetricRow('Full', stats.fullLicenses, AppColors.success),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SectionTitle(title: 'Productos y proyectos'),
+          // Payments section
+          _SectionTitle(title: 'Pagos'),
           const SizedBox(height: AppSpacing.sm),
           _MetricBreakdown(
             rows: [
-              _MetricRow(
-                'Productos app',
-                stats.totalProducts,
-                AppColors.textPrimary,
-              ),
-              _MetricRow(
-                'Publicados',
-                stats.publishedProducts,
-                AppColors.success,
-              ),
-              _MetricRow('Borradores', stats.draftProducts, AppColors.warning),
-              _MetricRow('Archivados', stats.archivedProducts, AppColors.error),
-              _MetricRow('Planes', stats.totalPlans, AppColors.primary),
-              _MetricRow(
-                'Planes activos',
-                stats.activePlans,
-                AppColors.success,
-              ),
-              _MetricRow('Proyectos', stats.totalProjects, AppColors.primary),
+              _MetricRow('Total pagos', stats.totalPayments, AppColors.textPrimary),
+              _MetricRow('Completados', stats.completedPayments, AppColors.success),
+              if (stats.pendingPayments > 0)
+                _MetricRow('Pendientes', stats.pendingPayments, AppColors.warning),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          _SectionTitle(title: 'Activaciones'),
-          const SizedBox(height: AppSpacing.sm),
-          _MetricBreakdown(
-            rows: [
-              _MetricRow(
-                'Total activaciones',
-                stats.totalActivations,
-                AppColors.textPrimary,
-              ),
-              _MetricRow('Activas', stats.activeActivations, AppColors.success),
-              _MetricRow(
-                'Revocadas',
-                stats.revokedActivations,
-                AppColors.error,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _SectionTitle(title: 'Estado de suscripciones'),
-          const SizedBox(height: AppSpacing.sm),
-          _SubscriptionBreakdown(stats: stats),
-          const SizedBox(height: AppSpacing.lg),
-          // Financial summary
-          _SectionTitle(title: 'Resumen financiero'),
-          const SizedBox(height: AppSpacing.sm),
-          _FinancialSummary(stats: stats, currencyFmt: currencyFmt),
         ],
       ),
     );
@@ -220,17 +166,15 @@ class _SectionTitle extends StatelessWidget {
 class _StatsGrid extends StatelessWidget {
   final int columns;
   final DashboardStats stats;
-  final NumberFormat currencyFmt;
 
   const _StatsGrid({
     required this.columns,
     required this.stats,
-    required this.currencyFmt,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cards = [
+    final cards = <_StatCardData>[
       _StatCardData(
         title: 'Clientes',
         value: stats.totalCustomers.toString(),
@@ -250,16 +194,16 @@ class _StatsGrid extends StatelessWidget {
         color: AppColors.success,
       ),
       _StatCardData(
-        title: 'Productos app',
-        value: stats.totalProducts.toString(),
-        icon: Icons.inventory_2_outlined,
-        color: AppColors.primary,
+        title: 'Licencias vencidas',
+        value: stats.expiredLicenses.toString(),
+        icon: Icons.error_outline_rounded,
+        color: AppColors.error,
       ),
       _StatCardData(
-        title: 'Planes',
-        value: stats.totalPlans.toString(),
-        icon: Icons.layers_outlined,
-        color: AppColors.primary,
+        title: 'Licencias pendientes',
+        value: stats.pendingLicenses.toString(),
+        icon: Icons.schedule_outlined,
+        color: AppColors.warning,
       ),
       _StatCardData(
         title: 'Proyectos',
@@ -268,24 +212,22 @@ class _StatsGrid extends StatelessWidget {
         color: AppColors.primary,
       ),
       _StatCardData(
-        title: 'Activaciones',
-        value: stats.totalActivations.toString(),
-        icon: Icons.devices_other_outlined,
-        color: AppColors.warning,
-      ),
-      _StatCardData(
-        title: 'Suscripciones',
-        value: stats.totalSubscriptions.toString(),
-        icon: Icons.subscriptions_outlined,
+        title: 'Pagos registrados',
+        value: stats.totalPayments.toString(),
+        icon: Icons.payments_outlined,
         color: AppColors.success,
       ),
-      _StatCardData(
+    ];
+
+    // Only show pending payments card if there are pending payments
+    if (stats.pendingPayments > 0) {
+      cards.add(_StatCardData(
         title: 'Pagos pendientes',
         value: stats.pendingPayments.toString(),
         icon: Icons.pending_actions_outlined,
         color: AppColors.warning,
-      ),
-    ];
+      ));
+    }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -436,147 +378,6 @@ class _MetricBreakdown extends StatelessWidget {
                 ),
               ),
               if (i < rows.length - 1) const Divider(height: 1),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _SubscriptionBreakdown extends StatelessWidget {
-  final DashboardStats stats;
-  const _SubscriptionBreakdown({required this.stats});
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = [
-      ('Total suscripciones', stats.totalSubscriptions, AppColors.textPrimary),
-      ('Activas', stats.activeSubscriptions, AppColors.success),
-      ('Vencidas', stats.expiredSubscriptions, AppColors.error),
-      ('Suspendidas', stats.suspendedSubscriptions, AppColors.warning),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: rows.asMap().entries.map((entry) {
-          final i = entry.key;
-          final row = entry.value;
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: row.$3,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        row.$1,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      row.$2.toString(),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: row.$3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (i < rows.length - 1) const Divider(height: 1),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _FinancialSummary extends StatelessWidget {
-  final DashboardStats stats;
-  final NumberFormat currencyFmt;
-
-  const _FinancialSummary({required this.stats, required this.currencyFmt});
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (
-        'Recaudado este mes',
-        stats.paymentsCollectedThisMonth > 0
-            ? currencyFmt.format(stats.paymentsCollectedThisMonth)
-            : 'No disponible',
-      ),
-      (
-        'Estimado mensual',
-        stats.monthlyRevenueEstimate > 0
-            ? currencyFmt.format(stats.monthlyRevenueEstimate)
-            : 'No disponible',
-      ),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: items.asMap().entries.map((entry) {
-          final i = entry.key;
-          final item = entry.value;
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.$1,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      item.$2,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (i < items.length - 1) const Divider(height: 1),
             ],
           );
         }).toList(),

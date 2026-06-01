@@ -383,6 +383,88 @@ async function activarManual(req, res) {
   }
 }
 
+/**
+ * POST /api/admin/licenses/:id/activate
+ * Activate a license with proper validation.
+ * - 404 if license not found
+ * - 409 if already active
+ * - 400 if blocked
+ * - 400 if expired
+ * - 200 on success
+ */
+async function activateLicense(req, res) {
+  try {
+    const licenseId = req.params.id;
+    const current = await licensesModel.getLicenseById(licenseId);
+
+    if (!current) {
+      return res.status(404).json({
+        success: false,
+        message: 'Licencia no encontrada',
+      });
+    }
+
+    const estado = String(current.estado || '').toUpperCase();
+
+    if (estado === 'ACTIVA') {
+      return res.status(409).json({
+        success: false,
+        message: 'La licencia ya está activa',
+      });
+    }
+
+    if (estado === 'BLOQUEADA') {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede activar una licencia bloqueada. Desbloquéela primero.',
+      });
+    }
+
+    if (estado === 'VENCIDA') {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede activar una licencia vencida. Renueve la licencia primero.',
+      });
+    }
+
+    const updated = await licensesModel.activateLicenseManually(licenseId);
+    if (!updated) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error al activar la licencia',
+      });
+    }
+
+    try {
+      const biz = String(current?.business_id || '').trim();
+      if (biz) {
+        licenseChangeBus.emitBusinessLicenseChanged(biz, {
+          reason: 'admin_activate_license',
+          licenseId: String(licenseId),
+        });
+      }
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      message: 'Licencia activada correctamente',
+      license: {
+        id: updated.id,
+        license_key: updated.license_key,
+        status: 'active',
+        activated_at: updated.fecha_inicio,
+        expires_at: updated.fecha_fin,
+      },
+    });
+  } catch (error) {
+    console.error('activateLicense error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+    });
+  }
+}
+
 async function desbloquearLicense(req, res) {
   try {
     const licenseId = req.params.id;
@@ -710,6 +792,7 @@ module.exports = {
   bloquearLicenseByKey,
   activarManual,
   activarManualByKey,
+  activateLicense,
   desbloquearLicense,
   deleteLicense,
   updateLicense,

@@ -145,8 +145,7 @@ class LicenseDetailPanel extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
                   // Details
                   _Section(title: 'Información', rows: [
-                    if (license.projectName != null)
-                      _Row('Sistema', license.projectName!),
+                    _Row('Sistema', license.displayProjectName),
                     if (license.licenseType != null)
                       _Row('Tipo', license.licenseType!),
                     if (license.businessId != null)
@@ -159,6 +158,9 @@ class LicenseDetailPanel extends StatelessWidget {
                         dateFmt.format(license.expiresAt!.toLocal()),
                         highlight: license.isExpired,
                       ),
+                    if (license.activatedAt != null)
+                      _Row('Activada',
+                          dateFmt.format(license.activatedAt!.toLocal())),
                     if (license.createdAt != null)
                       _Row('Creada',
                           dateFmt.format(license.createdAt!.toLocal())),
@@ -178,9 +180,10 @@ class LicenseDetailPanel extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  if (onActivate != null)
+                  // Show "Activar licencia" only if license can be activated
+                  if (license.canActivate && onActivate != null)
                     _ActionBtn(
-                      label: 'Activar manual',
+                      label: 'Activar licencia',
                       icon: Icons.check_circle_outline_rounded,
                       color: AppColors.success,
                       onTap: onActivate!,
@@ -192,14 +195,14 @@ class LicenseDetailPanel extends StatelessWidget {
                       color: AppColors.primary,
                       onTap: onEdit!,
                     ),
-                  if (onBlock != null)
+                  if (onBlock != null && !license.isBlocked)
                     _ActionBtn(
                       label: 'Bloquear',
                       icon: Icons.block_rounded,
                       color: AppColors.warning,
                       onTap: onBlock!,
                     ),
-                  if (onUnblock != null)
+                  if (onUnblock != null && license.isBlocked)
                     _ActionBtn(
                       label: 'Desbloquear',
                       icon: Icons.lock_open_outlined,

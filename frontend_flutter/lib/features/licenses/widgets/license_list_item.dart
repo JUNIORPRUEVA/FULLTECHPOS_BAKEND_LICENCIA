@@ -59,7 +59,7 @@ class LicenseListItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          license.projectName ?? license.shortKey,
+                          license.displayProjectName,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,

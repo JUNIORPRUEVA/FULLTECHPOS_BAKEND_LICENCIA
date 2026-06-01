@@ -53,6 +53,13 @@ class LicensesService {
     await _client.patch('/api/admin/licenses/$id/activar-manual', {});
   }
 
+  /// Activate a license using the dedicated activation endpoint.
+  /// POST /api/admin/licenses/{id}/activate
+  /// Throws ApiException with the backend message on failure.
+  Future<void> activateLicense(String id) async {
+    await _client.post('/api/admin/licenses/$id/activate', {});
+  }
+
   Future<void> extendDays(String id, int days) async {
     await _client.patch('/api/admin/licenses/$id/extender-dias', {'dias': days});
   }

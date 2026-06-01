@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
@@ -7,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_view.dart';
+import '../../../core/api/api_exception.dart';
 import '../../customers/models/customer.dart';
 import '../../customers/services/customers_service.dart';
 import '../models/license.dart';
@@ -291,8 +293,113 @@ class _LicensesPageState extends State<LicensesPage> {
     }
   }
 
+  /// Show activation confirmation dialog and activate the license.
+  Future<void> _activateLicenseWithConfirmation(License license) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Activar licencia'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('¿Seguro que deseas activar esta licencia?'),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (license.customerName != null)
+                    _DialogRow('Cliente', license.customerName!),
+                  _DialogRow('Sistema', license.displayProjectName),
+                  _DialogRow('Licencia', license.shortKey),
+                  _DialogRow('Estado', license.status ?? '—'),
+                  if (license.expiresAt != null)
+                    _DialogRow('Vencimiento',
+                        DateFormat('dd/MM/yyyy').format(license.expiresAt!.toLocal())),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Activar licencia'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading dialog
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Activando licencia...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await _licensesService.activateLicense(license.id);
+      if (mounted) {
+        Navigator.of(context).pop(); // close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Licencia activada correctamente'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        _refresh();
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // close loading
+        String message;
+        if (e is ApiException) {
+          message = 'No se pudo activar la licencia: ${e.message}';
+        } else {
+          message = 'No se pudo activar la licencia: $e';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   void _viewCustomer(String customerId) {
-    // Navegar al detalle del cliente específico
     context.go('/admin/clientes?customerId=$customerId');
   }
 
@@ -308,7 +415,7 @@ class _LicensesPageState extends State<LicensesPage> {
             Navigator.of(context).pop();
             await _openEditMobile(license);
           },
-          onActivate: () => _licensesService.activateManual(license.id),
+          onActivate: () => _activateLicenseWithConfirmation(license),
           onBlock: () => _licensesService.blockLicense(license.id),
           onUnblock: () => _licensesService.unblockLicense(license.id),
           onExtend: (d) => _licensesService.extendDays(license.id, d),
@@ -552,9 +659,7 @@ class _LicensesPageState extends State<LicensesPage> {
                   onEdit: () async {
                     _openEditLicense(_selected!);
                   },
-                  onActivate: () => _actionAndRefresh(
-                    () => _licensesService.activateManual(_selected!.id),
-                  ),
+                  onActivate: () => _activateLicenseWithConfirmation(_selected!),
                   onBlock: () => _actionAndRefresh(
                     () => _licensesService.blockLicense(_selected!.id),
                   ),
@@ -572,6 +677,45 @@ class _LicensesPageState extends State<LicensesPage> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Helper widget for dialog rows.
+class _DialogRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DialogRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
