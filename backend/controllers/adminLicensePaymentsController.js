@@ -440,10 +440,37 @@ async function createDemoLicense(req, res) {
   }
 }
 
+/**
+ * GET /api/admin/license-payments/paypal/health
+ * Diagnóstico de configuración PayPal.
+ * No expone secretos.
+ */
+async function paypalHealth(req, res) {
+  try {
+    const config = paypalService.validatePaypalConfig();
+    return res.json({
+      success: config.ok,
+      mode: config.mode,
+      base_url: config.baseUrl,
+      client_id_configured: config.clientIdConfigured,
+      client_secret_configured: config.clientSecretConfigured,
+      return_url: config.returnUrl,
+      cancel_url: config.cancelUrl,
+      webhook_id_configured: config.webhookIdConfigured,
+      brand_name: config.brandName,
+      ...(config.ok ? {} : { message: 'PayPal configuration is incomplete', missing: config.missing }),
+    });
+  } catch (error) {
+    console.error('[paypalHealth] Error:', error);
+    return res.status(500).json({ success: false, message: 'Error al verificar configuración PayPal' });
+  }
+}
+
 module.exports = {
   createPayPalOrder,
   capturePayPalOrder,
   listPaymentOrders,
   getPaymentOrderDetail,
   createDemoLicense,
+  paypalHealth,
 };

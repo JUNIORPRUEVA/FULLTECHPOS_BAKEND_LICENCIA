@@ -29,4 +29,9 @@ router.post('/demo', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensePaymentsController.createDemoLicense(req, res)).catch(next);
 });
 
+// GET /api/admin/license-payments/paypal/health
+router.get('/paypal/health', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensePaymentsController.paypalHealth(req, res)).catch(next);
+});
+
 module.exports = router;

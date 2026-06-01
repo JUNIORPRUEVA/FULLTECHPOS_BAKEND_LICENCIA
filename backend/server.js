@@ -62,6 +62,7 @@ const storePublicRoutes = require('./routes/storePublicRoutes');
 const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const supportRequestRoutes = require('./routes/supportRequestRoutes');
+const publicLicenseRoutes = require('./routes/publicLicenseRoutes');
 
 // Módulos opcionales (solo cuando se usa el backend completo)
 const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
@@ -260,25 +261,151 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-app.get('/paypal/success', (req, res) => {
-  console.log('Pago completado:', req.query);
-  res.type('html').send(`<!DOCTYPE html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Pago completado</title>
-  </head>
-  <body>
-    <h1>Pago completado</h1>
-    <p>Tu suscripción fue creada correctamente.</p>
-    <p>subscription_id: ${String(req.query.subscription_id || req.query.token || req.query.id || '')}</p>
-  </body>
-</html>`);
+const licensePaymentOrdersModel = require('./models/licensePaymentOrdersModel');
+const licensesModel = require('./models/licensesModel');
+const paypalService = require('./services/paypalService');
+
+/**
+ * GET /paypal/success
+ * Ruta de retorno después de pago exitoso en PayPal.
+ * PayPal redirige con ?token=PAYPAL_ORDER_ID
+ * 
+ * Flujo:
+ * 1. Recibir token (PayPal order ID)
+ * 2. Buscar orden local por provider_order_id
+ * 3. Si ya está PAID, mostrar confirmación
+ * 4. Si está PENDING, capturar el pago y activar licencia
+ */
+app.get('/paypal/success', async (req, res) => {
+  try {
+    const token = String(req.query.token || req.query.order_id || req.query.id || '').trim();
+    console.log('[paypal/success] Retorno PayPal:', { token, query: req.query });
+
+    if (!token) {
+      return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago - Sin datos</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e67e22;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>⚠️ Sin datos de pago</h1><p>No recibimos datos de PayPal. Si realizaste un pago, verifica en la aplicación.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+    }
+
+    // Buscar orden local por provider_order_id
+    const localOrder = await licensePaymentOrdersModel.getPaymentOrderByProviderOrderId(token);
+
+    if (!localOrder) {
+      return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Orden no encontrada</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e74c3c;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>❌ Orden no encontrada</h1><p>No encontramos esta orden de pago en nuestro sistema. Contacta a soporte si ya realizaste el pago.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+    }
+
+    // Si ya está PAID, mostrar confirmación
+    if (String(localOrder.status).toUpperCase() === 'PAID') {
+      return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago confirmado</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}.icon{font-size:64px;margin-bottom:16px}h1{color:#27ae60;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#27ae60;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><div class="icon">✅</div><h1>Pago ya confirmado</h1><p>Tu licencia ya está activa. Puedes cerrar esta ventana y volver a la aplicación.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+    }
+
+    // Si está PENDING, capturar el pago
+    if (String(localOrder.status).toUpperCase() === 'PENDING') {
+      try {
+        const captureResult = await paypalService.captureOrder(localOrder.provider_order_id);
+
+        if (String(captureResult.status).toUpperCase() !== 'COMPLETED') {
+          await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
+            status: 'FAILED',
+            raw_response: { captureResult, error: `PayPal status: ${captureResult.status}` },
+          });
+          return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago pendiente</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e67e22;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>⏳ Pago pendiente</h1><p>El pago todavía no ha sido confirmado por PayPal. Estado: ${captureResult.status}. Vuelve a intentar desde la aplicación.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+        }
+
+        // Captura exitosa: actualizar orden local
+        await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
+          provider_capture_id: captureResult.capture_id,
+          status: 'PAID',
+          raw_response: captureResult.raw || captureResult,
+          paid_at: new Date(),
+        });
+
+        // Activar o extender licencia
+        try {
+          await licensesModel.activateOrExtendPaidLicense({
+            customerId: localOrder.customer_id,
+            projectId: localOrder.project_id,
+            months: localOrder.months,
+            paymentOrderId: localOrder.id,
+            maxDevices: 1,
+          });
+        } catch (licenseError) {
+          console.error('[paypal/success] License activation error:', licenseError.message);
+        }
+
+        return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago exitoso</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}.icon{font-size:64px;margin-bottom:16px}h1{color:#27ae60;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#27ae60;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><div class="icon">✅</div><h1>Pago confirmado</h1><p>Tu licencia fue activada correctamente. Puedes cerrar esta ventana y volver a la aplicación.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+      } catch (captureError) {
+        console.error('[paypal/success] Capture error:', captureError.message);
+        await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
+          status: 'FAILED',
+          raw_response: { error: captureError.message, step: 'capture_from_success' },
+        });
+        return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Error al capturar</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e74c3c;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>❌ Error al procesar el pago</h1><p>Ocurrió un error al capturar tu pago. Por favor, intenta nuevamente desde la aplicación o contacta a soporte.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+      }
+    }
+
+    // Otro estado
+    return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Estado de pago</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#555;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>ℹ️ Estado: ${localOrder.status}</h1><p>Si tienes dudas, contacta a soporte.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+  } catch (error) {
+    console.error('[paypal/success] Error:', error);
+    return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Error</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e74c3c;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>❌ Error interno</h1><p>Ocurrió un error inesperado. Contacta a soporte.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+  }
 });
 
-app.get('/paypal/cancel', (req, res) => {
-  console.log('Pago cancelado:', req.query);
-  res.type('html').send('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8" /><title>Pago cancelado</title></head><body><h1>Pago cancelado</h1></body></html>');
+/**
+ * GET /paypal/cancel
+ * Ruta de retorno después de pago cancelado en PayPal.
+ */
+app.get('/paypal/cancel', async (req, res) => {
+  try {
+    const token = String(req.query.token || '').trim();
+    console.log('[paypal/cancel] Pago cancelado:', { token, query: req.query });
+
+    // Si hay token, marcar la orden como CANCELLED si está PENDING
+    if (token) {
+      const localOrder = await licensePaymentOrdersModel.getPaymentOrderByProviderOrderId(token);
+      if (localOrder && String(localOrder.status).toUpperCase() === 'PENDING') {
+        await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
+          status: 'CANCELLED',
+          raw_response: { cancelled_at: new Date().toISOString(), source: 'paypal_cancel_url' },
+        });
+        console.log('[paypal/cancel] Orden marcada como CANCELLED:', localOrder.id);
+      }
+    }
+
+    return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago cancelado</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}.icon{font-size:64px;margin-bottom:16px}h1{color:#e67e22;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><div class="icon">ℹ️</div><h1>Pago cancelado</h1><p>Has cancelado el pago. Puedes intentarlo nuevamente desde la aplicación cuando quieras.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+  } catch (error) {
+    console.error('[paypal/cancel] Error:', error);
+    return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago cancelado</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e67e22;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>ℹ️ Pago cancelado</h1><p>Puedes intentarlo nuevamente desde la aplicación.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+  }
 });
 
 // ==========================================
@@ -392,6 +519,11 @@ app.use('/descargas', express.static(path.join(__dirname, '../descargas')));
 // Public read-only APIs
 app.use('/api/public', storePublicRoutes);
 app.use('/api/public', publicAssetsRoutes);
+
+// Public License APIs (FullCredit / SaaS apps)
+// Rate limit: 60 req/min per IP (tight enough for license validation)
+const publicLicenseLimiter = rateLimit({ windowMs: 60_000, max: 60, message: 'Límite de peticiones alcanzado. Espere un momento.' });
+app.use('/api/public', publicLicenseLimiter, publicLicenseRoutes);
 
 // Admin APIs (protected by x-session-id)
 app.use('/api/admin', adminProductsRoutes);

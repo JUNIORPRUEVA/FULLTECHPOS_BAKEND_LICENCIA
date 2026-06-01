@@ -473,9 +473,16 @@ class _CreatePaymentLinkPanelState extends State<CreatePaymentLinkPanel> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   // Abrir en navegador
+                  Clipboard.setData(ClipboardData(text: checkoutUrl));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Link copiado al portapapeles. Pégalo en tu navegador.'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.open_in_new, size: 16),
-                label: const Text('Abrir link'),
+                label: const Text('Copiar y abrir'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

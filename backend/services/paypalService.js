@@ -2,23 +2,50 @@
  * PayPal REST API Service
  * 
  * Maneja la creación, captura y verificación de órdenes de pago PayPal.
- * Usa las variables de entorno:
- *   PAYPAL_CLIENT_ID
- *   PAYPAL_CLIENT_SECRET (o PAYPAL_SECRET)
- *   PAYPAL_ENV = sandbox | live
- *   PAYPAL_RETURN_URL
- *   PAYPAL_CANCEL_URL
  * 
- * Si PAYPAL_ENV = live, usa api-m.paypal.com
- * Si PAYPAL_ENV = sandbox o no definido, usa api-m.sandbox.paypal.com
+ * Variables de entorno:
+ *   PAYPAL_MODE | PAYPAL_ENV  = sandbox | live
+ *   PAYPAL_BASE_URL           = override de base URL (opcional)
+ *   PAYPAL_CLIENT_ID          = Client ID de la app PayPal
+ *   PAYPAL_CLIENT_SECRET      = Client Secret de la app PayPal
+ *   PAYPAL_RETURN_URL         = URL de retorno después de pago exitoso
+ *   PAYPAL_CANCEL_URL         = URL de retorno después de pago cancelado
+ *   PAYPAL_BRAND_NAME         = Nombre de marca (default: "Appyra")
+ *   PAYPAL_WEBHOOK_ID         = ID del webhook para verificación de firma
  */
 
 const PAYPAL_LIVE = 'https://api-m.paypal.com';
 const PAYPAL_SANDBOX = 'https://api-m.sandbox.paypal.com';
 
+/**
+ * Normaliza el modo PayPal (sandbox | live).
+ * Soporta PAYPAL_ENV y PAYPAL_MODE.
+ */
+function getPaypalMode() {
+  const mode = (
+    process.env.PAYPAL_ENV ||
+    process.env.PAYPAL_MODE ||
+    'sandbox'
+  ).toLowerCase();
+
+  if (mode !== 'sandbox' && mode !== 'live') {
+    console.warn(`[paypal] Modo "${mode}" no válido. Usando sandbox.`);
+    return 'sandbox';
+  }
+  return mode;
+}
+
+/**
+ * Obtiene la base URL de PayPal.
+ * Si PAYPAL_BASE_URL está definido, lo usa como override.
+ * Si no, usa la URL según el modo.
+ */
 function getBaseUrl() {
-  const env = String(process.env.PAYPAL_ENV || process.env.PAYPAL_MODE || 'sandbox').trim().toLowerCase();
-  return env === 'live' ? PAYPAL_LIVE : PAYPAL_SANDBOX;
+  const override = String(process.env.PAYPAL_BASE_URL || '').trim();
+  if (override) return override;
+
+  const mode = getPaypalMode();
+  return mode === 'live' ? PAYPAL_LIVE : PAYPAL_SANDBOX;
 }
 
 function getClientId() {
@@ -27,6 +54,41 @@ function getClientId() {
 
 function getClientSecret() {
   return String(process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '').trim();
+}
+
+/**
+ * Valida que la configuración de PayPal esté completa.
+ * @returns {{ ok: boolean, missing: string[], mode: string, baseUrl: string, clientIdConfigured: boolean, clientSecretConfigured: boolean, returnUrl: string, cancelUrl: string, webhookIdConfigured: boolean, brandName: string }}
+ */
+function validatePaypalConfig() {
+  const missing = [];
+  const clientId = getClientId();
+  const clientSecret = getClientSecret();
+  const returnUrl = String(process.env.PAYPAL_RETURN_URL || '').trim();
+  const cancelUrl = String(process.env.PAYPAL_CANCEL_URL || '').trim();
+  const webhookId = String(process.env.PAYPAL_WEBHOOK_ID || '').trim();
+  const brandName = String(process.env.PAYPAL_BRAND_NAME || 'Appyra').trim();
+
+  if (!clientId) missing.push('PAYPAL_CLIENT_ID');
+  if (!clientSecret) missing.push('PAYPAL_CLIENT_SECRET');
+  if (!returnUrl) missing.push('PAYPAL_RETURN_URL');
+  if (!cancelUrl) missing.push('PAYPAL_CANCEL_URL');
+
+  const mode = getPaypalMode();
+  const baseUrl = getBaseUrl();
+
+  return {
+    ok: missing.length === 0,
+    missing,
+    mode,
+    baseUrl,
+    clientIdConfigured: Boolean(clientId),
+    clientSecretConfigured: Boolean(clientSecret),
+    returnUrl,
+    cancelUrl,
+    webhookIdConfigured: Boolean(webhookId),
+    brandName,
+  };
 }
 
 /**
@@ -75,7 +137,7 @@ async function createOrder({ amount, currency, description, metadata }) {
   const accessToken = await getAccessToken();
   const returnUrl = String(process.env.PAYPAL_RETURN_URL || '').trim() || 'https://example.com/paypal/success';
   const cancelUrl = String(process.env.PAYPAL_CANCEL_URL || '').trim() || 'https://example.com/paypal/cancel';
-  const brandName = String(process.env.PAYPAL_BRAND_NAME || 'FULLTECH POS').trim();
+  const brandName = String(process.env.PAYPAL_BRAND_NAME || 'Appyra').trim();
 
   const payload = {
     intent: 'CAPTURE',
@@ -137,6 +199,10 @@ async function createOrder({ amount, currency, description, metadata }) {
     }
   }
 
+  if (!checkoutUrl) {
+    throw new Error('PayPal no devolvió un link de aprobación (approve). Verifica la configuración de la app PayPal.');
+  }
+
   return {
     id: String(data.id || ''),
     status: String(data.status || ''),
@@ -169,7 +235,7 @@ async function captureOrder(orderId) {
 
   const data = await response.json();
 
-  // Extraer capture_id del primer capture
+  // Extraer capture_id del primer capture COMPLETED
   let captureId = '';
   let payerEmail = '';
   let capturedAmount = 0;
@@ -236,4 +302,7 @@ module.exports = {
   createOrder,
   captureOrder,
   verifyOrder,
+  validatePaypalConfig,
+  getPaypalMode,
+  getBaseUrl,
 };
