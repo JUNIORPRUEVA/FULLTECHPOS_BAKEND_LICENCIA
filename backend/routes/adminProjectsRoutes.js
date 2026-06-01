@@ -14,4 +14,14 @@ router.post('/', isAdmin, (req, res, next) => {
   Promise.resolve(adminProjectsController.createProject(req, res)).catch(next);
 });
 
+// GET /api/admin/projects/:id
+router.get('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminProjectsController.getProjectById(req, res)).catch(next);
+});
+
+// PATCH /api/admin/projects/:id/billing-settings
+router.patch('/:id/billing-settings', isAdmin, (req, res, next) => {
+  Promise.resolve(adminProjectsController.updateBillingSettings(req, res)).catch(next);
+});
+
 module.exports = router;

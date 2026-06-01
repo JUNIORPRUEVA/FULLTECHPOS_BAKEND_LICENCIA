@@ -51,11 +51,75 @@ async function listProjects() {
   return res.rows;
 }
 
+async function updateProjectBillingSettings(projectId, settings) {
+  const {
+    monthly_price,
+    currency,
+    demo_days,
+    min_purchase_months,
+    is_paid_project,
+    allow_demo,
+    is_active
+  } = settings;
+
+  const res = await pool.query(
+    `UPDATE projects
+     SET
+       monthly_price = COALESCE($2, monthly_price),
+       currency = COALESCE($3, currency),
+       demo_days = COALESCE($4, demo_days),
+       min_purchase_months = COALESCE($5, min_purchase_months),
+       is_paid_project = COALESCE($6, is_paid_project),
+       allow_demo = COALESCE($7, allow_demo),
+       is_active = COALESCE($8, is_active),
+       updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      projectId,
+      monthly_price != null ? monthly_price : null,
+      currency || null,
+      demo_days != null ? demo_days : null,
+      min_purchase_months != null ? min_purchase_months : null,
+      is_paid_project != null ? is_paid_project : null,
+      allow_demo != null ? allow_demo : null,
+      is_active != null ? is_active : null
+    ]
+  );
+  return res.rows[0] || null;
+}
+
+/**
+ * Calcula el costo de una compra de licencia basada en la configuración del proyecto.
+ * @param {Object} project - El objeto del proyecto con monthly_price, currency, min_purchase_months
+ * @param {number} months - Cantidad de meses a comprar
+ * @returns {Object} { months, monthly_price, currency, subtotal, total }
+ */
+function calculateLicensePurchase(project, months) {
+  const monthlyPrice = Number(project.monthly_price) || 0;
+  const minMonths = Number(project.min_purchase_months) || 1;
+  const currency = String(project.currency || 'USD').trim();
+
+  const validatedMonths = Math.max(minMonths, Math.floor(Number(months)) || minMonths);
+  const subtotal = monthlyPrice * validatedMonths;
+  const total = subtotal; // Sin impuestos por ahora
+
+  return {
+    months: validatedMonths,
+    monthly_price: monthlyPrice,
+    currency,
+    subtotal,
+    total
+  };
+}
+
 module.exports = {
   normalizeCode,
   getProjectById,
   getProjectByCode,
   getDefaultProject,
   createProject,
-  listProjects
+  listProjects,
+  updateProjectBillingSettings,
+  calculateLicensePurchase
 };

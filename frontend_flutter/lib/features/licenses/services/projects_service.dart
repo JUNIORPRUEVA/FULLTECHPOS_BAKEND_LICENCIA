@@ -15,4 +15,34 @@ class ProjectsService {
         .map((e) => Project.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<Project> getProjectById(String id) async {
+    final data = await _client.get('/api/admin/projects/$id');
+    return Project.fromJson(data['project'] as Map<String, dynamic>? ?? data);
+  }
+
+  Future<Project> updateBillingSettings({
+    required String projectId,
+    required double monthlyPrice,
+    required String currency,
+    required int demoDays,
+    required int minPurchaseMonths,
+    required bool isPaidProject,
+    required bool allowDemo,
+    required bool isActive,
+  }) async {
+    final data = await _client.patch(
+      '/api/admin/projects/$projectId/billing-settings',
+      {
+        'monthly_price': monthlyPrice,
+        'currency': currency,
+        'demo_days': demoDays,
+        'min_purchase_months': minPurchaseMonths,
+        'is_paid_project': isPaidProject,
+        'allow_demo': allowDemo,
+        'is_active': isActive,
+      },
+    );
+    return Project.fromJson(data['project'] as Map<String, dynamic>? ?? data);
+  }
 }

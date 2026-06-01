@@ -843,6 +843,189 @@ async function extendLicenseDays(licenseId, extraDays) {
   }
 }
 
+/**
+ * Activa o extiende una licencia después de un pago exitoso.
+ * 
+ * Reglas:
+ * - Si no existe licencia para el cliente/proyecto: crea una nueva y la activa.
+ * - Si existe y está vencida: extiende desde now + months.
+ * - Si existe y está activa: extiende desde expires_at + months.
+ * - Si está bloqueada: lanza error.
+ * - Si está eliminada: crea una nueva.
+ * 
+ * @param {Object} params
+ * @param {string} params.customerId - ID del cliente
+ * @param {string} params.projectId - ID del proyecto
+ * @param {number} params.months - Meses a agregar
+ * @param {string} params.paymentOrderId - ID de la orden de pago
+ * @param {number} [params.maxDevices=1] - Máximo de dispositivos
+ * @returns {Promise<Object>} Licencia actualizada/creada
+ */
+async function activateOrExtendPaidLicense({ customerId, projectId, months, paymentOrderId, maxDevices }) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const msPerMonth = 30 * 24 * 60 * 60 * 1000; // ~30 días por mes
+    const extraMonths = Math.floor(Number(months));
+    if (!Number.isFinite(extraMonths) || extraMonths <= 0) {
+      throw new Error('months debe ser un número entero positivo');
+    }
+
+    // Buscar licencia existente del cliente para este proyecto
+    const licRes = await client.query(
+      `SELECT * FROM licenses
+       WHERE customer_id = $1 AND project_id = $2
+       ORDER BY created_at DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [customerId, projectId]
+    );
+    const existingLicense = licRes.rows[0] || null;
+
+    let license;
+
+    if (!existingLicense) {
+      // No existe licencia: crear una nueva
+      const { generateLicenseKey } = require('../utils/licenseKey');
+      let licenseKey;
+      for (let i = 0; i < 6; i++) {
+        licenseKey = generateLicenseKey('FULL');
+        const dupCheck = await client.query(
+          'SELECT id FROM licenses WHERE license_key = $1',
+          [licenseKey]
+        );
+        if (dupCheck.rows.length === 0) break;
+      }
+
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + extraMonths * msPerMonth);
+
+      const insertRes = await client.query(
+        `INSERT INTO licenses
+         (project_id, customer_id, license_key, tipo, license_type, dias_validez, max_dispositivos,
+          estado, fecha_inicio, fecha_fin, expires_at, notas, activation_source, payment_order_id)
+         VALUES ($1, $2, $3, 'FULL', 'SUSCRIPCION', $4, $5,
+                 'ACTIVA', $6::timestamp, $7::timestamp, $8::timestamptz,
+                 'Activada por pago PayPal', 'paypal', $9)
+         RETURNING *`,
+        [
+          projectId,
+          customerId,
+          licenseKey,
+          Math.ceil(extraMonths * 30),
+          Math.floor(Number(maxDevices)) || 1,
+          now,
+          expiresAt,
+          expiresAt,
+          paymentOrderId,
+        ]
+      );
+      license = insertRes.rows[0];
+    } else {
+      const currentStatus = normalizeLicenseStatus(existingLicense.estado);
+
+      if (currentStatus === 'BLOQUEADA') {
+        throw new Error('No se puede activar una licencia bloqueada automáticamente. Contacte a soporte.');
+      }
+
+      if (currentStatus === 'ELIMINADA') {
+        // Crear nueva licencia (similar al caso "no existe")
+        const { generateLicenseKey } = require('../utils/licenseKey');
+        let licenseKey;
+        for (let i = 0; i < 6; i++) {
+          licenseKey = generateLicenseKey('FULL');
+          const dupCheck = await client.query(
+            'SELECT id FROM licenses WHERE license_key = $1',
+            [licenseKey]
+          );
+          if (dupCheck.rows.length === 0) break;
+        }
+
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + extraMonths * msPerMonth);
+
+        const insertRes = await client.query(
+          `INSERT INTO licenses
+           (project_id, customer_id, license_key, tipo, license_type, dias_validez, max_dispositivos,
+            estado, fecha_inicio, fecha_fin, expires_at, notas, activation_source, payment_order_id)
+           VALUES ($1, $2, $3, 'FULL', 'SUSCRIPCION', $4, $5,
+                   'ACTIVA', $6::timestamp, $7::timestamp, $8::timestamptz,
+                   'Activada por pago PayPal (licencia anterior eliminada)', 'paypal', $9)
+           RETURNING *`,
+          [
+            projectId,
+            customerId,
+            licenseKey,
+            Math.ceil(extraMonths * 30),
+            Math.floor(Number(maxDevices)) || 1,
+            now,
+            expiresAt,
+            expiresAt,
+            paymentOrderId,
+          ]
+        );
+        license = insertRes.rows[0];
+      } else {
+        // Licencia existe y no está bloqueada/eliminada
+        const now = new Date();
+        const currentFin = existingLicense.fecha_fin ? new Date(existingLicense.fecha_fin) : null;
+        const currentInicio = existingLicense.fecha_inicio ? new Date(existingLicense.fecha_inicio) : null;
+        const isActive = currentStatus === 'ACTIVA' && currentFin && currentFin.getTime() > now.getTime();
+
+        // Calcular nueva fecha de expiración
+        let baseDate;
+        let newInicio;
+        if (isActive && currentFin) {
+          // Extender desde la fecha de vencimiento actual
+          baseDate = currentFin;
+          newInicio = currentInicio || now;
+        } else {
+          // Extender desde ahora (estaba vencida, pendiente o sin fecha_inicio)
+          baseDate = now;
+          newInicio = now;
+        }
+
+        const newExpiresAt = new Date(baseDate.getTime() + extraMonths * msPerMonth);
+        const newDiasValidez = Math.max(1, Math.ceil((newExpiresAt.getTime() - newInicio.getTime()) / (24 * 60 * 60 * 1000)));
+
+        const updateRes = await client.query(
+          `UPDATE licenses
+           SET
+             estado = 'ACTIVA',
+             fecha_inicio = COALESCE(fecha_inicio, $2::timestamp),
+             fecha_fin = $3::timestamp,
+             expires_at = $4::timestamptz,
+             dias_validez = $5,
+             activation_source = 'paypal',
+             payment_order_id = $6,
+             notas = COALESCE(NULLIF(notas, ''), 'Renovada por pago PayPal'),
+             updated_at = now()
+           WHERE id = $1
+           RETURNING *`,
+          [
+            existingLicense.id,
+            newInicio,
+            newExpiresAt,
+            newExpiresAt,
+            newDiasValidez,
+            paymentOrderId,
+          ]
+        );
+        license = updateRes.rows[0];
+      }
+    }
+
+    await client.query('COMMIT');
+    return license;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   LicenseStateError,
   normalizeLicenseStatus,
@@ -855,5 +1038,6 @@ module.exports = {
   activateLicenseManually,
   findLicenseByKey,
   markLicenseExpired,
-  extendLicenseDays
+  extendLicenseDays,
+  activateOrExtendPaidLicense
 };

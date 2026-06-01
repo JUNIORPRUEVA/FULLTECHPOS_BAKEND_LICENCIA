@@ -44,6 +44,7 @@ const adminLicenseConfigRoutes = require('./routes/adminLicenseConfigRoutes');
 const adminActivationsRoutes = require('./routes/adminActivationsRoutes');
 const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const adminPaymentsRoutes = require('./routes/adminPaymentsRoutes');
+const adminLicensePaymentsRoutes = require('./routes/adminLicensePaymentsRoutes');
 const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const activationsRoutes = require('./routes/activationsRoutes');
@@ -473,6 +474,7 @@ app.use('/api/admin/license-config', adminLicenseConfigRoutes);
 app.use('/api/admin/activations', adminActivationsRoutes);
 app.use('/api/admin/projects', adminProjectsRoutes);
 app.use('/api/admin/payments', adminPaymentsRoutes);
+app.use('/api/admin/license-payments', adminLicensePaymentsRoutes);
 app.use('/api/admin', adminDashboardRoutes);
 
 // APP ESCRITORIO
