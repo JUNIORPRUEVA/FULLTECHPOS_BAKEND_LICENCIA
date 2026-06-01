@@ -369,17 +369,19 @@ async function startDemo(req, res) {
       // 1) Buscar o crear customer
       let customer = null;
 
-      // Primero buscar por device_id en license_activations (demo_trials puede no existir)
+      // Primero buscar por device_id a través de licenses (license_activations NO tiene customer_id)
       const existingCustomerRes = await client.query(
         `SELECT DISTINCT c.*
          FROM customers c
-         JOIN license_activations la ON la.customer_id = c.id AND la.device_id = $1
+         JOIN licenses l ON l.customer_id = c.id
+         JOIN license_activations la ON la.license_id = l.id AND la.device_id = $1
          LIMIT 1`,
         [device_id]
       );
       customer = existingCustomerRes.rows[0] || null;
 
       console.log('[PUBLIC_DEMO_START] existing customer by activation:', customer ? customer.id : null);
+
 
       if (!customer && email) {
         customer = await customersModel.findCustomerByContact({ contacto_email: email });
@@ -962,16 +964,18 @@ async function registerOrFindCustomer(req, res) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
-    // Buscar customer existente por device_id
+    // Buscar customer existente por device_id (a través de licenses, NO license_activations.customer_id)
     let customer = null;
     const existingRes = await pool.query(
       `SELECT DISTINCT c.*
        FROM customers c
-       JOIN license_activations la ON la.customer_id = c.id AND la.device_id = $1
+       JOIN licenses l ON l.customer_id = c.id
+       JOIN license_activations la ON la.license_id = l.id AND la.device_id = $1
        LIMIT 1`,
       [device]
     );
     customer = existingRes.rows[0] || null;
+
 
     if (!customer && email) {
       customer = await customersModel.findCustomerByContact({ contacto_email: email });

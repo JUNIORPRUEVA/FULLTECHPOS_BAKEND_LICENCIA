@@ -75,10 +75,12 @@ async function main() {
   const custRes = await pool.query(
     `SELECT DISTINCT c.id
      FROM customers c
-     JOIN license_activations la ON la.customer_id = c.id AND la.device_id = $1
+     JOIN licenses l ON l.customer_id = c.id
+     JOIN license_activations la ON la.license_id = l.id AND la.device_id = $1
      LIMIT 1`,
     [DEVICE_ID]
   );
+
 
   if (custRes.rows.length > 0) {
     customerId = custRes.rows[0].id;

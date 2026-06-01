@@ -525,6 +525,22 @@ app.use('/api/public', publicAssetsRoutes);
 const publicLicenseLimiter = rateLimit({ windowMs: 60_000, max: 60, message: 'Límite de peticiones alcanzado. Espere un momento.' });
 app.use('/api/public', publicLicenseLimiter, publicLicenseRoutes);
 
+// Endpoint público de versión para confirmar deploy
+app.get('/api/public/version', (req, res) => {
+  res.json({
+    success: true,
+    service: 'appyra-license-backend',
+    version: 'fullcredit-demo-fix-2026-06-01',
+    has_public_license_routes: true,
+    has_demo_start: true,
+    has_migration_043: true,
+    license_only_mode: LICENSE_ONLY,
+    node_env: String(process.env.NODE_ENV || 'development'),
+    ts: new Date().toISOString()
+  });
+});
+
+
 // Admin APIs (protected by x-session-id)
 app.use('/api/admin', adminProductsRoutes);
 app.use('/api/admin', adminStoreSettingsRoutes);
