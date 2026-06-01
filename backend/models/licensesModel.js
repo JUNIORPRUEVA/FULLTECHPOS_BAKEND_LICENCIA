@@ -2,11 +2,50 @@ const { pool } = require('../db/pool');
 const activationsModel = require('./activationsModel');
 
 const ACTIVATION_BLOCKING_LICENSE_STATES = new Set(['BLOQUEADA', 'VENCIDA', 'ELIMINADA']);
+const LICENSE_STATUS_ALIASES = {
+  ACTIVE: 'ACTIVA',
+  ACTIVA: 'ACTIVA',
+  PENDING: 'PENDIENTE',
+  PENDIENTE: 'PENDIENTE',
+  EXPIRED: 'VENCIDA',
+  VENCIDA: 'VENCIDA',
+  BLOCKED: 'BLOQUEADA',
+  BLOQUEADA: 'BLOQUEADA',
+  DELETED: 'ELIMINADA',
+  ELIMINADA: 'ELIMINADA'
+};
+
+class LicenseStateError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.name = 'LicenseStateError';
+    this.statusCode = statusCode;
+  }
+}
 
 function isPgMissingColumnOrTable(e) {
   const code = e && e.code;
   // 42703 undefined_column, 42P01 undefined_table
   return code === '42703' || code === '42P01';
+}
+
+function normalizeLicenseStatus(status, fallback = '') {
+  const normalized = String(status || '').trim().toUpperCase();
+  return LICENSE_STATUS_ALIASES[normalized] || fallback || normalized;
+}
+
+function asDateOrNull(value) {
+  if (value == null) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getLicenseDateParams(fechaInicio, fechaFin) {
+  return {
+    fechaInicio: asDateOrNull(fechaInicio),
+    fechaFin: asDateOrNull(fechaFin),
+    expiresAt: asDateOrNull(fechaFin)
+  };
 }
 
 function isLicenseExpiredByDate(license, now = new Date()) {
@@ -17,7 +56,7 @@ function isLicenseExpiredByDate(license, now = new Date()) {
 }
 
 function getEffectiveLicenseStatus(license, now = new Date()) {
-  const current = String(license?.estado || '').trim().toUpperCase();
+  const current = normalizeLicenseStatus(license?.estado);
   if (current === 'ACTIVA' && isLicenseExpiredByDate(license, now)) {
     return 'VENCIDA';
   }
@@ -28,7 +67,7 @@ async function normalizeLicenseRuntimeStatus(license) {
   if (!license) return license;
 
   const nextStatus = getEffectiveLicenseStatus(license);
-  if (nextStatus === 'VENCIDA' && String(license.estado || '').trim().toUpperCase() !== 'VENCIDA') {
+  if (nextStatus === 'VENCIDA' && normalizeLicenseStatus(license.estado) !== 'VENCIDA') {
     try {
       await markLicenseExpired(license.id);
     } catch (_) {}
@@ -312,6 +351,7 @@ async function getLicenseById(licenseId) {
 }
 
 async function updateLicenseStatus(licenseId, estado) {
+  const normalizedEstado = normalizeLicenseStatus(estado, estado);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -320,10 +360,10 @@ async function updateLicenseStatus(licenseId, estado) {
        SET estado = $2
        WHERE id = $1
        RETURNING *`,
-      [licenseId, estado]
+      [licenseId, normalizedEstado]
     );
     const updated = res.rows[0] || null;
-    if (updated && ACTIVATION_BLOCKING_LICENSE_STATES.has(String(estado).toUpperCase())) {
+    if (updated && ACTIVATION_BLOCKING_LICENSE_STATES.has(normalizedEstado)) {
       await activationsModel.blockActivationsForLicense(licenseId, { client });
     }
     await client.query('COMMIT');
@@ -380,7 +420,9 @@ async function updateLicense(licenseId, patch) {
     const nextDias = patch.dias_validez != null ? patch.dias_validez : (current.dias_validez || 30);
     const nextMax = patch.max_dispositivos != null ? patch.max_dispositivos : (current.max_dispositivos || 1);
     const nextNotas = patch.notas !== undefined ? patch.notas : current.notas;
-    const nextEstado = patch.estado != null ? patch.estado : current.estado;
+    const nextEstado = patch.estado != null
+      ? normalizeLicenseStatus(patch.estado, patch.estado)
+      : normalizeLicenseStatus(current.estado, current.estado);
     const nextLicenseType = patch.license_type != null
       ? (String(patch.license_type).trim().toUpperCase() === 'PERMANENTE' ? 'PERMANENTE' : 'SUSCRIPCION')
       : (current.license_type || 'SUSCRIPCION');
@@ -407,6 +449,7 @@ async function updateLicense(licenseId, patch) {
     }
 
     // Intentar UPDATE con schema completo, degradar si faltan columnas
+    const nextDates = getLicenseDateParams(nextFechaInicio, nextFechaFin);
     const updateAttempts = [
       // Attempt 1: schema completo con license_type
       async () => {
@@ -419,10 +462,10 @@ async function updateLicense(licenseId, patch) {
                max_dispositivos = $6,
                estado = $7,
                notas = $8,
-               fecha_inicio = $9,
-               fecha_fin = $10,
-               expires_at = $10,
-               license_type = $11
+               fecha_inicio = $9::timestamp,
+               fecha_fin = $10::timestamp,
+               expires_at = $11::timestamptz,
+               license_type = $12
            WHERE id = $1
            RETURNING *`,
           [
@@ -434,8 +477,9 @@ async function updateLicense(licenseId, patch) {
             Number(nextMax),
             nextEstado,
             nextNotas,
-            nextFechaInicio,
-            nextFechaFin,
+            nextDates.fechaInicio,
+            nextDates.fechaFin,
+            nextDates.expiresAt,
             nextLicenseType
           ]
         );
@@ -451,9 +495,9 @@ async function updateLicense(licenseId, patch) {
                max_dispositivos = $6,
                estado = $7,
                notas = $8,
-               fecha_inicio = $9,
-               fecha_fin = $10,
-               expires_at = $10
+               fecha_inicio = $9::timestamp,
+               fecha_fin = $10::timestamp,
+               expires_at = $11::timestamptz
            WHERE id = $1
            RETURNING *`,
           [
@@ -465,8 +509,9 @@ async function updateLicense(licenseId, patch) {
             Number(nextMax),
             nextEstado,
             nextNotas,
-            nextFechaInicio,
-            nextFechaFin
+            nextDates.fechaInicio,
+            nextDates.fechaFin,
+            nextDates.expiresAt
           ]
         );
       },
@@ -480,9 +525,9 @@ async function updateLicense(licenseId, patch) {
                max_dispositivos = $5,
                estado = $6,
                notas = $7,
-               fecha_inicio = $8,
-               fecha_fin = $9,
-               expires_at = $9
+               fecha_inicio = $8::timestamp,
+               fecha_fin = $9::timestamp,
+               expires_at = $10::timestamptz
            WHERE id = $1
            RETURNING *`,
           [
@@ -493,8 +538,9 @@ async function updateLicense(licenseId, patch) {
             Number(nextMax),
             nextEstado,
             nextNotas,
-            nextFechaInicio,
-            nextFechaFin
+            nextDates.fechaInicio,
+            nextDates.fechaFin,
+            nextDates.expiresAt
           ]
         );
       }
@@ -545,6 +591,17 @@ async function activateLicenseManually(licenseId) {
       return null;
     }
 
+    const currentStatus = getEffectiveLicenseStatus(license);
+    if (currentStatus === 'ACTIVA') {
+      throw new LicenseStateError('La licencia ya está activa', 409);
+    }
+    if (currentStatus === 'BLOQUEADA') {
+      throw new LicenseStateError('No se puede activar una licencia bloqueada. Desbloquéela primero.', 400);
+    }
+    if (currentStatus === 'ELIMINADA') {
+      throw new LicenseStateError('No se puede activar una licencia eliminada.', 400);
+    }
+
     const now = new Date();
     const msPerDay = 24 * 60 * 60 * 1000;
     const daysRaw = Number(license.dias_validez);
@@ -574,24 +631,26 @@ async function activateLicenseManually(licenseId) {
       fecha_fin = new Date(now.getTime() + days * msPerDay);
     }
 
+    const activationDates = getLicenseDateParams(fecha_inicio, fecha_fin);
+
     // Intentar UPDATE con expires_at, degradar si no existe la columna
     const activateAttempts = [
       async () => {
         return await client.query(
           `UPDATE licenses
-          SET estado = 'ACTIVA', fecha_inicio = $2, fecha_fin = $3, expires_at = $3
+          SET estado = 'ACTIVA', fecha_inicio = $2::timestamp, fecha_fin = $3::timestamp, expires_at = $4::timestamptz
            WHERE id = $1
            RETURNING *`,
-          [licenseId, fecha_inicio, fecha_fin]
+          [licenseId, activationDates.fechaInicio, activationDates.fechaFin, activationDates.expiresAt]
         );
       },
       async () => {
         return await client.query(
           `UPDATE licenses
-          SET estado = 'ACTIVA', fecha_inicio = $2, fecha_fin = $3
+          SET estado = 'ACTIVA', fecha_inicio = $2::timestamp, fecha_fin = $3::timestamp
            WHERE id = $1
            RETURNING *`,
-          [licenseId, fecha_inicio, fecha_fin]
+          [licenseId, activationDates.fechaInicio, activationDates.fechaFin]
         );
       }
     ];
@@ -728,31 +787,34 @@ async function extendLicenseDays(licenseId, extraDays) {
     const nextDiasValidez = Math.max(1, Math.ceil((nextFin.getTime() - inicio.getTime()) / msPerDay));
 
     // Si estaba vencida y ahora la fecha_fin queda en el futuro, reactivar.
-    const nextEstado = license.estado === 'VENCIDA' ? 'ACTIVA' : license.estado;
+    const nextEstado = normalizeLicenseStatus(license.estado) === 'VENCIDA'
+      ? 'ACTIVA'
+      : normalizeLicenseStatus(license.estado, license.estado);
+    const nextDates = getLicenseDateParams(license.fecha_inicio, nextFin);
 
     // Intentar UPDATE con expires_at, degradar si no existe
     const extendAttempts = [
       async () => {
         return await client.query(
           `UPDATE licenses
-           SET fecha_fin = $2,
-               expires_at = $2,
-               dias_validez = $3,
-               estado = $4
+           SET fecha_fin = $2::timestamp,
+               expires_at = $3::timestamptz,
+               dias_validez = $4,
+               estado = $5
            WHERE id = $1
            RETURNING *`,
-          [licenseId, nextFin, nextDiasValidez, nextEstado]
+          [licenseId, nextDates.fechaFin, nextDates.expiresAt, nextDiasValidez, nextEstado]
         );
       },
       async () => {
         return await client.query(
           `UPDATE licenses
-           SET fecha_fin = $2,
+           SET fecha_fin = $2::timestamp,
                dias_validez = $3,
                estado = $4
            WHERE id = $1
            RETURNING *`,
-          [licenseId, nextFin, nextDiasValidez, nextEstado]
+          [licenseId, nextDates.fechaFin, nextDiasValidez, nextEstado]
         );
       }
     ];
@@ -782,6 +844,8 @@ async function extendLicenseDays(licenseId, extraDays) {
 }
 
 module.exports = {
+  LicenseStateError,
+  normalizeLicenseStatus,
   createLicenseWithKey,
   listLicenses,
   getLicenseById,

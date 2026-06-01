@@ -44,6 +44,7 @@ class _LicensesPageState extends State<LicensesPage> {
   bool _showCreatePanel = false;
   bool _editingLicense = false;
   bool _creating = false;
+  String? _activatingLicenseId;
 
   bool get _isDesktop => MediaQuery.of(context).size.width >= 1000;
 
@@ -294,10 +295,12 @@ class _LicensesPageState extends State<LicensesPage> {
   }
 
   /// Show activation confirmation dialog and activate the license.
+  /// The dialog only returns true/false. Activation happens after dialog closes.
+  /// No Navigator.pop() is called on the page context after activation.
   Future<void> _activateLicenseWithConfirmation(License license) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Activar licencia'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -329,11 +332,11 @@ class _LicensesPageState extends State<LicensesPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.success,
               foregroundColor: Colors.white,
@@ -345,56 +348,49 @@ class _LicensesPageState extends State<LicensesPage> {
     );
 
     if (confirmed != true) return;
-
-    // Show loading dialog
     if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Activando licencia...'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
 
+    // Activation happens after dialog closes — no loading dialog needed.
+    // This avoids any Navigator.pop() on the page context.
     try {
+      setState(() {
+        _activatingLicenseId = license.id;
+      });
+
       await _licensesService.activateLicense(license.id);
-      if (mounted) {
-        Navigator.of(context).pop(); // close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Licencia activada correctamente'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        _refresh();
-      }
+
+      if (!mounted) return;
+
+      _refresh();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Licencia activada correctamente'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     } catch (e) {
+      if (!mounted) return;
+
+      String message;
+      if (e is ApiException) {
+        message = 'No se pudo activar la licencia: ${e.message}';
+      } else {
+        message = 'No se pudo activar la licencia: $e';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
       if (mounted) {
-        Navigator.of(context).pop(); // close loading
-        String message;
-        if (e is ApiException) {
-          message = 'No se pudo activar la licencia: ${e.message}';
-        } else {
-          message = 'No se pudo activar la licencia: $e';
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        setState(() {
+          _activatingLicenseId = null;
+        });
       }
     }
   }

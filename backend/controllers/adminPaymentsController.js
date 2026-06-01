@@ -52,7 +52,7 @@ async function listPayments(req, res) {
         po.user_id,
         po.company_id,
         po.customer_id,
-        COALESCE(c.nombre_negocio, c.nombre_completo, '—') AS customer_name,
+        COALESCE(c.nombre_negocio, c.contacto_nombre, c.contacto_email, 'Cliente sin nombre') AS customer_name,
         po.plan_id,
         po.product_id,
         po.project_id,

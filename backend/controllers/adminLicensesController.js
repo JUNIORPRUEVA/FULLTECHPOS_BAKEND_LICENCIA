@@ -6,6 +6,33 @@ const projectsModel = require('../models/projectsModel');
 const licenseFile = require('../utils/licenseFile');
 const licenseChangeBus = require('../services/licenseChangeBus');
 
+function logSqlError(scope, error) {
+  console.error(`[${scope}] SQL ERROR:`, {
+    message: error?.message,
+    code: error?.code,
+    detail: error?.detail,
+    stack: error?.stack
+  });
+}
+
+function handleLicenseError(res, error, fallbackScope, fallbackMessage = 'Error interno del servidor') {
+  if (error instanceof licensesModel.LicenseStateError) {
+    return res.status(error.statusCode || 400).json({
+      ok: false,
+      success: false,
+      message: error.message
+    });
+  }
+
+  logSqlError(fallbackScope, error);
+  return res.status(500).json({
+    ok: false,
+    success: false,
+    message: fallbackMessage,
+    code: error?.code || null
+  });
+}
+
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
 }
@@ -196,7 +223,7 @@ async function createLicense(req, res) {
           return res.status(201).json({ ok: true, license });
         }
 
-        const activated = await licensesModel.updateLicense(license.id, { estado: 'ACTIVA' });
+        const activated = await licensesModel.activateLicenseManually(license.id);
 
         // LOG: Activación
         console.log('[createLicense] Licencia activada automáticamente:', JSON.stringify({
@@ -220,18 +247,16 @@ async function createLicense(req, res) {
       } catch (e) {
         // 23505 = unique_violation
         if (e && e.code === '23505') continue;
-        console.error('[CREATE_LICENSE] FATAL ERROR:', {
-          message: e.message,
-          stack: e.stack,
-          code: e.code,
-          detail: e.detail,
-          constraint: e.constraint,
-          table: e.table,
-          column: e.column
-        });
+        if (e instanceof licensesModel.LicenseStateError) {
+          return res.status(e.statusCode || 400).json({
+            ok: false,
+            message: e.message
+          });
+        }
+        logSqlError('CREATE_LICENSE', e);
         return res.status(500).json({
           ok: false,
-          message: 'Error interno del servidor',
+          message: 'No se pudo crear o activar la licencia por un error interno del servidor',
           error: e.message,
           code: e.code || null,
           detail: e.detail || null,
@@ -242,16 +267,13 @@ async function createLicense(req, res) {
 
     return res.status(500).json({ ok: false, message: 'Error interno del servidor: no se pudo generar una license_key única' });
   } catch (error) {
-    console.error('[CREATE_LICENSE] FATAL ERROR (outer):', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      detail: error.detail,
-      constraint: error.constraint
-    });
+    if (error instanceof licensesModel.LicenseStateError) {
+      return res.status(error.statusCode || 400).json({ ok: false, message: error.message });
+    }
+    logSqlError('CREATE_LICENSE', error);
     return res.status(500).json({
       ok: false,
-      message: 'Error interno del servidor',
+      message: 'No se pudo crear la licencia por un error interno del servidor',
       error: error.message,
       code: error.code || null,
       detail: error.detail || null,
@@ -378,8 +400,7 @@ async function activarManual(req, res) {
 
     return res.json({ ok: true, license: updated });
   } catch (error) {
-    console.error('activarManual error:', error);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+    return handleLicenseError(res, error, 'activateLicense', 'No se pudo activar la licencia por un error interno del servidor');
   }
 }
 
@@ -404,7 +425,7 @@ async function activateLicense(req, res) {
       });
     }
 
-    const estado = String(current.estado || '').toUpperCase();
+    const estado = licensesModel.normalizeLicenseStatus(current.estado, current.estado);
 
     if (estado === 'ACTIVA') {
       return res.status(409).json({
@@ -451,17 +472,19 @@ async function activateLicense(req, res) {
       license: {
         id: updated.id,
         license_key: updated.license_key,
-        status: 'active',
+        status: 'ACTIVA',
+        estado: 'ACTIVA',
         activated_at: updated.fecha_inicio,
         expires_at: updated.fecha_fin,
       },
     });
   } catch (error) {
-    console.error('activateLicense error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor',
-    });
+    return handleLicenseError(
+      res,
+      error,
+      'activateLicense',
+      'No se pudo activar la licencia por un error interno del servidor'
+    );
   }
 }
 
@@ -636,8 +659,7 @@ async function updateLicense(req, res) {
 
     return res.json({ ok: true, license: updated });
   } catch (error) {
-    console.error('updateLicense error:', error);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+    return handleLicenseError(res, error, 'updateLicense', 'No se pudo actualizar la licencia por un error interno del servidor');
   }
 }
 
@@ -779,8 +801,7 @@ async function activarManualByKey(req, res) {
 
     return res.json({ ok: true, license: updated });
   } catch (error) {
-    console.error('activarManualByKey error:', error);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+    return handleLicenseError(res, error, 'activateLicense', 'No se pudo activar la licencia por un error interno del servidor');
   }
 }
 
