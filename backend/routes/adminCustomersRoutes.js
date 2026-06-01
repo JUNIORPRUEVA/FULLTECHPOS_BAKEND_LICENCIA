@@ -24,6 +24,26 @@ router.get('/:id', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.getCustomerById(req, res)).catch(next);
 });
 
+// GET /api/admin/customers/:id/licenses
+router.get('/:id/licenses', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.getCustomerLicenses(req, res)).catch(next);
+});
+
+// GET /api/admin/customers/:id/payments
+router.get('/:id/payments', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.getCustomerPayments(req, res)).catch(next);
+});
+
+// POST /api/admin/customers/:id/assign-business-id
+router.post('/:id/assign-business-id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.assignBusinessId(req, res)).catch(next);
+});
+
+// POST /api/admin/customers/:id/reset-token
+router.post('/:id/reset-token', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.resetToken(req, res)).catch(next);
+});
+
 // DELETE /api/admin/customers/:id
 router.delete('/:id', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.deleteCustomer(req, res)).catch(next);
@@ -38,4 +58,10 @@ router.put('/:id/business_id', isAdmin, (req, res, next) => {
 router.put('/:id', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.updateCustomer(req, res)).catch(next);
 });
+
+// PATCH /api/admin/customers/:id
+router.patch('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.updateCustomer(req, res)).catch(next);
+});
+
 module.exports = router;

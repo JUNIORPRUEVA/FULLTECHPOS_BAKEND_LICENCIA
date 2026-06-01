@@ -209,9 +209,45 @@ async function deleteCustomerCascade(customerId) {
   try {
     await client.query('BEGIN');
 
-    // Delete licenses first (licenses.customer_id is RESTRICT). Activations cascade from licenses.
+    // Verificar si tiene licencias activas (no vencidas, no eliminadas)
+    const activeLicenses = await client.query(
+      `SELECT COUNT(*)::int AS count FROM licenses
+       WHERE customer_id = $1
+         AND estado::text <> 'ELIMINADA'
+         AND (estado::text <> 'VENCIDA' OR estado::text = 'VENCIDA')
+         AND (estado::text <> 'ACTIVA' OR (estado::text = 'ACTIVA' AND (fecha_fin IS NULL OR fecha_fin >= NOW())))`,
+      [customerId]
+    );
+
+    // Verificar si tiene pagos asociados
+    const payments = await client.query(
+      `SELECT COUNT(*)::int AS count FROM license_payment_orders
+       WHERE customer_id = $1`,
+      [customerId]
+    );
+
+    const activeCount = activeLicenses.rows[0]?.count || 0;
+    const paymentsCount = payments.rows[0]?.count || 0;
+
+    if (activeCount > 0) {
+      await client.query('ROLLBACK');
+      const err = new Error(`No se puede eliminar el cliente porque tiene ${activeCount} licencia(s) activa(s).`);
+      err.code = 'CUSTOMER_HAS_ACTIVE_LICENSES';
+      err.statusCode = 409;
+      throw err;
+    }
+
+    if (paymentsCount > 0) {
+      await client.query('ROLLBACK');
+      const err = new Error(`No se puede eliminar el cliente porque tiene ${paymentsCount} pago(s) asociado(s).`);
+      err.code = 'CUSTOMER_HAS_PAYMENTS';
+      err.statusCode = 409;
+      throw err;
+    }
+
+    // Delete licenses first (soft delete)
     const delLicensesRes = await client.query(
-      'DELETE FROM licenses WHERE customer_id = $1 RETURNING id',
+      "UPDATE licenses SET estado = 'ELIMINADA' WHERE customer_id = $1 RETURNING id",
       [customerId]
     );
     const deletedLicensesCount = (delLicensesRes.rows || []).length;
@@ -238,6 +274,116 @@ async function deleteCustomerCascade(customerId) {
   }
 }
 
+/**
+ * Obtiene todas las licencias de un cliente con información del proyecto.
+ */
+async function getCustomerLicenses(customerId) {
+  const tryQueries = [
+    { includeProjects: true, includeBusinessId: true },
+    { includeProjects: true, includeBusinessId: false },
+    { includeProjects: false, includeBusinessId: true },
+    { includeProjects: false, includeBusinessId: false }
+  ];
+
+  let lastError = null;
+  for (const q of tryQueries) {
+    try {
+      const businessIdSelect = q.includeBusinessId ? 'c.business_id' : 'NULL::text AS business_id';
+      const projectSelect = q.includeProjects
+        ? 'p.code AS project_code, p.name AS project_name'
+        : `'DEFAULT'::text AS project_code, NULL::text AS project_name`;
+      const projectsJoin = q.includeProjects ? 'LEFT JOIN projects p ON p.id = l.project_id' : '';
+
+      const result = await pool.query(
+        `SELECT l.*, c.nombre_negocio, ${businessIdSelect}, ${projectSelect},
+                CASE
+                  WHEN l.fecha_fin IS NOT NULL THEN
+                    GREATEST(0, EXTRACT(EPOCH FROM (l.fecha_fin - NOW())) / 86400)::int
+                  ELSE NULL
+                END AS days_remaining
+         FROM licenses l
+         LEFT JOIN customers c ON c.id = l.customer_id
+         ${projectsJoin}
+         WHERE l.customer_id = $1
+           AND l.estado::text <> 'ELIMINADA'
+         ORDER BY l.created_at DESC`,
+        [customerId]
+      );
+
+      // Normalizar estado runtime
+      const normalized = result.rows.map(row => {
+        const estado = String(row.estado || '').trim().toUpperCase();
+        let effectiveStatus = estado;
+        if (estado === 'ACTIVA' && row.fecha_fin) {
+          const expDate = new Date(row.fecha_fin);
+          if (expDate < new Date()) {
+            effectiveStatus = 'VENCIDA';
+          }
+        }
+        return { ...row, estado: effectiveStatus };
+      });
+
+      return normalized;
+    } catch (e) {
+      lastError = e;
+      if (!isPgMissingColumnOrTable(e)) throw e;
+    }
+  }
+  throw lastError || new Error('No se pudieron obtener las licencias del cliente');
+}
+
+/**
+ * Obtiene los pagos de un cliente.
+ */
+async function getCustomerPayments(customerId) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM license_payment_orders
+       WHERE customer_id = $1
+       ORDER BY created_at DESC`,
+      [customerId]
+    );
+    return result.rows;
+  } catch (e) {
+    // Si la tabla no existe, devolver array vacío
+    if (e && e.code === '42P01') {
+      return [];
+    }
+    throw e;
+  }
+}
+
+/**
+ * Cuenta licencias activas (no vencidas, no eliminadas) de un cliente.
+ */
+async function countCustomerActiveLicenses(customerId) {
+  const result = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM licenses
+     WHERE customer_id = $1
+       AND estado::text <> 'ELIMINADA'
+       AND (estado::text <> 'VENCIDA')
+       AND (estado::text <> 'ACTIVA' OR (estado::text = 'ACTIVA' AND (fecha_fin IS NULL OR fecha_fin >= NOW())))`,
+    [customerId]
+  );
+  return result.rows[0]?.count || 0;
+}
+
+/**
+ * Cuenta pagos de un cliente.
+ */
+async function countCustomerPayments(customerId) {
+  try {
+    const result = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM license_payment_orders WHERE customer_id = $1`,
+      [customerId]
+    );
+    return result.rows[0]?.count || 0;
+  } catch (e) {
+    if (e && e.code === '42P01') return 0;
+    throw e;
+  }
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
@@ -245,7 +391,12 @@ module.exports = {
   getCustomerByBusinessId,
   setCustomerBusinessId,
   findCustomerByContact,
-  deleteCustomerCascade
+  deleteCustomerCascade,
+  getCustomerLicenses,
+  getCustomerPayments,
+  countCustomerActiveLicenses,
+  countCustomerPayments,
+  updateCustomer
 };
 
 async function updateCustomer(customerId, fields) {

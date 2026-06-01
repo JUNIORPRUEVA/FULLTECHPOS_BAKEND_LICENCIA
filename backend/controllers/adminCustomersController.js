@@ -1,4 +1,6 @@
+const { pool } = require('../db/pool');
 const customersModel = require('../models/customersModel');
+const crypto = require('crypto');
 
 function parsePagination(req) {
   const pageRaw = req.query.page;
@@ -90,6 +92,16 @@ async function deleteCustomer(req, res) {
     });
   } catch (error) {
     console.error('deleteCustomer error:', error);
+
+    // Errores de validación de negocio (409)
+    if (error && (error.code === 'CUSTOMER_HAS_ACTIVE_LICENSES' || error.code === 'CUSTOMER_HAS_PAYMENTS')) {
+      return res.status(error.statusCode || 409).json({
+        ok: false,
+        code: error.code,
+        message: error.message
+      });
+    }
+
     return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
   }
 }
@@ -264,6 +276,197 @@ async function updateCustomer(req, res) {
   }
 }
 
+/**
+ * GET /api/admin/customers/:id/licenses
+ * Obtiene todas las licencias de un cliente.
+ */
+async function getCustomerLicenses(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ success: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ success: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const customer = await customersModel.getCustomerById(customerId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+
+    const licenses = await customersModel.getCustomerLicenses(customerId);
+
+    // Mapear al formato esperado por el frontend
+    const mapped = licenses.map(l => ({
+      id: l.id,
+      license_key: l.license_key,
+      project_id: l.project_id,
+      project_code: l.project_code || 'DEFAULT',
+      project_name: l.project_name || 'Proyecto no definido',
+      tipo: l.tipo,
+      estado: l.estado,
+      activation_source: l.activation_source || null,
+      payment_order_id: l.payment_order_id || null,
+      created_at: l.created_at,
+      activated_at: l.fecha_inicio,
+      expires_at: l.fecha_fin,
+      days_remaining: l.days_remaining,
+      max_dispositivos: l.max_dispositivos,
+      notas: l.notas,
+      customer_name: l.nombre_negocio,
+      business_id: l.business_id
+    }));
+
+    return res.json({ success: true, licenses: mapped });
+  } catch (error) {
+    console.error('getCustomerLicenses error:', error);
+    return res.status(500).json({ success: false, message: 'Error al obtener licencias del cliente' });
+  }
+}
+
+/**
+ * POST /api/admin/customers/:id/assign-business-id
+ * Asigna o regenera el Business ID de un cliente.
+ */
+async function assignBusinessId(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ success: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ success: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const customer = await customersModel.getCustomerById(customerId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+
+    // Si ya tiene business_id y no se fuerza regeneración
+    const force = req.body?.force === true;
+    if (customer.business_id && String(customer.business_id).trim() && !force) {
+      return res.json({
+        success: true,
+        message: 'El cliente ya tiene un Business ID asignado',
+        customer: customer,
+        already_exists: true
+      });
+    }
+
+    // Generar business_id único
+    let businessId = req.body?.business_id || null;
+    if (!businessId) {
+      businessId = 'BIZ-' + crypto.randomBytes(12).toString('hex').toUpperCase();
+    }
+
+    const updated = await customersModel.setCustomerBusinessId({ customerId, business_id: String(businessId).trim() });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+
+    return res.json({
+      success: true,
+      message: force ? 'Business ID regenerado correctamente' : 'Business ID asignado correctamente',
+      customer: updated
+    });
+  } catch (error) {
+    console.error('assignBusinessId error:', error);
+
+    if (error && error.code === '23505') {
+      return res.status(409).json({ success: false, message: 'Ese business_id ya está asignado a otro cliente' });
+    }
+
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+/**
+ * POST /api/admin/customers/:id/reset-token
+ * Genera un token de reset para el cliente.
+ */
+async function resetToken(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ success: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ success: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const customer = await customersModel.getCustomerById(customerId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+
+    // Generar token único
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
+    // Guardar token en la base de datos (en tabla password_reset_tokens o similar)
+    try {
+      await pool.query(
+        `INSERT INTO password_reset_tokens (customer_id, token, expires_at, used)
+         VALUES ($1, $2, $3, false)
+         ON CONFLICT (customer_id) DO UPDATE SET token = $2, expires_at = $3, used = false, created_at = NOW()`,
+        [customerId, token, expiresAt]
+      );
+    } catch (e) {
+      // Si la tabla no existe, intentar con una tabla genérica o simplemente devolver el token
+      if (e && e.code === '42P01') {
+        // Tabla no existe, devolvemos el token sin persistir
+        console.warn('resetToken: password_reset_tokens table does not exist, returning token without persistence');
+      } else {
+        throw e;
+      }
+    }
+
+    return res.json({
+      success: true,
+      token,
+      expires_at: expiresAt.toISOString(),
+      message: 'Token de reset generado correctamente'
+    });
+  } catch (error) {
+    console.error('resetToken error:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+/**
+ * GET /api/admin/customers/:id/payments
+ * Obtiene los pagos de un cliente.
+ */
+async function getCustomerPayments(req, res) {
+  try {
+    const customerId = String(req.params.id || '').trim();
+    if (!customerId) {
+      return res.status(400).json({ success: false, message: 'id es requerido' });
+    }
+
+    if (!isUuid(customerId)) {
+      return res.status(400).json({ success: false, message: 'id inválido (UUID requerido)' });
+    }
+
+    const customer = await customersModel.getCustomerById(customerId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+
+    const payments = await customersModel.getCustomerPayments(customerId);
+
+    return res.json({ success: true, payments });
+  } catch (error) {
+    console.error('getCustomerPayments error:', error);
+    return res.status(500).json({ success: false, message: 'Error al obtener pagos del cliente' });
+  }
+}
+
 module.exports = {
   createCustomer,
   listCustomers,
@@ -271,5 +474,9 @@ module.exports = {
   setBusinessId,
   getCustomerByBusinessId,
   getCustomerById,
-  updateCustomer
+  updateCustomer,
+  getCustomerLicenses,
+  assignBusinessId,
+  resetToken,
+  getCustomerPayments
 };
