@@ -84,7 +84,8 @@ async function runMigrations({ endPool = true } = {}) {
     '039_allow_pending_saas_subscriptions.sql',
     '040_add_platform_users_full_name_compat.sql',
     '041_seed_fullcredit_project.sql',
-    '042_add_project_billing_settings.sql'
+    '042_add_project_billing_settings.sql',
+    '043_add_demo_trials_table.sql'
   ]);
 
   const selectedFiles = licenseOnly

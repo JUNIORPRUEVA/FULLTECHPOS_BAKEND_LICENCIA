@@ -46,6 +46,22 @@ function daysBetween(a, b) {
 }
 
 /**
+ * Ejecuta una query SQL ignorando errores de tabla no existente (42P01).
+ * Útil para consultas a demo_trials que puede no existir en producción.
+ */
+async function queryOptionalTable(sql, params) {
+  try {
+    return await pool.query(sql, params);
+  } catch (error) {
+    if (error && error.code === '42P01') {
+      // Tabla no existe, devolver resultado vacío
+      return { rows: [], rowCount: 0 };
+    }
+    throw error;
+  }
+}
+
+/**
  * POST /api/public/license/validate
  * Valida la licencia de un dispositivo para un proyecto.
  * 
@@ -63,6 +79,8 @@ async function validateLicense(req, res) {
     const { project_code, device_id } = req.body || {};
     const device = asTrimmed(device_id);
     const projectCode = asTrimmed(project_code);
+
+    console.log('[PUBLIC_VALIDATE] BODY:', JSON.stringify(req.body, null, 2));
 
     if (!device) {
       return res.status(400).json({
@@ -87,6 +105,8 @@ async function validateLicense(req, res) {
         message: 'Proyecto no encontrado'
       });
     }
+
+    console.log('[PUBLIC_VALIDATE] project:', { id: project.id, code: project.code, allow_demo: project.allow_demo });
 
     const now = new Date();
 
@@ -114,6 +134,8 @@ async function validateLicense(req, res) {
         const expiresAt = fullActivation.fecha_fin;
         const daysRemaining = expiresAt ? daysBetween(now, expiresAt) : 0;
 
+        console.log('[PUBLIC_VALIDATE] FULL activa encontrada, days_remaining:', daysRemaining);
+
         return res.json({
           success: true,
           valid: true,
@@ -134,6 +156,7 @@ async function validateLicense(req, res) {
 
       // Licencia FULL existe pero vencida
       if (licStatus === 'VENCIDA' || licStatus === 'EXPIRED') {
+        console.log('[PUBLIC_VALIDATE] FULL vencida');
         return res.json({
           success: true,
           valid: false,
@@ -175,6 +198,8 @@ async function validateLicense(req, res) {
         const expiresAt = demoActivation.fecha_fin;
         const daysRemaining = expiresAt ? daysBetween(now, expiresAt) : 0;
 
+        console.log('[PUBLIC_VALIDATE] DEMO activa, days_remaining:', daysRemaining);
+
         return res.json({
           success: true,
           valid: true,
@@ -194,6 +219,7 @@ async function validateLicense(req, res) {
       }
 
       // Demo vencido
+      console.log('[PUBLIC_VALIDATE] DEMO vencida');
       return res.json({
         success: true,
         valid: false,
@@ -210,7 +236,8 @@ async function validateLicense(req, res) {
     }
 
     // 3) Verificar si hubo demo previa (demo_trials) para este device
-    const trialRes = await pool.query(
+    // Usar queryOptionalTable porque demo_trials puede no existir
+    const trialRes = await queryOptionalTable(
       `SELECT id, started_at, customer_id
        FROM demo_trials
        WHERE project_id = $1 AND device_id = $2
@@ -221,7 +248,7 @@ async function validateLicense(req, res) {
     const trial = trialRes.rows[0];
 
     if (trial) {
-      // Ya consumió demo, no puede iniciar otra
+      console.log('[PUBLIC_VALIDATE] Demo previa encontrada en demo_trials');
       return res.json({
         success: true,
         valid: false,
@@ -238,6 +265,7 @@ async function validateLicense(req, res) {
     }
 
     // 4) No hay licencia ni demo
+    console.log('[PUBLIC_VALIDATE] Sin licencia ni demo');
     return res.json({
       success: true,
       valid: false,
@@ -251,7 +279,13 @@ async function validateLicense(req, res) {
       project_id: project.id
     });
   } catch (error) {
-    console.error('[publicLicense.validateLicense] Error:', error);
+    console.error('[PUBLIC_VALIDATE] FATAL ERROR:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+      stack: error.stack
+    });
     return res.status(500).json({
       success: false, valid: false, status: 'ERROR',
       reason: 'internal_error',
@@ -268,24 +302,50 @@ async function validateLicense(req, res) {
  */
 async function startDemo(req, res) {
   try {
-    const business_name = asTrimmed(req.body?.business_name || req.body?.nombre_negocio);
-    const customer_name = asTrimmed(req.body?.customer_name || req.body?.contacto_nombre);
-    const customer_email = normalizeEmail(req.body?.customer_email || req.body?.contacto_email);
-    const device_id = asTrimmed(req.body?.device_id);
-    const project_code_raw = asTrimmed(req.body?.project_code);
+    // Normalizar campos con múltiples alias
+    const project_code = req.body.project_code || req.body.projectCode || '';
+    const device_id = req.body.device_id || req.body.deviceId || '';
+    const business_name =
+      req.body.business_name ||
+      req.body.businessName ||
+      req.body.customer_name ||
+      req.body.customerName ||
+      req.body.nombre_negocio ||
+      '';
+    const phone =
+      req.body.phone ||
+      req.body.telefono ||
+      req.body.customer_phone ||
+      req.body.contacto_telefono ||
+      '';
+    const email =
+      req.body.email ||
+      req.body.customer_email ||
+      req.body.customerEmail ||
+      req.body.contacto_email ||
+      '';
+
+    console.log('[PUBLIC_DEMO_START] BODY:', JSON.stringify(req.body, null, 2));
+    console.log('[PUBLIC_DEMO_START] normalized:', {
+      project_code,
+      device_id,
+      business_name,
+      phone,
+      email
+    });
 
     if (!device_id) {
       return res.status(400).json({ success: false, message: 'device_id es requerido' });
     }
 
-    if (!business_name && !customer_name) {
-      return res.status(400).json({ success: false, message: 'business_name o customer_name es requerido' });
+    if (!project_code) {
+      return res.status(400).json({ success: false, message: 'project_code es requerido' });
     }
 
     // Resolver proyecto
     let project = null;
-    if (project_code_raw) {
-      project = await projectsModel.getProjectByCode(project_code_raw);
+    if (project_code) {
+      project = await projectsModel.getProjectByCode(project_code);
     }
     if (!project) {
       project = await projectsModel.getDefaultProject();
@@ -293,6 +353,8 @@ async function startDemo(req, res) {
     if (!project) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
+
+    console.log('[PUBLIC_DEMO_START] project:', { id: project.id, code: project.code, allow_demo: project.allow_demo, demo_days: project.demo_days });
 
     // Validar que el proyecto permita demo
     if (!project.allow_demo) {
@@ -307,72 +369,58 @@ async function startDemo(req, res) {
       // 1) Buscar o crear customer
       let customer = null;
 
-      // Primero buscar por device_id en demo_trials o license_activations
+      // Primero buscar por device_id en license_activations (demo_trials puede no existir)
       const existingCustomerRes = await client.query(
         `SELECT DISTINCT c.*
          FROM customers c
-         LEFT JOIN demo_trials dt ON dt.customer_id = c.id AND dt.device_id = $1
-         LEFT JOIN license_activations la ON la.customer_id = c.id AND la.device_id = $1
-         WHERE dt.id IS NOT NULL OR la.id IS NOT NULL
+         JOIN license_activations la ON la.customer_id = c.id AND la.device_id = $1
          LIMIT 1`,
         [device_id]
       );
       customer = existingCustomerRes.rows[0] || null;
 
-      if (!customer && customer_email) {
-        customer = await customersModel.findCustomerByContact({ contacto_email: customer_email });
+      console.log('[PUBLIC_DEMO_START] existing customer by activation:', customer ? customer.id : null);
+
+      if (!customer && email) {
+        customer = await customersModel.findCustomerByContact({ contacto_email: email });
+        console.log('[PUBLIC_DEMO_START] existing customer by email:', customer ? customer.id : null);
       }
 
       if (!customer) {
         // Crear nuevo customer
         const createdRes = await client.query(
-          `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_email)
-           VALUES ($1, $2, $3)
+          `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email)
+           VALUES ($1, $2, $3, $4)
            RETURNING *`,
           [
-            business_name || customer_name || 'Cliente FullCredit',
-            customer_name || null,
-            customer_email || null
+            business_name || 'Cliente FullCredit',
+            null,
+            phone || null,
+            email || null
           ]
         );
         customer = createdRes.rows[0];
+        console.log('[PUBLIC_DEMO_START] customer created:', customer.id);
       } else {
         // Actualizar datos si viene información nueva
-        if (business_name || customer_name || customer_email) {
+        if (business_name || phone || email) {
           try {
             await client.query(
               `UPDATE customers
                SET nombre_negocio = COALESCE(NULLIF($2,''), nombre_negocio),
-                   contacto_nombre = COALESCE(NULLIF($3,''), contacto_nombre),
+                   contacto_telefono = COALESCE(NULLIF($3,''), contacto_telefono),
                    contacto_email = COALESCE(NULLIF($4,''), contacto_email)
                WHERE id = $1`,
-              [customer.id, business_name, customer_name, customer_email]
+              [customer.id, business_name, phone, email]
             );
-          } catch (_) {}
+            console.log('[PUBLIC_DEMO_START] customer updated');
+          } catch (_) {
+            console.log('[PUBLIC_DEMO_START] customer update skipped (non-critical)');
+          }
         }
       }
 
-      // 2) Verificar que no exista demo previa para este device + proyecto
-      const deviceTrialRes = await client.query(
-        `SELECT id, started_at
-         FROM demo_trials
-         WHERE project_id = $1 AND device_id = $2
-         ORDER BY started_at ASC
-         LIMIT 1`,
-        [project.id, device_id]
-      );
-      const deviceTrial = deviceTrialRes.rows[0];
-
-      if (deviceTrial) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({
-          success: false,
-          code: 'DEMO_ALREADY_USED',
-          message: 'La prueba DEMO ya fue utilizada en este equipo. Debes activar una licencia FULL.'
-        });
-      }
-
-      // 3) Verificar si ya existe una DEMO activa para este customer + proyecto
+      // 2) Verificar si ya existe una DEMO activa para este customer + proyecto
       const existingDemoRes = await client.query(
         `SELECT l.*
          FROM licenses l
@@ -392,6 +440,7 @@ async function startDemo(req, res) {
         const demoExpired = existingDemo.fecha_fin && new Date(existingDemo.fecha_fin).getTime() < now.getTime();
         if (!demoExpired && existingDemo.estado !== 'BLOQUEADA' && existingDemo.estado !== 'VENCIDA') {
           await client.query('COMMIT');
+          console.log('[PUBLIC_DEMO_START] Demo ya activa, retornando existente');
           return res.json({
             success: true,
             message: 'Demo ya activa',
@@ -406,9 +455,42 @@ async function startDemo(req, res) {
         }
       }
 
+      // 3) Verificar que no exista demo previa para este device + proyecto en demo_trials
+      // Usar query directa con manejo de tabla no existente
+      try {
+        const deviceTrialRes = await client.query(
+          `SELECT id, started_at
+           FROM demo_trials
+           WHERE project_id = $1 AND device_id = $2
+           ORDER BY started_at ASC
+           LIMIT 1`,
+          [project.id, device_id]
+        );
+        const deviceTrial = deviceTrialRes.rows[0];
+
+        if (deviceTrial) {
+          await client.query('ROLLBACK');
+          console.log('[PUBLIC_DEMO_START] Demo ya usada para este device');
+          return res.status(409).json({
+            success: false,
+            code: 'DEMO_ALREADY_USED',
+            message: 'La prueba DEMO ya fue utilizada en este equipo. Debes activar una licencia FULL.'
+          });
+        }
+      } catch (e) {
+        // Si demo_trials no existe (42P01), continuar normalmente
+        if (e && e.code === '42P01') {
+          console.log('[PUBLIC_DEMO_START] demo_trials table does not exist, skipping check');
+        } else {
+          throw e;
+        }
+      }
+
       // 4) Configuración de demo desde el proyecto
       const demoDays = Math.max(1, Number(project.demo_days) || 5);
       const maxDisp = Math.max(1, Number(project.max_dispositivos) || 1);
+
+      console.log('[PUBLIC_DEMO_START] demo config:', { demoDays, maxDisp });
 
       // 5) Crear licencia DEMO
       let license;
@@ -431,8 +513,11 @@ async function startDemo(req, res) {
 
       if (!license) {
         await client.query('ROLLBACK');
+        console.log('[PUBLIC_DEMO_START] No se pudo generar license_key');
         return res.status(500).json({ success: false, message: 'No se pudo generar license_key' });
       }
+
+      console.log('[PUBLIC_DEMO_START] license created:', { id: license.id, key: license.license_key });
 
       // 6) Activar demo
       const fechaInicio = now;
@@ -440,12 +525,14 @@ async function startDemo(req, res) {
 
       const updRes = await client.query(
         `UPDATE licenses
-         SET fecha_inicio = $2, fecha_fin = $3, estado = 'ACTIVA'
+         SET fecha_inicio = $2::timestamp, fecha_fin = $3::timestamp, estado = 'ACTIVA'
          WHERE id = $1
          RETURNING *`,
         [license.id, fechaInicio, fechaFin]
       );
       license = updRes.rows[0];
+
+      console.log('[PUBLIC_DEMO_START] license activated:', { id: license.id, fecha_inicio: license.fecha_inicio, fecha_fin: license.fecha_fin });
 
       await client.query(
         `INSERT INTO license_activations (license_id, project_id, device_id, estado)
@@ -455,26 +542,37 @@ async function startDemo(req, res) {
         [license.id, project.id, device_id]
       );
 
-      // 7) Registrar consumo de demo
+      console.log('[PUBLIC_DEMO_START] activation created');
+
+      // 7) Registrar consumo de demo (si la tabla existe)
       try {
         await client.query(
           `INSERT INTO demo_trials (project_id, device_id, contacto_email_norm, customer_id, license_id)
            VALUES ($1, $2, $3, $4, $5)`,
-          [project.id, device_id, customer_email || null, customer.id, license.id]
+          [project.id, device_id, email || null, customer.id, license.id]
         );
+        console.log('[PUBLIC_DEMO_START] demo_trial registered');
       } catch (e) {
         if (e && e.code === '23505') {
           await client.query('ROLLBACK');
+          console.log('[PUBLIC_DEMO_START] Demo ya usada (unique constraint)');
           return res.status(409).json({
             success: false,
             code: 'DEMO_ALREADY_USED',
             message: 'La prueba DEMO ya fue utilizada.'
           });
         }
-        throw e;
+        if (e && e.code === '42P01') {
+          // Tabla demo_trials no existe, continuar sin registrar
+          console.log('[PUBLIC_DEMO_START] demo_trials table does not exist, skipping insert');
+        } else {
+          throw e;
+        }
       }
 
       await client.query('COMMIT');
+      console.log('[PUBLIC_DEMO_START] Demo iniciada exitosamente');
+
       return res.status(201).json({
         success: true,
         message: `Demo iniciada por ${demoDays} días`,
@@ -496,14 +594,42 @@ async function startDemo(req, res) {
       });
     } catch (error) {
       await client.query('ROLLBACK');
-      console.error('[publicLicense.startDemo] Error:', error);
-      return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+      console.error('[PUBLIC_DEMO_START] FATAL ERROR:', {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint,
+        table: error.table,
+        column: error.column,
+        stack: error.stack
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: error.message,
+        code: error.code || null,
+        detail: error.detail || null,
+        constraint: error.constraint || null
+      });
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('[publicLicense.startDemo] Outer error:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    console.error('[PUBLIC_DEMO_START] OUTER FATAL ERROR:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+      stack: error.stack
+    });
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message,
+      code: error.code || null,
+      detail: error.detail || null,
+      constraint: error.constraint || null
+    });
   }
 }
 
@@ -595,15 +721,11 @@ async function createPaymentOrder(req, res) {
     // Resolver customer_id por device_id
     let customerId = null;
     const customerRes = await pool.query(
-      `SELECT DISTINCT customer_id
-       FROM (
-         SELECT customer_id FROM demo_trials WHERE device_id = $1
-         UNION
-         SELECT l.customer_id FROM license_activations a
-         JOIN licenses l ON l.id = a.license_id
-         WHERE a.device_id = $1
-       ) sub
-       WHERE customer_id IS NOT NULL
+      `SELECT DISTINCT l.customer_id
+       FROM license_activations a
+       JOIN licenses l ON l.id = a.license_id
+       WHERE a.device_id = $1
+         AND l.customer_id IS NOT NULL
        LIMIT 1`,
       [device]
     );
@@ -800,9 +922,11 @@ async function capturePayment(req, res) {
         estado: license.estado,
         activated_at: license.fecha_inicio,
         expires_at: license.fecha_fin,
-        months_added: localOrder.months,
-      },
-      message: 'Pago confirmado. Tu licencia fue activada correctamente.',
+        months: localOrder.months,
+        monthly_price: Number(localOrder.monthly_price),
+        total_amount: Number(localOrder.total_amount),
+        currency: localOrder.currency
+      }
     });
   } catch (error) {
     console.error('[publicLicense.capturePayment] Error:', error);
@@ -814,31 +938,28 @@ async function capturePayment(req, res) {
  * POST /api/public/customers/register-or-find
  * Registra o encuentra un cliente por device_id.
  * 
- * Payload: { project_code, business_name, phone, email, device_id }
+ * Payload: { project_code, device_id, business_name, phone, email }
  */
 async function registerOrFindCustomer(req, res) {
   try {
-    const { project_code, business_name, phone, email, device_id } = req.body || {};
+    const { project_code, device_id, business_name, phone, email } = req.body || {};
     const device = asTrimmed(device_id);
-    const businessName = asTrimmed(business_name);
-    const phoneNorm = normalizePhone(phone);
-    const emailNorm = normalizeEmail(email);
+    const projectCode = asTrimmed(project_code);
 
     if (!device) {
       return res.status(400).json({ success: false, message: 'device_id es requerido' });
     }
 
-    if (!businessName && !emailNorm && !phoneNorm) {
-      return res.status(400).json({ success: false, message: 'business_name, email o phone es requerido' });
-    }
-
     // Buscar proyecto
     let project = null;
-    if (project_code) {
-      project = await projectsModel.getProjectByCode(project_code);
+    if (projectCode) {
+      project = await projectsModel.getProjectByCode(projectCode);
     }
     if (!project) {
       project = await projectsModel.getDefaultProject();
+    }
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
     // Buscar customer existente por device_id
@@ -846,57 +967,38 @@ async function registerOrFindCustomer(req, res) {
     const existingRes = await pool.query(
       `SELECT DISTINCT c.*
        FROM customers c
-       LEFT JOIN demo_trials dt ON dt.customer_id = c.id AND dt.device_id = $1
-       LEFT JOIN license_activations la ON la.customer_id = c.id AND la.device_id = $1
-       WHERE dt.id IS NOT NULL OR la.id IS NOT NULL
+       JOIN license_activations la ON la.customer_id = c.id AND la.device_id = $1
        LIMIT 1`,
       [device]
     );
     customer = existingRes.rows[0] || null;
 
-    // Si no, buscar por email
-    if (!customer && emailNorm) {
-      customer = await customersModel.findCustomerByContact({ contacto_email: emailNorm });
+    if (!customer && email) {
+      customer = await customersModel.findCustomerByContact({ contacto_email: email });
     }
 
-    // Si no, buscar por teléfono
-    if (!customer && phoneNorm) {
-      customer = await customersModel.findCustomerByContact({ contacto_telefono: phoneNorm });
+    if (!customer) {
+      // Crear nuevo customer
+      const createdRes = await pool.query(
+        `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [
+          business_name || 'Cliente FullCredit',
+          null,
+          phone || null,
+          email || null
+        ]
+      );
+      customer = createdRes.rows[0];
     }
 
-    if (customer) {
-      // Actualizar datos si viene información nueva
-      if (businessName || emailNorm || phoneNorm) {
-        try {
-          await customersModel.updateCustomer(customer.id, {
-            nombre_negocio: businessName || undefined,
-            contacto_email: emailNorm || undefined,
-            contacto_telefono: phoneNorm || undefined,
-          });
-        } catch (_) {}
-      }
-
-      return res.json({
-        success: true,
-        customer_id: customer.id,
-        customer_name: customer.nombre_negocio || customer.contacto_nombre || 'Cliente',
-        is_new: false,
-      });
-    }
-
-    // Crear nuevo customer
-    const newCustomer = await customersModel.createCustomer({
-      nombre_negocio: businessName || 'Cliente FullCredit',
-      contacto_nombre: null,
-      contacto_telefono: phoneNorm || null,
-      contacto_email: emailNorm || null,
-    });
-
-    return res.status(201).json({
+    return res.json({
       success: true,
-      customer_id: newCustomer.id,
-      customer_name: newCustomer.nombre_negocio || newCustomer.contacto_nombre || 'Cliente',
-      is_new: true,
+      customer_id: customer.id,
+      customer_name: customer.nombre_negocio || customer.contacto_nombre,
+      customer_email: customer.contacto_email,
+      customer_phone: customer.contacto_telefono
     });
   } catch (error) {
     console.error('[publicLicense.registerOrFindCustomer] Error:', error);
@@ -910,5 +1012,5 @@ module.exports = {
   getProjectBillingInfo,
   createPaymentOrder,
   capturePayment,
-  registerOrFindCustomer,
+  registerOrFindCustomer
 };
