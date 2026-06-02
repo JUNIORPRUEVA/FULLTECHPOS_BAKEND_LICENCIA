@@ -384,21 +384,6 @@ async function countCustomerPayments(customerId) {
   }
 }
 
-module.exports = {
-  createCustomer,
-  listCustomers,
-  getCustomerById,
-  getCustomerByBusinessId,
-  setCustomerBusinessId,
-  findCustomerByContact,
-  deleteCustomerCascade,
-  getCustomerLicenses,
-  getCustomerPayments,
-  countCustomerActiveLicenses,
-  countCustomerPayments,
-  updateCustomer
-};
-
 async function updateCustomer(customerId, fields) {
   const allowed = ['nombre_negocio', 'contacto_nombre', 'contacto_telefono', 'contacto_email', 'rol_negocio', 'business_id'];
   const sets = [];
@@ -421,5 +406,17 @@ async function updateCustomer(customerId, fields) {
   return result.rows[0] || null;
 }
 
-// expose updateCustomer for external use
-module.exports.updateCustomer = updateCustomer;
+module.exports = {
+  createCustomer,
+  listCustomers,
+  getCustomerById,
+  getCustomerByBusinessId,
+  setCustomerBusinessId,
+  findCustomerByContact,
+  deleteCustomerCascade,
+  getCustomerLicenses,
+  getCustomerPayments,
+  countCustomerActiveLicenses,
+  countCustomerPayments,
+  updateCustomer
+};

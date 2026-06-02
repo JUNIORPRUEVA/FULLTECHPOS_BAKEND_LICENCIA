@@ -1,4 +1,4 @@
- import '../../../core/api/api_client.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/auth/session_manager.dart';
 import '../models/project.dart';
 

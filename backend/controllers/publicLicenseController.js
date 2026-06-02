@@ -999,7 +999,9 @@ async function capturePayment(req, res) {
         months: localOrder.months,
         monthly_price: Number(localOrder.monthly_price),
         total_amount: Number(localOrder.total_amount),
-        currency: localOrder.currency
+        currency: localOrder.currency,
+        license_version: Number(license.license_version) || 1,
+        license_updated_at: license.updated_at
       }
     });
   } catch (error) {
