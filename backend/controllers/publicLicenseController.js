@@ -842,6 +842,22 @@ async function createPaymentOrder(req, res) {
       },
     });
 
+    // Validar configuración de PayPal antes de intentar crear la orden
+    const paypalConfig = paypalService.validatePaypalConfig();
+    if (!paypalConfig.ok) {
+      console.error('[publicLicense.createPaymentOrder] PayPal no configurado:', paypalConfig.missing);
+      await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
+        status: 'FAILED',
+        raw_response: { error: 'PayPal no configurado', missing: paypalConfig.missing },
+      });
+      return res.status(502).json({
+        success: false,
+        message: 'El sistema de pagos PayPal no está configurado. Contacte al administrador.',
+        detail: `Faltan: ${paypalConfig.missing.join(', ')}`,
+        paypal_configured: false,
+      });
+    }
+
     // Crear orden en PayPal
     let paypalOrder;
     try {
@@ -1084,11 +1100,48 @@ async function registerOrFindCustomer(req, res) {
   }
 }
 
+/**
+ * GET /api/public/paypal/status
+ * Diagnóstico del estado de configuración de PayPal.
+ * No requiere autenticación.
+ */
+async function getPaypalStatus(req, res) {
+  try {
+    const config = paypalService.validatePaypalConfig();
+    return res.json({
+      success: true,
+      paypal_configured: config.ok,
+      config: {
+        mode: config.mode,
+        base_url: config.baseUrl,
+        client_id_configured: config.clientIdConfigured,
+        client_secret_configured: config.clientSecretConfigured,
+        return_url: config.returnUrl || '(no configurado)',
+        cancel_url: config.cancelUrl || '(no configurado)',
+        webhook_configured: config.webhookIdConfigured,
+        brand_name: config.brandName,
+      },
+      missing: config.missing,
+      message: config.ok
+        ? 'PayPal está configurado correctamente'
+        : `Falta configuración de PayPal: ${config.missing.join(', ')}`,
+    });
+  } catch (error) {
+    console.error('[publicLicense.getPaypalStatus] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al verificar configuración de PayPal',
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   validateLicense,
   startDemo,
   getProjectBillingInfo,
   createPaymentOrder,
   capturePayment,
-  registerOrFindCustomer
+  registerOrFindCustomer,
+  getPaypalStatus
 };

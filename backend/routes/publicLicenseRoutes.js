@@ -47,4 +47,9 @@ router.post('/customers/register-or-find', (req, res, next) => {
   Promise.resolve(publicLicenseController.registerOrFindCustomer(req, res)).catch(next);
 });
 
+// GET /api/public/paypal/status - Diagnóstico de configuración PayPal
+router.get('/paypal/status', (req, res, next) => {
+  Promise.resolve(publicLicenseController.getPaypalStatus(req, res)).catch(next);
+});
+
 module.exports = router;
