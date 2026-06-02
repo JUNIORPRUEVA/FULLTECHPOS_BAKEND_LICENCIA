@@ -1,0 +1,1 @@
+const fs=require("fs");const path="backend/controllers/publicLicenseController.js";let c=fs.readFileSync(path,"utf8");const NL="\r\n";console.log("File loaded, length:"+c.length);fs.writeFileSync(path,c,"utf8");console.log("Done");

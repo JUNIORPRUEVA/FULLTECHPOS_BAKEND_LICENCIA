@@ -150,7 +150,18 @@ async function validateLicense(req, res) {
           demo_active: false,
           payment_required: false,
           customer_id: fullActivation.customer_id,
-          project_id: project.id
+          project_id: project.id,
+          license_version: Number(fullActivation.license_version) || 1,
+          license_updated_at: fullActivation.updated_at,
+          project: {
+            monthly_price: Number(project.monthly_price) || 0,
+            currency: String(project.currency || 'USD'),
+            demo_days: Number(project.demo_days) || 0,
+            min_purchase_months: Number(project.min_purchase_months) || 1,
+            is_paid_project: Boolean(project.is_paid_project),
+            allow_demo: Boolean(project.allow_demo),
+            is_active: Boolean(project.is_active)
+          }
         });
       }
 
@@ -171,7 +182,18 @@ async function validateLicense(req, res) {
           demo_active: false,
           payment_required: true,
           customer_id: fullActivation.customer_id,
-          project_id: project.id
+          project_id: project.id,
+          license_version: Number(fullActivation.license_version) || 1,
+          license_updated_at: fullActivation.updated_at,
+          project: {
+            monthly_price: Number(project.monthly_price) || 0,
+            currency: String(project.currency || 'USD'),
+            demo_days: Number(project.demo_days) || 0,
+            min_purchase_months: Number(project.min_purchase_months) || 1,
+            is_paid_project: Boolean(project.is_paid_project),
+            allow_demo: Boolean(project.allow_demo),
+            is_active: Boolean(project.is_active)
+          }
         });
       }
     }
@@ -214,7 +236,18 @@ async function validateLicense(req, res) {
           demo_active: true,
           payment_required: false,
           customer_id: demoActivation.customer_id,
-          project_id: project.id
+          project_id: project.id,
+          license_version: Number(demoActivation.license_version) || 1,
+          license_updated_at: demoActivation.updated_at,
+          project: {
+            monthly_price: Number(project.monthly_price) || 0,
+            currency: String(project.currency || 'USD'),
+            demo_days: Number(project.demo_days) || 0,
+            min_purchase_months: Number(project.min_purchase_months) || 1,
+            is_paid_project: Boolean(project.is_paid_project),
+            allow_demo: Boolean(project.allow_demo),
+            is_active: Boolean(project.is_active)
+          }
         });
       }
 
@@ -231,7 +264,16 @@ async function validateLicense(req, res) {
         demo_active: false,
         payment_required: true,
         customer_id: demoActivation.customer_id,
-        project_id: project.id
+        project_id: project.id,
+        project: {
+          monthly_price: Number(project.monthly_price) || 0,
+          currency: String(project.currency || 'USD'),
+          demo_days: Number(project.demo_days) || 0,
+          min_purchase_months: Number(project.min_purchase_months) || 1,
+          is_paid_project: Boolean(project.is_paid_project),
+          allow_demo: Boolean(project.allow_demo),
+          is_active: Boolean(project.is_active)
+        }
       });
     }
 
@@ -260,7 +302,16 @@ async function validateLicense(req, res) {
         demo_active: false,
         payment_required: true,
         customer_id: trial.customer_id,
-        project_id: project.id
+        project_id: project.id,
+        project: {
+          monthly_price: Number(project.monthly_price) || 0,
+          currency: String(project.currency || 'USD'),
+          demo_days: Number(project.demo_days) || 0,
+          min_purchase_months: Number(project.min_purchase_months) || 1,
+          is_paid_project: Boolean(project.is_paid_project),
+          allow_demo: Boolean(project.allow_demo),
+          is_active: Boolean(project.is_active)
+        }
       });
     }
 
@@ -276,7 +327,16 @@ async function validateLicense(req, res) {
       days_remaining: 0,
       demo_active: false,
       payment_required: project.is_paid_project,
-      project_id: project.id
+      project_id: project.id,
+      project: {
+        monthly_price: Number(project.monthly_price) || 0,
+        currency: String(project.currency || 'USD'),
+        demo_days: Number(project.demo_days) || 0,
+        min_purchase_months: Number(project.min_purchase_months) || 1,
+        is_paid_project: Boolean(project.is_paid_project),
+        allow_demo: Boolean(project.allow_demo),
+        is_active: Boolean(project.is_active)
+      }
     });
   } catch (error) {
     console.error('[PUBLIC_VALIDATE] FATAL ERROR:', {
