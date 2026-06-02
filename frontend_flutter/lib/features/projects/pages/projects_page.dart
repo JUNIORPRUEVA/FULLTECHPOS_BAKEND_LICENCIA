@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -82,6 +83,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
           );
         }
       });
+    } on UnauthorizedException {
+      // No hacer nada: el callback global de AuthService ya limpio la sesion
+      // y el router redirigira al login automaticamente.
+      return;
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -161,6 +166,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
           ),
         );
       }
+    } on UnauthorizedException {
+      // No hacer nada: el callback global de AuthService ya limpio la sesion
+      // y el router redirigira al login automaticamente.
+      return;
     } catch (e) {
       setState(() => _saving = false);
       if (mounted) {

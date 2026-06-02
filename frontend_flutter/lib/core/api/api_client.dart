@@ -5,14 +5,25 @@ import '../config/app_config.dart';
 import '../auth/session_manager.dart';
 import 'api_exception.dart';
 
-/// Callback para manejo global de 401 (sesión expirada).
-/// Se asigna desde AuthService para limpiar sesión y redirigir al login.
+/// Excepcion especifica para 401 - sesion expirada o invalida.
+/// Las pantallas deben detectar esta excepcion y NO mostrar error con Reintentar.
+class UnauthorizedException implements Exception {
+  final String message;
+  const UnauthorizedException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// Callback para manejo global de 401 (sesion expirada).
+/// Se asigna desde AuthService para limpiar sesion y redirigir al login.
 typedef UnauthorizedCallback = void Function(String message);
 
 class ApiClient {
   final SessionManager _sessionManager;
 
   /// Callback global que se invoca cuando cualquier endpoint devuelve 401.
+  /// Se ejecuta SINCRONICAMENTE antes de lanzar la excepcion.
   static UnauthorizedCallback? onUnauthorized;
 
   ApiClient({required SessionManager sessionManager})
@@ -47,10 +58,12 @@ class ApiClient {
           .get(uri, headers: _headers())
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
+    } on UnauthorizedException {
+      rethrow;
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexión: $e');
+      throw ApiException('Error de conexion: $e');
     }
   }
 
@@ -72,10 +85,12 @@ class ApiClient {
           )
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
+    } on UnauthorizedException {
+      rethrow;
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexión: $e');
+      throw ApiException('Error de conexion: $e');
     }
   }
 
@@ -97,10 +112,12 @@ class ApiClient {
           .put(uri, headers: _headers(), body: jsonEncode(body))
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
+    } on UnauthorizedException {
+      rethrow;
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexión: $e');
+      throw ApiException('Error de conexion: $e');
     }
   }
 
@@ -117,10 +134,12 @@ class ApiClient {
           .patch(uri, headers: _headers(), body: jsonEncode(body))
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
+    } on UnauthorizedException {
+      rethrow;
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexión: $e');
+      throw ApiException('Error de conexion: $e');
     }
   }
 
@@ -134,10 +153,12 @@ class ApiClient {
           .delete(uri, headers: _headers())
           .timeout(AppConfig.requestTimeout);
       return _handleResponse(response);
+    } on UnauthorizedException {
+      rethrow;
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexión: $e');
+      throw ApiException('Error de conexion: $e');
     }
   }
 
@@ -160,13 +181,14 @@ class ApiClient {
         data['error'] as String? ??
         _statusMessage(response.statusCode);
 
-    // Manejo global de 401: limpiar sesión y redirigir al login
+    // Manejo SINCRONICO de 401: ejecutar callback ANTES de lanzar excepcion
     if (response.statusCode == 401) {
       final callback = onUnauthorized;
       if (callback != null) {
-        // Ejecutar callback de forma asíncrona para no bloquear el throw
-        Future.microtask(() => callback(message));
+        callback(message);
       }
+      // Lanzar excepcion especifica para que las pantallas NO muestren Reintentar
+      throw UnauthorizedException(message);
     }
 
     throw ApiException(message, statusCode: response.statusCode, data: data);
@@ -175,9 +197,9 @@ class ApiClient {
   String _statusMessage(int code) {
     switch (code) {
       case 400:
-        return 'Solicitud inválida';
+        return 'Solicitud invalida';
       case 401:
-        return 'Tu sesión expiró. Inicia sesión nuevamente.';
+        return 'Tu sesion expiro. Inicia sesion nuevamente.';
       case 403:
         return 'No tienes permisos para ver este recurso.';
       case 404:
