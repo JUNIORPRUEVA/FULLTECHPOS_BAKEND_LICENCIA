@@ -806,23 +806,6 @@ async function activarManualByKey(req, res) {
   }
 }
 
-module.exports = {
-  createLicense,
-  listLicenses,
-  getLicenseDetail,
-  bloquearLicense,
-  bloquearLicenseByKey,
-  activarManual,
-  activarManualByKey,
-  activateLicense,
-  desbloquearLicense,
-  deleteLicense,
-  updateLicense,
-  extenderDias,
-  vencerLicenseByKey,
-  exportLicenseFile
-};
-
 async function exportLicenseFile(req, res) {
   try {
     const licenseId = req.params.id;
@@ -895,3 +878,20 @@ async function exportLicenseFile(req, res) {
     return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
   }
 }
+
+module.exports = {
+  createLicense,
+  listLicenses,
+  getLicenseDetail,
+  bloquearLicense,
+  bloquearLicenseByKey,
+  activarManual,
+  activarManualByKey,
+  activateLicense,
+  desbloquearLicense,
+  deleteLicense,
+  updateLicense,
+  extenderDias,
+  vencerLicenseByKey,
+  exportLicenseFile
+};
