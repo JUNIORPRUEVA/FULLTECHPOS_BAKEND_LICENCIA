@@ -866,7 +866,11 @@ async function exportLicenseFile(req, res) {
 
     const download = String(req.query.download || '').toLowerCase() === '1' || String(req.query.download || '').toLowerCase() === 'true';
     if (download) {
-      const fileName = `license_${project.code}_${license.license_key}${deviceId ? '_' + String(deviceId).trim() : ''}.lic.json`;
+      const fileName = licenseFile.buildLicenseFileName({
+        project_code: project.code,
+        license_key: license.license_key,
+        tipo: license.tipo
+      });
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       return res.status(200).send(JSON.stringify(fileObj, null, 2));
@@ -875,6 +879,46 @@ async function exportLicenseFile(req, res) {
     return res.json({ ok: true, license_file: fileObj });
   } catch (error) {
     console.error('exportLicenseFile outer error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
+/**
+ * POST /api/admin/licenses/:id/reset-activations
+ * Libera todos los dispositivos activados para una licencia.
+ * Permite que la licencia pueda ser importada en otro equipo.
+ */
+async function resetLicenseActivations(req, res) {
+  try {
+    const licenseId = req.params.id;
+    const license = await licensesModel.getLicenseById(licenseId);
+    if (!license) {
+      return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
+    }
+
+    const { pool } = require('../db/pool');
+    const result = await pool.query(
+      `UPDATE license_activations
+       SET estado = 'REVOCADA', status = 'REVOKED'
+       WHERE license_id = $1 AND (estado = 'ACTIVA' OR status = 'ACTIVE')
+       RETURNING id, device_id`,
+      [licenseId]
+    );
+
+    console.log('[resetLicenseActivations] Activaciones liberadas:', {
+      license_id: licenseId,
+      count: result.rowCount,
+      devices: result.rows.map(r => r.device_id)
+    });
+
+    return res.json({
+      ok: true,
+      message: `Se liberaron ${result.rowCount} dispositivo(s). La licencia puede ser importada en otro equipo.`,
+      released_count: result.rowCount,
+      released_devices: result.rows.map(r => r.device_id)
+    });
+  } catch (error) {
+    console.error('resetLicenseActivations error:', error);
     return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
   }
 }
@@ -893,5 +937,6 @@ module.exports = {
   updateLicense,
   extenderDias,
   vencerLicenseByKey,
-  exportLicenseFile
+  exportLicenseFile,
+  resetLicenseActivations
 };

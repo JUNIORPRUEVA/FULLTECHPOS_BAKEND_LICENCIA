@@ -1136,6 +1136,200 @@ async function getPaypalStatus(req, res) {
   }
 }
 
+/**
+ * POST /api/public/license/import-activation
+ * Importa una licencia desde un archivo .fulllicense.
+ * 
+ * Payload: {
+ *   project_code: string,
+ *   device_id: string,
+ *   license_file: { ... contenido completo del archivo .fulllicense ... }
+ * }
+ * 
+ * Flujo:
+ * 1. Verificar firma del archivo
+ * 2. Verificar project_code coincide
+ * 3. Verificar licencia existe y está activa
+ * 4. Verificar no vencida
+ * 5. Verificar max_devices
+ * 6. Crear license_activation para este device_id
+ * 7. Devolver licencia activa
+ */
+async function importLicenseFromFile(req, res) {
+  try {
+    const { project_code, device_id, license_file } = req.body || {};
+    const device = asTrimmed(device_id);
+    const projectCode = asTrimmed(project_code);
+
+    console.log('[PUBLIC_IMPORT_FILE] BODY:', JSON.stringify({ project_code, device_id, has_file: !!license_file }));
+
+    if (!device) {
+      return res.status(400).json({ success: false, message: 'device_id es requerido' });
+    }
+
+    if (!license_file || typeof license_file !== 'object') {
+      return res.status(400).json({ success: false, message: 'license_file es requerido (contenido del archivo .fulllicense)' });
+    }
+
+    // 1) Verificar firma
+    let publicKeyPem;
+    try {
+      const licenseFileUtil = require('../utils/licenseFile');
+      publicKeyPem = licenseFileUtil.getPublicKeyPem();
+      const verification = licenseFileUtil.verifyLicenseFile(license_file, publicKeyPem);
+      if (!verification.ok) {
+        return res.status(400).json({
+          success: false,
+          message: 'Archivo de licencia inválido o modificado. La firma no coincide.',
+          reason: verification.reason
+        });
+      }
+    } catch (e) {
+      if (e && e.code === 'MISSING_ENV') {
+        return res.status(501).json({
+          success: false,
+          message: 'La verificación de licencias no está configurada en el servidor.'
+        });
+      }
+      console.error('[PUBLIC_IMPORT_FILE] Signature verification error:', e);
+      return res.status(500).json({ success: false, message: 'Error al verificar la firma del archivo' });
+    }
+
+    const payload = license_file.payload;
+    if (!payload) {
+      return res.status(400).json({ success: false, message: 'Archivo de licencia inválido: falta payload' });
+    }
+
+    // 2) Verificar project_code
+    const fileProjectCode = String(payload.project_code || '').toUpperCase();
+    if (projectCode && fileProjectCode !== projectCode.toUpperCase()) {
+      return res.status(400).json({
+        success: false,
+        message: `Este archivo de licencia no pertenece a este sistema. El archivo es para ${fileProjectCode}.`
+      });
+    }
+
+    // 3) Buscar licencia por license_key
+    const license = await licensesModel.findLicenseByKey(payload.license_key);
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: 'La licencia del archivo no existe en el sistema. Verifica que el archivo sea válido.'
+      });
+    }
+
+    // 4) Verificar estado
+    const licStatus = licensesModel.normalizeLicenseStatus(license.estado);
+    if (licStatus === 'BLOQUEADA') {
+      return res.status(400).json({ success: false, message: 'Esta licencia está bloqueada. Contacte a soporte.' });
+    }
+    if (licStatus === 'ELIMINADA') {
+      return res.status(400).json({ success: false, message: 'Esta licencia ha sido eliminada.' });
+    }
+    if (licStatus === 'VENCIDA') {
+      return res.status(400).json({ success: false, message: 'Esta licencia está vencida.' });
+    }
+
+    // 5) Verificar expiración por fecha
+    if (license.fecha_fin) {
+      const now = new Date();
+      const expiresAt = new Date(license.fecha_fin);
+      if (expiresAt.getTime() < now.getTime()) {
+        return res.status(400).json({ success: false, message: 'Esta licencia está vencida.' });
+      }
+    }
+
+    // 6) Verificar max_devices
+    const maxDevices = Number(license.max_dispositivos) || 1;
+    const actRes = await pool.query(
+      `SELECT COUNT(*)::int AS count
+       FROM license_activations
+       WHERE license_id = $1 AND estado = 'ACTIVA'`,
+      [license.id]
+    );
+    const currentActivations = actRes.rows[0]?.count || 0;
+
+    // Verificar si este device ya está activado
+    const existingActRes = await pool.query(
+      `SELECT id FROM license_activations
+       WHERE license_id = $1 AND device_id = $2 AND estado = 'ACTIVA'`,
+      [license.id, device]
+    );
+    const alreadyActivated = existingActRes.rows.length > 0;
+
+    if (!alreadyActivated && currentActivations >= maxDevices) {
+      return res.status(400).json({
+        success: false,
+        message: `Esta licencia ya está activada en ${currentActivations} equipo(s) y el máximo permitido es ${maxDevices}. Contacte al administrador para liberar un dispositivo.`,
+        max_devices: maxDevices,
+        current_activations: currentActivations
+      });
+    }
+
+    // 7) Crear o reactivar activation
+    if (alreadyActivated) {
+      // Ya está activada en este device, reactivar
+      await pool.query(
+        `UPDATE license_activations
+         SET estado = 'ACTIVA', activated_at = now(), last_check_at = now()
+         WHERE license_id = $1 AND device_id = $2`,
+        [license.id, device]
+      );
+    } else {
+      // Crear nueva activation
+      await pool.query(
+        `INSERT INTO license_activations (license_id, project_id, device_id, estado)
+         VALUES ($1, $2, $3, 'ACTIVA')
+         ON CONFLICT (license_id, device_id)
+         DO UPDATE SET estado = 'ACTIVA', project_id = EXCLUDED.project_id, activated_at = now(), last_check_at = now()`,
+        [license.id, license.project_id, device]
+      );
+    }
+
+    // 8) Si la licencia estaba PENDIENTE, activarla
+    if (licStatus === 'PENDIENTE') {
+      try {
+        await licensesModel.activateLicenseManually(license.id);
+      } catch (_) {
+        // Ignorar si ya estaba activa
+      }
+    }
+
+    console.log('[PUBLIC_IMPORT_FILE] Licencia importada exitosamente:', {
+      license_id: license.id,
+      license_key: license.license_key,
+      device_id: device,
+      project_code: fileProjectCode
+    });
+
+    return res.json({
+      success: true,
+      message: 'Licencia importada correctamente.',
+      license: {
+        id: license.id,
+        license_key: license.license_key,
+        status: 'ACTIVA',
+        estado: 'ACTIVA',
+        project_code: fileProjectCode,
+        expires_at: license.fecha_fin,
+        max_devices: maxDevices,
+        device_id: device
+      }
+    });
+  } catch (error) {
+    console.error('[PUBLIC_IMPORT_FILE] FATAL ERROR:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      stack: error.stack
+    });
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al importar la licencia'
+    });
+  }
+}
+
 module.exports = {
   validateLicense,
   startDemo,
@@ -1143,5 +1337,6 @@ module.exports = {
   createPaymentOrder,
   capturePayment,
   registerOrFindCustomer,
-  getPaypalStatus
+  getPaypalStatus,
+  importLicenseFromFile
 };

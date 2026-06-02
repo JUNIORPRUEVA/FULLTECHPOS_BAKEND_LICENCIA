@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
@@ -15,6 +16,7 @@ class LicenseDetailPanel extends StatelessWidget {
   final Future<void> Function(int days)? onExtend;
   final Future<void> Function()? onDelete;
   final VoidCallback? onViewCustomer;
+  final Future<void> Function()? onDownloadLicense;
 
   const LicenseDetailPanel({
     super.key,
@@ -27,6 +29,7 @@ class LicenseDetailPanel extends StatelessWidget {
     this.onExtend,
     this.onDelete,
     this.onViewCustomer,
+    this.onDownloadLicense,
   });
 
   @override
@@ -215,6 +218,13 @@ class LicenseDetailPanel extends StatelessWidget {
                       icon: Icons.calendar_month_outlined,
                       color: AppColors.info,
                       onTap: () => onExtend!(30),
+                    ),
+                  if (onDownloadLicense != null)
+                    _ActionBtn(
+                      label: 'Descargar licencia',
+                      icon: Icons.download_rounded,
+                      color: AppColors.primary,
+                      onTap: onDownloadLicense!,
                     ),
                   if (onDelete != null)
                     _ActionBtn(

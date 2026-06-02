@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:universal_html/html.dart' as html;
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -410,6 +412,56 @@ class _LicensesPageState extends State<LicensesPage> {
     context.go('/admin/clientes?customerId=$customerId');
   }
 
+  /// Descarga el archivo de licencia usando dart:html (Blob + createObjectUrl).
+  /// El archivo se descarga con extensión .fulllicense.
+  Future<void> _downloadLicense(License license) async {
+    try {
+      // Obtener el contenido del archivo de licencia desde el API (con autenticación)
+      final data = await _licensesService.downloadLicenseFile(license.id);
+      if (!mounted) return;
+
+      final content = const JsonEncoder.withIndent('  ').convert(data);
+
+      // Determinar nombre del archivo desde el contenido o generar uno por defecto
+      String fileName;
+      try {
+        final projectCode = (data['license']?['project_code'] as String?) ?? 
+                           (data['payload']?['project_code'] as String?) ?? 
+                           license.projectName?.toUpperCase()?.replaceAll(' ', '_') ?? 'LICENSE';
+        final keyShort = license.shortKey;
+        final dateStr = DateFormat('yyyyMMdd').format(DateTime.now());
+        fileName = '${projectCode}_${keyShort}_${dateStr}.fulllicense';
+      } catch (_) {
+        fileName = 'licencia_${license.shortKey}.fulllicense';
+      }
+
+      // Crear un Blob con el contenido JSON y descargarlo usando dart:html
+      final blob = html.Blob([content], 'application/json');
+      final url = html.Url.createObjectUrl(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement
+        ..href = url
+        ..download = fileName;
+      anchor.click();
+      html.Url.revokeObjectUrl(url);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Archivo de licencia descargado correctamente'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al descargar licencia: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   Future<void> _openDetailMobile(License license) async {
     await showDialog<void>(
       context: context,
@@ -433,6 +485,7 @@ class _LicensesPageState extends State<LicensesPage> {
           onViewCustomer: license.customerId != null
               ? () => _viewCustomer(license.customerId!)
               : null,
+          onDownloadLicense: () => _downloadLicense(license),
         ),
       ),
     );
@@ -680,6 +733,7 @@ class _LicensesPageState extends State<LicensesPage> {
                   onViewCustomer: _selected!.customerId != null
                       ? () => _viewCustomer(_selected!.customerId!)
                       : null,
+                  onDownloadLicense: () => _downloadLicense(_selected!),
                 ),
             ],
           );

@@ -52,4 +52,9 @@ router.get('/paypal/status', (req, res, next) => {
   Promise.resolve(publicLicenseController.getPaypalStatus(req, res)).catch(next);
 });
 
+// POST /api/public/license/import-activation - Importar licencia desde archivo .fulllicense
+router.post('/license/import-activation', (req, res, next) => {
+  Promise.resolve(publicLicenseController.importLicenseFromFile(req, res)).catch(next);
+});
+
 module.exports = router;

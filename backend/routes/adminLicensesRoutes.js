@@ -88,4 +88,9 @@ router.post('/:id/license-file', isAdmin, (req, res, next) => {
   Promise.resolve(adminLicensesController.exportLicenseFile(req, res)).catch(next);
 });
 
+// POST /api/admin/licenses/:id/reset-activations - Liberar todos los dispositivos
+router.post('/:id/reset-activations', isAdmin, (req, res, next) => {
+  Promise.resolve(adminLicensesController.resetLicenseActivations(req, res)).catch(next);
+});
+
 module.exports = router;

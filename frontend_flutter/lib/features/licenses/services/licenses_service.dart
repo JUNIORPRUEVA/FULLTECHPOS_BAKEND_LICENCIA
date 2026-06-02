@@ -77,4 +77,17 @@ class LicensesService {
     await _ensureInit();
     await _client.patch('/api/admin/licenses/$id/extender-dias', {'dias': days});
   }
+
+  /// Descarga el archivo de licencia activo (firmado) listo para usar en FULLPOS.
+  /// El archivo se genera con device_id=null para que sirva en cualquier PC.
+  /// Retorna el contenido JSON del archivo de licencia.
+  Future<Map<String, dynamic>> downloadLicenseFile(String id) async {
+    await _ensureInit();
+    // Usamos ensure_active=true para activar automáticamente si está pendiente
+    // y download=1 para obtener el archivo como descarga
+    final data = await _client.get(
+      '/api/admin/licenses/$id/license-file?ensure_active=true&download=1',
+    );
+    return data;
+  }
 }
