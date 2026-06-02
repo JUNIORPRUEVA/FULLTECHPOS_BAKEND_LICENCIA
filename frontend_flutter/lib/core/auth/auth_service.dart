@@ -20,7 +20,19 @@ class AuthService extends ChangeNotifier {
   AuthService({required SessionManager sessionManager})
       : _sessionManager = sessionManager {
     _apiClient = ApiClient(sessionManager: sessionManager);
+    // Registrar callback global para manejo de 401
+    ApiClient.onUnauthorized = _handleUnauthorized;
     _initialize();
+  }
+
+  /// Callback global para cuando cualquier endpoint devuelve 401.
+  /// Limpia la sesión y notifica a los listeners para que el router redirija al login.
+  void _handleUnauthorized(String message) {
+    debugPrint('[AuthService] Sesión expirada o inválida: $message');
+    _sessionManager.clearSession();
+    _isLoggedIn = false;
+    _currentUser = null;
+    notifyListeners();
   }
 
   Future<void> _initialize() async {
@@ -39,7 +51,8 @@ class AuthService extends ChangeNotifier {
         if (e.isUnauthorized || e.isForbidden) {
           await _sessionManager.clearSession();
         } else {
-          // Transient error — keep session alive
+          // Transient error (network, server down) — keep session alive
+          // The user can retry later; if session expired, the 401 handler will catch it.
           _isLoggedIn = true;
           _currentUser = AdminUser(username: 'Admin');
         }

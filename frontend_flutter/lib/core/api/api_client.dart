@@ -1,11 +1,19 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../auth/session_manager.dart';
 import 'api_exception.dart';
 
+/// Callback para manejo global de 401 (sesión expirada).
+/// Se asigna desde AuthService para limpiar sesión y redirigir al login.
+typedef UnauthorizedCallback = void Function(String message);
+
 class ApiClient {
   final SessionManager _sessionManager;
+
+  /// Callback global que se invoca cuando cualquier endpoint devuelve 401.
+  static UnauthorizedCallback? onUnauthorized;
 
   ApiClient({required SessionManager sessionManager})
     : _sessionManager = sessionManager;
@@ -20,6 +28,9 @@ class ApiClient {
       if (sessionId != null) {
         headers['x-session-id'] = sessionId;
       }
+      if (AppConfig.isDebug) {
+        debugPrint('[API] auth header present: ${sessionId != null && sessionId.isNotEmpty}');
+      }
     }
     return headers;
   }
@@ -29,8 +40,7 @@ class ApiClient {
   Future<Map<String, dynamic>> get(String path) async {
     final uri = _uri(path);
     if (AppConfig.isDebug) {
-      // ignore: avoid_print
-      print('[API] GET $uri');
+      debugPrint('[API] GET $uri');
     }
     try {
       final response = await http
@@ -51,8 +61,7 @@ class ApiClient {
   }) async {
     final uri = _uri(path);
     if (AppConfig.isDebug) {
-      // ignore: avoid_print
-      print('[API] POST $uri');
+      debugPrint('[API] POST $uri');
     }
     try {
       final response = await http
@@ -81,8 +90,7 @@ class ApiClient {
   ) async {
     final uri = _uri(path);
     if (AppConfig.isDebug) {
-      // ignore: avoid_print
-      print('[API] PUT $uri');
+      debugPrint('[API] PUT $uri');
     }
     try {
       final response = await http
@@ -102,8 +110,7 @@ class ApiClient {
   ) async {
     final uri = _uri(path);
     if (AppConfig.isDebug) {
-      // ignore: avoid_print
-      print('[API] PATCH $uri');
+      debugPrint('[API] PATCH $uri');
     }
     try {
       final response = await http
@@ -120,8 +127,7 @@ class ApiClient {
   Future<Map<String, dynamic>> delete(String path) async {
     final uri = _uri(path);
     if (AppConfig.isDebug) {
-      // ignore: avoid_print
-      print('[API] DELETE $uri');
+      debugPrint('[API] DELETE $uri');
     }
     try {
       final response = await http
@@ -154,6 +160,15 @@ class ApiClient {
         data['error'] as String? ??
         _statusMessage(response.statusCode);
 
+    // Manejo global de 401: limpiar sesión y redirigir al login
+    if (response.statusCode == 401) {
+      final callback = onUnauthorized;
+      if (callback != null) {
+        // Ejecutar callback de forma asíncrona para no bloquear el throw
+        Future.microtask(() => callback(message));
+      }
+    }
+
     throw ApiException(message, statusCode: response.statusCode, data: data);
   }
 
@@ -162,9 +177,9 @@ class ApiClient {
       case 400:
         return 'Solicitud inválida';
       case 401:
-        return 'No autorizado. Por favor inicia sesión';
+        return 'Tu sesión expiró. Inicia sesión nuevamente.';
       case 403:
-        return 'Acceso denegado';
+        return 'No tienes permisos para ver este recurso.';
       case 404:
         return 'Recurso no encontrado';
       case 409:
