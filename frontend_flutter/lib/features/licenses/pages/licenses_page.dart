@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:universal_html/html.dart' as html;
+import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -412,13 +414,18 @@ class _LicensesPageState extends State<LicensesPage> {
     context.go('/admin/clientes?customerId=$customerId');
   }
 
-  /// Descarga el archivo de licencia usando dart:html (Blob + createObjectUrl).
+  /// Descarga el archivo de licencia usando file_picker (Windows/Desktop) o
+  /// fallback a descarga directa por API.
   /// El archivo se descarga con extensión .fulllicense.
   Future<void> _downloadLicense(License license) async {
     try {
-      // Obtener el contenido del archivo de licencia desde el API (con autenticación)
+      debugPrint('[LICENSE_DOWNLOAD] Iniciando descarga para licencia: ${license.id}');
+
+      // Obtener el contenido del archivo de licencia desde el API
       final data = await _licensesService.downloadLicenseFile(license.id);
       if (!mounted) return;
+
+      debugPrint('[LICENSE_DOWNLOAD] Datos recibidos correctamente');
 
       final content = const JsonEncoder.withIndent('  ').convert(data);
 
@@ -435,14 +442,58 @@ class _LicensesPageState extends State<LicensesPage> {
         fileName = 'licencia_${license.shortKey}.fulllicense';
       }
 
-      // Crear un Blob con el contenido JSON y descargarlo usando dart:html
-      final blob = html.Blob([content], 'application/json');
-      final url = html.Url.createObjectUrl(blob);
-      final anchor = html.document.createElement('a') as html.AnchorElement
-        ..href = url
-        ..download = fileName;
-      anchor.click();
-      html.Url.revokeObjectUrl(url);
+      debugPrint('[LICENSE_DOWNLOAD] Nombre de archivo: $fileName');
+
+      // Usar file_picker para guardar el archivo (funciona en Windows, Linux, macOS)
+      // FilePicker.saveFile() es un método estático en file_picker 11.x
+      try {
+        final outputPath = await FilePicker.saveFile(
+          dialogTitle: 'Guardar archivo de licencia',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['fulllicense'],
+        );
+
+        if (outputPath == null) {
+          debugPrint('[LICENSE_DOWNLOAD] Usuario canceló la descarga');
+          return;
+        }
+
+        debugPrint('[LICENSE_DOWNLOAD] Guardando en: $outputPath');
+        final file = File(outputPath);
+        await file.writeAsString(content, flush: true);
+        debugPrint('[LICENSE_DOWNLOAD] Archivo guardado exitosamente');
+      } catch (pickerError) {
+        // Fallback: si file_picker no funciona (web), intentar con descarga directa
+        debugPrint('[LICENSE_DOWNLOAD] file_picker falló, usando fallback: $pickerError');
+        
+        // Fallback para web: usar descarga directa desde el backend
+        try {
+          final rawResponse = await _licensesService.downloadLicenseFileRaw(license.id);
+          debugPrint('[LICENSE_DOWNLOAD] Fallback: respuesta raw status=${rawResponse.statusCode}');
+          
+          // Guardar usando file_picker de nuevo con los bytes
+          final bytes = rawResponse.bodyBytes;
+          final fallbackPath = await FilePicker.saveFile(
+            dialogTitle: 'Guardar archivo de licencia',
+            fileName: fileName,
+            type: FileType.custom,
+            allowedExtensions: ['fulllicense'],
+          );
+          
+          if (fallbackPath != null) {
+            final fallbackFile = File(fallbackPath);
+            await fallbackFile.writeAsBytes(bytes, flush: true);
+            debugPrint('[LICENSE_DOWNLOAD] Fallback: archivo guardado en $fallbackPath');
+          } else {
+            debugPrint('[LICENSE_DOWNLOAD] Fallback: usuario canceló');
+            return;
+          }
+        } catch (fallbackError) {
+          debugPrint('[LICENSE_DOWNLOAD] Fallback también falló: $fallbackError');
+          rethrow;
+        }
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -451,7 +502,9 @@ class _LicensesPageState extends State<LicensesPage> {
           backgroundColor: AppColors.success,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('[LICENSE_DOWNLOAD] ERROR: $e');
+      debugPrint('[LICENSE_DOWNLOAD] STACK: $stackTrace');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

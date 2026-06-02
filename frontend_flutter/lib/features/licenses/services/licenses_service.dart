@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/auth/session_manager.dart';
+import '../../../core/config/app_config.dart';
 import '../models/license.dart';
 
 class LicensesService {
@@ -78,16 +83,52 @@ class LicensesService {
     await _client.patch('/api/admin/licenses/$id/extender-dias', {'dias': days});
   }
 
-  /// Descarga el archivo de licencia activo (firmado) listo para usar en FULLPOS.
+  /// Descarga el archivo de licencia activo (firmado) listo para usar en cualquier proyecto.
   /// El archivo se genera con device_id=null para que sirva en cualquier PC.
   /// Retorna el contenido JSON del archivo de licencia.
   Future<Map<String, dynamic>> downloadLicenseFile(String id) async {
     await _ensureInit();
-    // Usamos ensure_active=true para activar automáticamente si está pendiente
-    // y download=1 para obtener el archivo como descarga
-    final data = await _client.get(
-      '/api/admin/licenses/$id/license-file?ensure_active=true&download=1',
-    );
-    return data;
+    debugPrint('[LICENSE_FILE_DOWNLOAD] licenseId: $id');
+    debugPrint('[LICENSE_FILE_DOWNLOAD] endpoint: /api/admin/licenses/$id/license-file?ensure_active=true&download=1');
+    try {
+      final data = await _client.get(
+        '/api/admin/licenses/$id/license-file?ensure_active=true&download=1',
+      );
+      debugPrint('[LICENSE_FILE_DOWNLOAD] SUCCESS: data keys = ${data.keys}');
+      return data;
+    } catch (e) {
+      debugPrint('[LICENSE_FILE_DOWNLOAD] ERROR: $e');
+      rethrow;
+    }
+  }
+
+  /// Descarga el archivo de licencia como http.Response crudo (para guardar con file_picker en desktop).
+  /// Usa http.get directamente para obtener la respuesta completa incluyendo headers.
+  Future<http.Response> downloadLicenseFileRaw(String id) async {
+    await _ensureInit();
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/admin/licenses/$id/license-file?ensure_active=true&download=1');
+    debugPrint('[LICENSE_FILE_DOWNLOAD_RAW] uri: $uri');
+    final sessionId = _sessionManager.sessionId;
+    final headers = <String, String>{
+      'Accept': 'application/json',
+    };
+    if (sessionId != null) {
+      headers['x-session-id'] = sessionId;
+    }
+    try {
+      final response = await http.get(uri, headers: headers).timeout(AppConfig.requestTimeout);
+      debugPrint('[LICENSE_FILE_DOWNLOAD_RAW] status: ${response.statusCode}');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response;
+      }
+      debugPrint('[LICENSE_FILE_DOWNLOAD_RAW] ERROR body: ${response.body}');
+      throw ApiException(
+        'Error al descargar archivo de licencia (HTTP ${response.statusCode})',
+        statusCode: response.statusCode,
+      );
+    } catch (e) {
+      debugPrint('[LICENSE_FILE_DOWNLOAD_RAW] ERROR: $e');
+      rethrow;
+    }
   }
 }

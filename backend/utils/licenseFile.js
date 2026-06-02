@@ -161,13 +161,16 @@ function createLicenseFileFromDbRows({ license, project, customer, device_id }) 
   const signed = signLicensePayload(payload, privateKeyPem);
 
   // Envoltorio profesional del archivo
-  // NOTA: El payload contiene los datos firmados. El importador espera
-  // la estructura { file_type, payload, signature }.
+  // IMPORTANTE: El payload que se guarda en el archivo DEBE ser el mismo que se firmó.
+  // signed.payload contiene el objeto que se pasó a crypto.sign().
   const licenseFile = {
     schema_version: 1,
     file_type: 'APPYRA_LICENSE_FILE',
     generated_at: new Date().toISOString(),
-    payload: {
+    // El payload firmado es el que retorna buildPayload() (estructura interna con v, project_code, etc.)
+    payload: signed.payload,
+    // Datos adicionales de presentación (NO firmados, solo informativos)
+    license_info: {
       id: license.id,
       license_key: license.license_key,
       project_id: project.id,
