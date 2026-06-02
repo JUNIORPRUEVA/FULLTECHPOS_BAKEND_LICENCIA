@@ -15,6 +15,7 @@ class LicenseFormValues {
   final String? projectName;
   final String? notas;
   final bool autoActivate;
+  final int? maxDevices;
 
   const LicenseFormValues({
     required this.customerId,
@@ -25,6 +26,7 @@ class LicenseFormValues {
     this.projectName,
     this.notas,
     required this.autoActivate,
+    this.maxDevices,
   });
 }
 

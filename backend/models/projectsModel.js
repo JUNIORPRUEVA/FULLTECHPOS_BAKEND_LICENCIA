@@ -51,6 +51,59 @@ async function listProjects() {
   return res.rows;
 }
 
+/**
+ * Actualiza todos los campos editables de un proyecto.
+ * @param {string} projectId - UUID del proyecto
+ * @param {Object} data - Campos a actualizar
+ * @returns {Object|null} Proyecto actualizado o null
+ */
+async function updateProject(projectId, data) {
+  const {
+    name,
+    code,
+    description,
+    monthly_price,
+    currency,
+    demo_days,
+    min_purchase_months,
+    is_paid_project,
+    allow_demo,
+    is_active
+  } = data;
+
+  const res = await pool.query(
+    `UPDATE projects
+     SET
+       name = COALESCE($2, name),
+       code = COALESCE($3, code),
+       description = COALESCE($4, description),
+       monthly_price = COALESCE($5, monthly_price),
+       currency = COALESCE($6, currency),
+       demo_days = COALESCE($7, demo_days),
+       min_purchase_months = COALESCE($8, min_purchase_months),
+       is_paid_project = COALESCE($9, is_paid_project),
+       allow_demo = COALESCE($10, allow_demo),
+       is_active = COALESCE($11, is_active),
+       updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      projectId,
+      name != null ? String(name).trim() : null,
+      code != null ? normalizeCode(code) : null,
+      description !== undefined ? (description == null ? null : String(description)) : null,
+      monthly_price != null ? monthly_price : null,
+      currency || null,
+      demo_days != null ? demo_days : null,
+      min_purchase_months != null ? min_purchase_months : null,
+      is_paid_project != null ? is_paid_project : null,
+      allow_demo != null ? allow_demo : null,
+      is_active != null ? is_active : null
+    ]
+  );
+  return res.rows[0] || null;
+}
+
 async function updateProjectBillingSettings(projectId, settings) {
   const {
     monthly_price,
@@ -120,6 +173,7 @@ module.exports = {
   getDefaultProject,
   createProject,
   listProjects,
+  updateProject,
   updateProjectBillingSettings,
   calculateLicensePurchase
 };

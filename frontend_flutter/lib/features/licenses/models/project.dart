@@ -71,6 +71,38 @@ class Project {
 
   String get displayName => '$name ($code)';
 
+  Project copyWith({
+    String? id,
+    String? code,
+    String? name,
+    String? description,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    double? monthlyPrice,
+    String? currency,
+    int? demoDays,
+    int? minPurchaseMonths,
+    bool? isPaidProject,
+    bool? allowDemo,
+  }) {
+    return Project(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      monthlyPrice: monthlyPrice ?? this.monthlyPrice,
+      currency: currency ?? this.currency,
+      demoDays: demoDays ?? this.demoDays,
+      minPurchaseMonths: minPurchaseMonths ?? this.minPurchaseMonths,
+      isPaidProject: isPaidProject ?? this.isPaidProject,
+      allowDemo: allowDemo ?? this.allowDemo,
+    );
+  }
+
   static double _parseDouble(dynamic value) {
     if (value == null) return 0;
     if (value is num) return value.toDouble();

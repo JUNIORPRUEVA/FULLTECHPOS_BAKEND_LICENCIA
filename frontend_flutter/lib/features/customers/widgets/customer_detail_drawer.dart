@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../customers/services/customers_service.dart';
@@ -139,14 +140,18 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
   Future<void> _submitCreateLicense(LicenseFormValues values) async {
     setState(() => _loadingAction = true);
     try {
-      await _licensesService.createLicense({
+      final body = <String, dynamic>{
         'customer_id': values.customerId,
         'project_id': values.projectId,
         'tipo': values.tipo,
         'dias_validez': values.diasValidez,
         'notas': values.notas,
         'auto_activate': values.autoActivate,
-      });
+      };
+      if (values.maxDevices != null) {
+        body['max_dispositivos'] = values.maxDevices;
+      }
+      await _licensesService.createLicense(body);
 
       if (mounted) {
         setState(() => _loadingAction = false);
@@ -1093,10 +1098,8 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         final dateFmt = DateFormat('dd/MM/yyyy');
         return InkWell(
           onTap: () {
-            setState(() {
-              _selectedLicense = license;
-              _activeView = 'license_detail';
-            });
+            // Navegar a la página de licencias con el ID de la licencia seleccionada
+            context.go('/admin/licencias?licenseId=${license.id}');
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),

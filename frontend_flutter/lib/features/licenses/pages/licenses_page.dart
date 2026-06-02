@@ -20,7 +20,9 @@ import '../widgets/license_form_panel.dart';
 import '../widgets/license_list_item.dart';
 
 class LicensesPage extends StatefulWidget {
-  const LicensesPage({super.key});
+  final String? initialLicenseId;
+
+  const LicensesPage({super.key, this.initialLicenseId});
 
   @override
   State<LicensesPage> createState() => _LicensesPageState();
@@ -55,7 +57,16 @@ class _LicensesPageState extends State<LicensesPage> {
     _licensesService = LicensesService(sessionManager: session);
     _customersService = CustomersService(sessionManager: session);
     _projectsService = ProjectsService(sessionManager: session);
-    _licensesFuture = _licensesService.listLicenses();
+    _licensesFuture = _licensesService.listLicenses().then((licenses) {
+      // Si hay un initialLicenseId, seleccionar esa licencia automáticamente
+      if (widget.initialLicenseId != null && mounted) {
+        final found = licenses.where((l) => l.id == widget.initialLicenseId).toList();
+        if (found.isNotEmpty) {
+          setState(() => _selected = found.first);
+        }
+      }
+      return licenses;
+    });
     _loadCustomers();
     _loadProjects();
   }

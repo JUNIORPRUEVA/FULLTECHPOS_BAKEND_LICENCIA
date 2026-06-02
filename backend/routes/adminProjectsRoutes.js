@@ -19,6 +19,11 @@ router.get('/:id', isAdmin, (req, res, next) => {
   Promise.resolve(adminProjectsController.getProjectById(req, res)).catch(next);
 });
 
+// PATCH /api/admin/projects/:id
+router.patch('/:id', isAdmin, (req, res, next) => {
+  Promise.resolve(adminProjectsController.updateProject(req, res)).catch(next);
+});
+
 // PATCH /api/admin/projects/:id/billing-settings
 router.patch('/:id/billing-settings', isAdmin, (req, res, next) => {
   Promise.resolve(adminProjectsController.updateBillingSettings(req, res)).catch(next);

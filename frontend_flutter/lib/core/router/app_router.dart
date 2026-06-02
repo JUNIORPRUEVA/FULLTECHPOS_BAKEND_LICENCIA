@@ -5,6 +5,7 @@ import '../../features/customers/pages/customers_page.dart';
 import '../../features/dashboard/pages/dashboard_page.dart';
 import '../../features/licenses/pages/licenses_page.dart';
 import '../../features/payments/pages/payments_page.dart';
+import '../../features/projects/pages/projects_page.dart';
 import '../../features/cloud_admin/pages/cloud_resource_page.dart';
 import '../../features/cloud_admin/configs/resource_configs.dart';
 import '../auth/auth_service.dart';
@@ -62,7 +63,10 @@ class AppRouter {
             ),
             GoRoute(
               path: '/admin/licencias',
-              builder: (context, state) => const LicensesPage(),
+              builder: (context, state) {
+                final licenseId = state.uri.queryParameters['licenseId'];
+                return LicensesPage(initialLicenseId: licenseId);
+              },
             ),
             // GoRoute(
             //   path: '/admin/configuracion-licencias',
@@ -70,8 +74,7 @@ class AppRouter {
             // ),
             GoRoute(
               path: '/admin/proyectos',
-              builder: (context, state) =>
-                  CloudResourcePage(config: projectResourceConfig),
+              builder: (context, state) => const ProjectsPage(),
             ),
             GoRoute(
               path: '/admin/usuarios',
