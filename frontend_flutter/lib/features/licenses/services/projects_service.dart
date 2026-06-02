@@ -1,14 +1,20 @@
-import '../../../core/api/api_client.dart';
+ import '../../../core/api/api_client.dart';
 import '../../../core/auth/session_manager.dart';
 import '../models/project.dart';
 
 class ProjectsService {
   final ApiClient _client;
+  final SessionManager _sessionManager;
 
   ProjectsService({required SessionManager sessionManager})
-      : _client = ApiClient(sessionManager: sessionManager);
+      : _sessionManager = sessionManager,
+        _client = ApiClient(sessionManager: sessionManager);
+
+  /// Inicializa el SessionManager si no lo está.
+  Future<void> _ensureInit() => _sessionManager.init();
 
   Future<List<Project>> listProjects() async {
+    await _ensureInit();
     final data = await _client.get('/api/admin/projects');
     final list = data['projects'] as List<dynamic>? ?? [];
     return list
@@ -17,6 +23,7 @@ class ProjectsService {
   }
 
   Future<Project> getProjectById(String id) async {
+    await _ensureInit();
     final data = await _client.get('/api/admin/projects/$id');
     return Project.fromJson(data['project'] as Map<String, dynamic>? ?? data);
   }
@@ -34,6 +41,7 @@ class ProjectsService {
     required bool allowDemo,
     required bool isActive,
   }) async {
+    await _ensureInit();
     final data = await _client.patch(
       '/api/admin/projects/$projectId',
       {
@@ -62,6 +70,7 @@ class ProjectsService {
     required bool allowDemo,
     required bool isActive,
   }) async {
+    await _ensureInit();
     final data = await _client.patch(
       '/api/admin/projects/$projectId/billing-settings',
       {

@@ -496,9 +496,10 @@ async function desbloquearLicense(req, res) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }
 
-    // Desbloquear debe dejar la licencia utilizable.
-    // activateLicenseManually se encarga de (re)armar fechas si están ausentes o vencidas.
-    const updated = await licensesModel.activateLicenseManually(licenseId);
+    // Desbloquear: cambiar estado a ACTIVA y rearmar fechas si es necesario.
+    // Usamos updateLicense con estado='ACTIVA' en lugar de activateLicenseManually
+    // porque activateLicenseManually rechaza licencias BLOQUEADA.
+    const updated = await licensesModel.updateLicense(licenseId, { estado: 'ACTIVA' });
     if (!updated) {
       return res.status(404).json({ ok: false, message: 'Licencia no encontrada' });
     }

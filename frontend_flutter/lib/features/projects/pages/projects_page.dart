@@ -84,7 +84,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
         }
       });
     } on UnauthorizedException {
-      // No hacer nada: el callback global de AuthService ya limpio la sesion
+      setState(() => _loading = false);
+      // No hacer nada mas: el callback global de AuthService ya limpio la sesion
       // y el router redirigira al login automaticamente.
       return;
     } catch (e) {

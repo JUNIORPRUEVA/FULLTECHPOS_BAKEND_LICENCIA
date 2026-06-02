@@ -4,11 +4,16 @@ import '../models/license.dart';
 
 class LicensesService {
   final ApiClient _client;
+  final SessionManager _sessionManager;
 
   LicensesService({required SessionManager sessionManager})
-      : _client = ApiClient(sessionManager: sessionManager);
+      : _sessionManager = sessionManager,
+        _client = ApiClient(sessionManager: sessionManager);
+
+  Future<void> _ensureInit() => _sessionManager.init();
 
   Future<List<License>> listLicenses({int page = 1, int limit = 50}) async {
+    await _ensureInit();
     final data = await _client
         .get('/api/admin/licenses?page=$page&limit=$limit');
     final list = data['licenses'] as List<dynamic>? ??
@@ -20,36 +25,43 @@ class LicensesService {
   }
 
   Future<License> getLicense(String id) async {
+    await _ensureInit();
     final data = await _client.get('/api/admin/licenses/$id');
     final lic = data['license'] as Map<String, dynamic>? ?? data;
     return License.fromJson(lic);
   }
 
   Future<License> createLicense(Map<String, dynamic> body) async {
+    await _ensureInit();
     final data = await _client.post('/api/admin/licenses', body);
     final lic = data['license'] as Map<String, dynamic>? ?? data;
     return License.fromJson(lic);
   }
 
   Future<License> updateLicense(String id, Map<String, dynamic> body) async {
+    await _ensureInit();
     final data = await _client.patch('/api/admin/licenses/$id', body);
     final lic = data['license'] as Map<String, dynamic>? ?? data;
     return License.fromJson(lic);
   }
 
   Future<void> deleteLicense(String id) async {
+    await _ensureInit();
     await _client.delete('/api/admin/licenses/$id');
   }
 
   Future<void> blockLicense(String id) async {
+    await _ensureInit();
     await _client.patch('/api/admin/licenses/$id/bloquear', {});
   }
 
   Future<void> unblockLicense(String id) async {
+    await _ensureInit();
     await _client.patch('/api/admin/licenses/$id/desbloquear', {});
   }
 
   Future<void> activateManual(String id) async {
+    await _ensureInit();
     await _client.patch('/api/admin/licenses/$id/activar-manual', {});
   }
 
@@ -57,10 +69,12 @@ class LicensesService {
   /// POST /api/admin/licenses/{id}/activate
   /// Throws ApiException with the backend message on failure.
   Future<void> activateLicense(String id) async {
+    await _ensureInit();
     await _client.post('/api/admin/licenses/$id/activate', {});
   }
 
   Future<void> extendDays(String id, int days) async {
+    await _ensureInit();
     await _client.patch('/api/admin/licenses/$id/extender-dias', {'dias': days});
   }
 }
