@@ -112,9 +112,10 @@ async function validateLicense(req, res) {
 
     // 1) Buscar licencias FULL activas para este device + proyecto
     const fullActRes = await pool.query(
-      `SELECT l.*, a.device_id, a.estado AS activation_estado
+      `SELECT l.*, c.business_id, a.device_id, a.estado AS activation_estado
        FROM license_activations a
        JOIN licenses l ON l.id = a.license_id
+       LEFT JOIN customers c ON c.id = l.customer_id
        WHERE a.device_id = $1
          AND a.project_id = $2
          AND a.estado = 'ACTIVA'
@@ -147,6 +148,7 @@ async function validateLicense(req, res) {
           expires_at: expiresAt,
           days_remaining: daysRemaining,
           max_devices: fullActivation.max_dispositivos,
+          business_id: fullActivation.business_id || null,
           demo_active: false,
           payment_required: false,
           customer_id: fullActivation.customer_id,
@@ -200,9 +202,10 @@ async function validateLicense(req, res) {
 
     // 2) Buscar licencias DEMO activas para este device + proyecto
     const demoActRes = await pool.query(
-      `SELECT l.*, a.device_id, a.estado AS activation_estado
+      `SELECT l.*, c.business_id, a.device_id, a.estado AS activation_estado
        FROM license_activations a
        JOIN licenses l ON l.id = a.license_id
+       LEFT JOIN customers c ON c.id = l.customer_id
        WHERE a.device_id = $1
          AND a.project_id = $2
          AND a.estado = 'ACTIVA'
@@ -233,6 +236,7 @@ async function validateLicense(req, res) {
           expires_at: expiresAt,
           days_remaining: daysRemaining,
           max_devices: demoActivation.max_dispositivos,
+          business_id: demoActivation.business_id || null,
           demo_active: true,
           payment_required: false,
           customer_id: demoActivation.customer_id,
@@ -1218,6 +1222,17 @@ async function importLicenseFromFile(req, res) {
       });
     }
 
+    const licenseDetail = await licensesModel.getLicenseById(license.id);
+    const payloadBusinessId = String(payload.business_id || '').trim();
+    const customerBusinessId = String(licenseDetail?.business_id || '').trim();
+    if (payloadBusinessId && customerBusinessId && payloadBusinessId !== customerBusinessId) {
+      return res.status(409).json({
+        success: false,
+        code: 'BUSINESS_ID_CONFLICT',
+        message: 'El archivo de licencia pertenece a otro negocio.',
+      });
+    }
+
     // 4) Verificar estado
     const licStatus = licensesModel.normalizeLicenseStatus(license.estado);
     if (licStatus === 'BLOQUEADA') {
@@ -1311,6 +1326,7 @@ async function importLicenseFromFile(req, res) {
         status: 'ACTIVA',
         estado: 'ACTIVA',
         project_code: fileProjectCode,
+        business_id: customerBusinessId || payloadBusinessId || null,
         expires_at: license.fecha_fin,
         max_devices: maxDevices,
         device_id: device

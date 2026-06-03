@@ -5,6 +5,7 @@ const { generateLicenseKey } = require('../utils/licenseKey');
 const projectsModel = require('../models/projectsModel');
 const licenseFile = require('../utils/licenseFile');
 const licenseChangeBus = require('../services/licenseChangeBus');
+const { normalizeBusinessId, resolveBusinessIdForNewRecord, emitBusinessIdAudit } = require('../services/businessIdPolicyService');
 
 function logSqlError(scope, error) {
   console.error(`[${scope}] SQL ERROR:`, {
@@ -132,6 +133,29 @@ async function createLicense(req, res) {
     const customer = await customersModel.getCustomerById(String(customer_id).trim());
     if (!customer) {
       return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
+    }
+
+    if (!normalizeBusinessId(customer.business_id)) {
+      const generatedBusinessId = await resolveBusinessIdForNewRecord(null);
+      await customersModel.setCustomerBusinessId({
+        customerId: customer.id,
+        business_id: generatedBusinessId,
+      });
+      customer.business_id = generatedBusinessId;
+      await emitBusinessIdAudit(
+        {
+          event: 'initial_set',
+          source: 'admin_create_license',
+          action: 'generated',
+          reason: 'Se generó business_id formalmente al crear una nueva licencia',
+          severity: 'info',
+          currentBusinessId: null,
+          incomingBusinessId: null,
+          resolvedBusinessId: generatedBusinessId,
+          customerId: customer.id,
+        },
+        { req }
+      );
     }
 
     // LOG: Cliente seleccionado

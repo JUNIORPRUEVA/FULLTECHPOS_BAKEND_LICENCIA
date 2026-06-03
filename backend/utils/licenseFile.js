@@ -157,7 +157,7 @@ function createLicenseFileFromDbRows({ license, project, customer, device_id }) 
     customer
   });
 
-  // Firmar el payload
+  // Firmar el payload  
   const signed = signLicensePayload(payload, privateKeyPem);
 
   // Envoltorio profesional del archivo

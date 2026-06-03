@@ -39,6 +39,11 @@ router.post('/:id/assign-business-id', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.assignBusinessId(req, res)).catch(next);
 });
 
+// POST /api/admin/customers/:id/business_id/repair
+router.post('/:id/business_id/repair', isAdmin, (req, res, next) => {
+  Promise.resolve(adminCustomersController.repairBusinessId(req, res)).catch(next);
+});
+
 // POST /api/admin/customers/:id/reset-token
 router.post('/:id/reset-token', isAdmin, (req, res, next) => {
   Promise.resolve(adminCustomersController.resetToken(req, res)).catch(next);

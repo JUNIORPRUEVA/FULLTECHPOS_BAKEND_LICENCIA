@@ -1,6 +1,17 @@
 const { pool } = require('../db/pool');
 const customersModel = require('../models/customersModel');
-const crypto = require('crypto');
+const {
+  normalizeBusinessId,
+  isValidBusinessIdForExistingRecord,
+  isValidBusinessIdForNewRecord,
+  resolveBusinessIdForNewRecord,
+  getCustomerBusinessIdMutationContext,
+  canChangeBusinessIdNormally,
+  requiresRepairMode,
+  hasProtectedCustomerActivity,
+  beginBusinessIdRepairSession,
+  emitBusinessIdAudit,
+} = require('../services/businessIdPolicyService');
 
 function parsePagination(req) {
   const pageRaw = req.query.page;
@@ -14,6 +25,7 @@ function parsePagination(req) {
 async function createCustomer(req, res) {
   try {
     const { nombre_negocio, contacto_nombre, contacto_telefono, contacto_email, rol_negocio, business_id } = req.body || {};
+    const normalizedBusinessId = normalizeBusinessId(business_id);
 
     if (!nombre_negocio || !String(nombre_negocio).trim()) {
       return res.status(400).json({ ok: false, message: 'nombre_negocio es requerido' });
@@ -23,19 +35,35 @@ async function createCustomer(req, res) {
       return res.status(400).json({ ok: false, message: 'contacto_telefono es requerido' });
     }
 
+    if (normalizedBusinessId && !isValidBusinessIdForNewRecord(normalizedBusinessId)) {
+      return res.status(400).json({
+        ok: false,
+        code: 'INVALID_NEW_BUSINESS_ID',
+        message: 'Para nuevos clientes, business_id debe ser UUID v4',
+      });
+    }
+
     const customer = await customersModel.createCustomer({
       nombre_negocio: String(nombre_negocio).trim(),
       contacto_nombre: contacto_nombre ? String(contacto_nombre).trim() : null,
       contacto_telefono: String(contacto_telefono).trim(),
       contacto_email: contacto_email ? String(contacto_email).trim() : null,
       rol_negocio: rol_negocio ? String(rol_negocio).trim() : null,
-      business_id: business_id ? String(business_id).trim() : null
+      business_id: normalizedBusinessId
     });
 
     return res.status(201).json({ ok: true, customer });
   } catch (error) {
     console.error('createCustomer error:', error);
     // 23505 = unique_violation
+    if (error && error.code === 'INVALID_NEW_BUSINESS_ID') {
+      return res.status(400).json({ success: false, code: error.code, message: 'Para nuevas asignaciones, business_id debe ser UUID v4' });
+    }
+
+    if (error && error.code === 'INVALID_NEW_BUSINESS_ID') {
+      return res.status(400).json({ success: false, code: error.code, message: 'Para nuevas asignaciones, business_id debe ser UUID v4' });
+    }
+
     if (error && error.code === '23505') {
       const constraint = String(error.constraint || '');
       if (constraint.includes('contacto_telefono')) {
@@ -67,6 +95,16 @@ async function listCustomers(req, res) {
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
+function businessIdConflictResponse(message, extra = {}) {
+  return {
+    ok: false,
+    success: false,
+    code: 'BUSINESS_ID_MUTATION_BLOCKED',
+    message,
+    ...extra,
+  };
 }
 
 async function deleteCustomer(req, res) {
@@ -117,32 +155,66 @@ async function setBusinessId(req, res) {
       return res.status(400).json({ ok: false, message: 'id inválido (UUID requerido)' });
     }
 
-    const business_id = String(req.body?.business_id || '').trim();
-    const force = Boolean(req.body?.force);
+    const business_id = normalizeBusinessId(req.body?.business_id);
 
     if (!business_id) {
       return res.status(400).json({ ok: false, message: 'business_id es requerido' });
     }
 
-    const current = await customersModel.getCustomerById(customerId);
-    if (!current) {
+    const context = await getCustomerBusinessIdMutationContext(customerId);
+    if (!context) {
       return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
     }
 
-    if (current.business_id && String(current.business_id).trim() && !force) {
-      if (String(current.business_id).trim() !== business_id) {
-        return res.status(409).json({
-          ok: false,
-          code: 'BUSINESS_ID_ALREADY_SET',
-          message: 'Este cliente ya tiene business_id asignado (usa force para reemplazar)'
-        });
-      }
+    if (!canChangeBusinessIdNormally(context, business_id)) {
+      await emitBusinessIdAudit(
+        {
+          event: 'overwrite_blocked',
+          source: 'admin_set_business_id',
+          action: 'blocked',
+          reason: 'Cambio normal bloqueado para proteger business_id existente',
+          severity: hasProtectedCustomerActivity(context) ? 'critical' : 'warn',
+          currentBusinessId: context.customer.business_id || null,
+          incomingBusinessId: business_id,
+          resolvedBusinessId: context.customer.business_id || null,
+          customerId,
+        },
+        { req }
+      );
+      return res.status(409).json(
+        businessIdConflictResponse(
+          'Este cliente ya tiene business_id asignado. Usa la ruta de reparación administrativa si necesitas corregirlo.'
+        )
+      );
+    }
+
+    if (!context.customer.business_id && !isValidBusinessIdForNewRecord(business_id)) {
+      return res.status(400).json({
+        ok: false,
+        code: 'INVALID_NEW_BUSINESS_ID',
+        message: 'Para una asignación inicial, business_id debe ser UUID v4',
+      });
     }
 
     const updated = await customersModel.setCustomerBusinessId({ customerId, business_id });
     if (!updated) {
       return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
     }
+
+    await emitBusinessIdAudit(
+      {
+        event: context.customer.business_id ? 'read' : 'initial_set',
+        source: 'admin_set_business_id',
+        action: 'allowed',
+        reason: context.customer.business_id ? 'Asignación idempotente' : 'Business ID inicial establecido',
+        severity: 'info',
+        currentBusinessId: context.customer.business_id || null,
+        incomingBusinessId: business_id,
+        resolvedBusinessId: updated.business_id || business_id,
+        customerId,
+      },
+      { req }
+    );
 
     return res.json({ ok: true, customer: updated });
   } catch (error) {
@@ -250,6 +322,52 @@ async function updateCustomer(req, res) {
       return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
     }
 
+    if (Object.prototype.hasOwnProperty.call(updates, 'business_id')) {
+      const context = await getCustomerBusinessIdMutationContext(customerId);
+      const nextBusinessId = normalizeBusinessId(updates.business_id);
+      const currentBusinessId = normalizeBusinessId(current.business_id);
+
+      if (!nextBusinessId) {
+        return res.status(409).json(
+          businessIdConflictResponse(
+            'No se permite vaciar business_id desde el flujo normal.'
+          )
+        );
+      }
+
+      if (!canChangeBusinessIdNormally(context, nextBusinessId)) {
+        await emitBusinessIdAudit(
+          {
+            event: 'overwrite_blocked',
+            source: 'admin_update_customer',
+            action: 'blocked',
+            reason: 'Intento de mutación de business_id desde updateCustomer',
+            severity: hasProtectedCustomerActivity(context) ? 'critical' : 'warn',
+            currentBusinessId,
+            incomingBusinessId: nextBusinessId,
+            resolvedBusinessId: currentBusinessId,
+            customerId,
+          },
+          { req }
+        );
+        return res.status(409).json(
+          businessIdConflictResponse(
+            'No se permite cambiar business_id desde la edición normal del cliente.'
+          )
+        );
+      }
+
+      if (!currentBusinessId && !isValidBusinessIdForNewRecord(nextBusinessId)) {
+        return res.status(400).json({
+          ok: false,
+          code: 'INVALID_NEW_BUSINESS_ID',
+          message: 'Para asignación inicial, business_id debe ser UUID v4',
+        });
+      }
+
+      updates.business_id = nextBusinessId;
+    }
+
     const updated = await customersModel.updateCustomer(customerId, updates);
     if (!updated) {
       return res.status(404).json({ ok: false, message: 'Cliente no encontrado' });
@@ -291,8 +409,8 @@ async function getCustomerLicenses(req, res) {
       return res.status(400).json({ success: false, message: 'id inválido (UUID requerido)' });
     }
 
-    const customer = await customersModel.getCustomerById(customerId);
-    if (!customer) {
+    const context = await getCustomerBusinessIdMutationContext(customerId);
+    if (!context) {
       return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
     }
 
@@ -341,36 +459,62 @@ async function assignBusinessId(req, res) {
       return res.status(400).json({ success: false, message: 'id inválido (UUID requerido)' });
     }
 
-    const customer = await customersModel.getCustomerById(customerId);
-    if (!customer) {
+    const context = await getCustomerBusinessIdMutationContext(customerId);
+    if (!context) {
       return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
     }
 
     // Si ya tiene business_id y no se fuerza regeneración
-    const force = req.body?.force === true;
-    if (customer.business_id && String(customer.business_id).trim() && !force) {
+    if (context.customer.business_id && String(context.customer.business_id).trim()) {
+      await emitBusinessIdAudit(
+        {
+          event: 'overwrite_blocked',
+          source: 'admin_assign_business_id',
+          action: 'blocked',
+          reason: 'assignBusinessId no puede reemplazar business_id existente',
+          severity: hasProtectedCustomerActivity(context) ? 'critical' : 'warn',
+          currentBusinessId: context.customer.business_id,
+          incomingBusinessId: normalizeBusinessId(req.body?.business_id),
+          resolvedBusinessId: context.customer.business_id,
+          customerId,
+        },
+        { req }
+      );
       return res.json({
         success: true,
         message: 'El cliente ya tiene un Business ID asignado',
-        customer: customer,
+        customer: context.customer,
         already_exists: true
       });
     }
 
     // Generar business_id único
-    let businessId = req.body?.business_id || null;
-    if (!businessId) {
-      businessId = 'BIZ-' + crypto.randomBytes(12).toString('hex').toUpperCase();
-    }
+    let businessId = normalizeBusinessId(req.body?.business_id);
+    businessId = await resolveBusinessIdForNewRecord(businessId);
 
-    const updated = await customersModel.setCustomerBusinessId({ customerId, business_id: String(businessId).trim() });
+    const updated = await customersModel.setCustomerBusinessId({ customerId, business_id: businessId });
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
     }
 
+    await emitBusinessIdAudit(
+      {
+        event: 'initial_set',
+        source: 'admin_assign_business_id',
+        action: 'allowed',
+        reason: 'Business ID inicial asignado desde admin',
+        severity: 'info',
+        currentBusinessId: null,
+        incomingBusinessId: businessId,
+        resolvedBusinessId: updated.business_id,
+        customerId,
+      },
+      { req }
+    );
+
     return res.json({
       success: true,
-      message: force ? 'Business ID regenerado correctamente' : 'Business ID asignado correctamente',
+      message: 'Business ID asignado correctamente',
       customer: updated
     });
   } catch (error) {
@@ -381,6 +525,95 @@ async function assignBusinessId(req, res) {
     }
 
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+async function repairBusinessId(req, res) {
+  const customerId = String(req.params.id || '').trim();
+  const business_id = normalizeBusinessId(req.body?.business_id);
+  const forceRepair = req.body?.forceRepair === true;
+  const reason = String(req.body?.reason || '').trim();
+
+  if (!customerId) {
+    return res.status(400).json({ success: false, message: 'id es requerido' });
+  }
+  if (!isUuid(customerId)) {
+    return res.status(400).json({ success: false, message: 'id invÃ¡lido (UUID requerido)' });
+  }
+  if (!forceRepair) {
+    return res.status(400).json({ success: false, code: 'FORCE_REPAIR_REQUIRED', message: 'forceRepair=true es requerido para reparaciones de business_id' });
+  }
+  if (!reason) {
+    return res.status(400).json({ success: false, code: 'REPAIR_REASON_REQUIRED', message: 'Debes indicar un motivo para la reparaciÃ³n administrativa' });
+  }
+  if (!business_id) {
+    return res.status(400).json({ success: false, message: 'business_id es requerido' });
+  }
+
+  const context = await getCustomerBusinessIdMutationContext(customerId);
+  if (!context) {
+    return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+  }
+
+  const currentBusinessId = normalizeBusinessId(context.customer.business_id);
+  if (!currentBusinessId && !isValidBusinessIdForNewRecord(business_id)) {
+    return res.status(400).json({ success: false, code: 'INVALID_NEW_BUSINESS_ID', message: 'Para asignaciÃ³n inicial, business_id debe ser UUID v4' });
+  }
+  if (currentBusinessId && !(await isValidBusinessIdForExistingRecord(business_id))) {
+    return res.status(400).json({ success: false, code: 'INVALID_EXISTING_BUSINESS_ID', message: 'El business_id de reparaciÃ³n no es vÃ¡lido para un registro existente' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await beginBusinessIdRepairSession(client);
+
+    const updated = await customersModel.setCustomerBusinessId({ customerId, business_id }, { client });
+    if (!updated) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+
+    await emitBusinessIdAudit(
+      {
+        event: currentBusinessId ? 'admin_repair_completed' : 'initial_set',
+        source: 'admin_business_id_repair',
+        action: 'allowed',
+        reason,
+        severity: hasProtectedCustomerActivity(context) ? 'critical' : 'warn',
+        currentBusinessId,
+        incomingBusinessId: business_id,
+        resolvedBusinessId: updated.business_id,
+        customerId,
+      },
+      { req, client }
+    );
+
+    await client.query('COMMIT');
+    return res.json({
+      success: true,
+      warning: 'ReparaciÃ³n administrativa aplicada. Revisa las activaciones y el cliente antes de continuar.',
+      customer: updated,
+    });
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    console.error('repairBusinessId error:', error);
+
+    if (error && error.code === '23505') {
+      return res.status(409).json({ success: false, message: 'Ese business_id ya estÃ¡ asignado a otro cliente' });
+    }
+    if (error && error.code === 'INVALID_NEW_BUSINESS_ID') {
+      return res.status(400).json({ success: false, code: error.code, message: 'Para asignaciÃ³n inicial, business_id debe ser UUID v4' });
+    }
+    if (error && error.code === 'INVALID_EXISTING_BUSINESS_ID') {
+      return res.status(400).json({ success: false, code: error.code, message: 'El business_id indicado no es compatible con un cliente legacy existente' });
+    }
+
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  } finally {
+    client.release();
   }
 }
 
@@ -477,6 +710,7 @@ module.exports = {
   updateCustomer,
   getCustomerLicenses,
   assignBusinessId,
+  repairBusinessId,
   resetToken,
   getCustomerPayments
 };

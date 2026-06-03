@@ -153,9 +153,9 @@ async function getCustomerByBusinessId(businessId) {
   }
 }
 
-async function setCustomerBusinessId({ customerId, business_id }) {
+async function setCustomerBusinessId({ customerId, business_id }, { client = pool } = {}) {
   try {
-    const result = await pool.query(
+    const result = await client.query(
       'UPDATE customers SET business_id = $2 WHERE id = $1 RETURNING *',
       [customerId, business_id]
     );

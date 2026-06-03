@@ -3,6 +3,12 @@ const projectsModel = require('../models/projectsModel');
 const crypto = require('crypto');
 const { getPrivateKeyPem } = require('../utils/licenseFile');
 const licenseChangeBus = require('../services/licenseChangeBus');
+const {
+  normalizeBusinessId,
+  isValidBusinessIdForExistingRecord,
+  resolveBusinessIdForNewRecord,
+  emitBusinessIdAudit,
+} = require('../services/businessIdPolicyService');
 
 function asTrimmed(value) {
   const v = String(value || '').trim();
@@ -100,7 +106,7 @@ function isWithinDaysFromNow(iso, days) {
 }
 
 async function register(req, res) {
-  const business_id = asTrimmed(req.body?.business_id);
+  const incomingBusinessId = normalizeBusinessId(req.body?.business_id);
   const business_name = asTrimmed(req.body?.business_name);
   const role = asTrimmed(req.body?.role);
   const owner_name = asTrimmed(req.body?.owner_name);
@@ -109,9 +115,6 @@ async function register(req, res) {
   const trial_start = asTrimmed(req.body?.trial_start);
   const app_version = asTrimmed(req.body?.app_version);
 
-  if (!business_id) {
-    return res.status(400).json({ ok: false, message: 'business_id es requerido' });
-  }
   if (!business_name) {
     return res.status(400).json({ ok: false, message: 'business_name es requerido' });
   }
@@ -126,10 +129,24 @@ async function register(req, res) {
   }
 
   const trialStartAt = safeIsoDate(trial_start);
+  let generatedBusinessId = false;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    let business_id = incomingBusinessId;
+    if (business_id) {
+      const existingIncomingValid = await isValidBusinessIdForExistingRecord(business_id, { client });
+      if (!existingIncomingValid && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(business_id)) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          ok: false,
+          code: 'INVALID_NEW_BUSINESS_ID',
+          message: 'Para nuevos registros, business_id debe ser UUID v4. Los formatos legacy solo se aceptan si ya existen.',
+        });
+      }
+    }
 
     const existingRes = await client.query(
       'SELECT * FROM customers WHERE business_id = $1 LIMIT 1 FOR UPDATE',
@@ -172,7 +189,25 @@ async function register(req, res) {
       const matched = byPhone || byEmail;
       if (matched) {
         const existingBiz = asTrimmed(matched.business_id);
+        if (!business_id) {
+          business_id = existingBiz || await resolveBusinessIdForNewRecord(null);
+          generatedBusinessId = !existingBiz;
+        }
         if (existingBiz && existingBiz !== business_id) {
+          await emitBusinessIdAudit(
+            {
+              event: 'conflict_detected',
+              source: 'businesses_register',
+              action: 'blocked',
+              reason: 'El cliente existente ya tiene otro business_id asignado',
+              severity: 'critical',
+              currentBusinessId: existingBiz,
+              incomingBusinessId: business_id,
+              resolvedBusinessId: existingBiz,
+              customerId: matched.id,
+            },
+            { req, client }
+          );
           await client.query('ROLLBACK');
           return res.status(409).json({
             ok: false,
@@ -211,6 +246,8 @@ async function register(req, res) {
     }
 
     if (!customer) {
+      business_id = await resolveBusinessIdForNewRecord(business_id);
+      generatedBusinessId = !incomingBusinessId;
       const ins = await client.query(
         `INSERT INTO customers (business_id, nombre_negocio, rol_negocio, contacto_nombre, contacto_telefono, contacto_email, trial_start_at, app_version)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -228,6 +265,7 @@ async function register(req, res) {
       );
       customer = ins.rows[0];
     } else {
+      business_id = asTrimmed(customer.business_id) || await resolveBusinessIdForNewRecord(business_id);
       // Update mutable fields (keep existing trial_start_at if already set).
       const upd = await client.query(
         `UPDATE customers
@@ -253,6 +291,21 @@ async function register(req, res) {
       );
       customer = upd.rows[0] || customer;
     }
+
+    await emitBusinessIdAudit(
+      {
+        event: generatedBusinessId ? 'initial_set' : 'read',
+        source: 'businesses_register',
+        action: generatedBusinessId ? 'generated' : 'allowed',
+        reason: generatedBusinessId ? 'Business ID generado formalmente en backend' : 'Registro reutilizó business_id existente',
+        severity: 'info',
+        currentBusinessId: customer?.business_id || null,
+        incomingBusinessId,
+        resolvedBusinessId: business_id,
+        customerId: customer?.id || null,
+      },
+      { req, client }
+    );
 
     await client.query('COMMIT');
     return res.json({
