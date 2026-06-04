@@ -15,7 +15,7 @@ class AppSpacing {
   static const double sidebarCollapsedWidth = 64;
   static const double sidebarExpandedWidth = 240;
   static const double appBarHeight = 56;
-  static const double detailPanelWidth = 520;
+  static const double detailPanelWidth = 640;
 
   // ── Radios ──
   static const double cardRadius = 12;

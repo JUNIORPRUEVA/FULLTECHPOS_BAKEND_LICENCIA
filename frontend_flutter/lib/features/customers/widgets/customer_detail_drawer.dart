@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../customers/services/customers_service.dart';
@@ -668,7 +667,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Si el cliente tiene licencias activas o pagos asociados, no se podrá eliminar.',
+                      'Se borrará el cliente junto con sus licencias y datos relacionados.',
                       style:
                           TextStyle(fontSize: 11, color: AppColors.warning),
                     ),

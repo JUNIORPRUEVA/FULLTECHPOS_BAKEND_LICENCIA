@@ -64,27 +64,27 @@ async function createPersistedDemoLicense({ customer, project, trial, client = p
       const note = created.notas || `Demo ${trial.isActive ? 'activa' : 'historica'} sincronizada automaticamente desde trial_start_at`;
       const updateAttempts = [
         `UPDATE licenses
-         SET fecha_inicio = $2,
-             fecha_fin = $3,
-             expires_at = $3,
-             estado = $4,
+         SET fecha_inicio = CAST($2 AS timestamp),
+             fecha_fin = CAST($3 AS timestamp),
+             expires_at = CAST($4 AS timestamptz),
+             estado = $5,
              activation_source = 'trial_auto_persisted',
-             notas = $5
+             notas = $6
          WHERE id = $1
          RETURNING *`,
         `UPDATE licenses
-         SET fecha_inicio = $2,
-             fecha_fin = $3,
-             estado = $4,
+         SET fecha_inicio = CAST($2 AS timestamp),
+             fecha_fin = CAST($3 AS timestamp),
+             estado = $5,
              activation_source = 'trial_auto_persisted',
-             notas = $5
+             notas = $6
          WHERE id = $1
          RETURNING *`,
         `UPDATE licenses
-         SET fecha_inicio = $2,
-             fecha_fin = $3,
-             estado = $4,
-             notas = $5
+         SET fecha_inicio = CAST($2 AS timestamp),
+             fecha_fin = CAST($3 AS timestamp),
+             estado = $5,
+             notas = $6
          WHERE id = $1
          RETURNING *`,
       ];
@@ -94,6 +94,7 @@ async function createPersistedDemoLicense({ customer, project, trial, client = p
           const updated = await client.query(sql, [
             created.id,
             trial.trialStart,
+            trial.trialEnd,
             trial.trialEnd,
             trial.estado,
             note,
@@ -177,30 +178,30 @@ async function ensurePersistedTrialLicense(customer, { client = pool } = {}) {
   const note = existing.notas || `Demo ${trial.isActive ? 'activa' : 'historica'} sincronizada automaticamente desde trial_start_at`;
   const updateAttempts = [
     `UPDATE licenses
-     SET fecha_inicio = $2,
-         fecha_fin = $3,
-         expires_at = $3,
-         dias_validez = $4,
-         estado = $5,
+     SET fecha_inicio = CAST($2 AS timestamp),
+         fecha_fin = CAST($3 AS timestamp),
+         expires_at = CAST($4 AS timestamptz),
+         dias_validez = $5,
+         estado = $6,
          activation_source = COALESCE(activation_source, 'trial_auto_persisted'),
-         notas = $6
+         notas = $7
      WHERE id = $1
      RETURNING *`,
     `UPDATE licenses
-     SET fecha_inicio = $2,
-         fecha_fin = $3,
-         dias_validez = $4,
-         estado = $5,
+     SET fecha_inicio = CAST($2 AS timestamp),
+         fecha_fin = CAST($3 AS timestamp),
+         dias_validez = $5,
+         estado = $6,
          activation_source = COALESCE(activation_source, 'trial_auto_persisted'),
-         notas = $6
+         notas = $7
      WHERE id = $1
      RETURNING *`,
     `UPDATE licenses
-     SET fecha_inicio = $2,
-         fecha_fin = $3,
-         dias_validez = $4,
-         estado = $5,
-         notas = $6
+     SET fecha_inicio = CAST($2 AS timestamp),
+         fecha_fin = CAST($3 AS timestamp),
+         dias_validez = $5,
+         estado = $6,
+         notas = $7
      WHERE id = $1
      RETURNING *`,
   ];
@@ -210,6 +211,7 @@ async function ensurePersistedTrialLicense(customer, { client = pool } = {}) {
       const updated = await client.query(sql, [
         existing.id,
         trial.trialStart,
+        trial.trialEnd,
         trial.trialEnd,
         trial.demoDays,
         trial.estado,

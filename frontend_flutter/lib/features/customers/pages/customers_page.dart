@@ -69,6 +69,16 @@ class _CustomersPageState extends State<CustomersPage> {
     });
   }
 
+  Future<void> _deleteCustomerConfirmed(Customer c) async {
+    await _service.deleteCustomer(c.id);
+    if (!mounted) return;
+    setState(() => _selected = null);
+    _refresh();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Cliente eliminado')));
+  }
+
   List<Customer> _filtered(List<Customer> all) {
     var out = all;
     if (_licenseFilter != 'TODOS') {
@@ -119,14 +129,7 @@ class _CustomersPageState extends State<CustomersPage> {
 
     if (confirmed != true) return;
     try {
-      await _service.deleteCustomer(c.id);
-      if (mounted) {
-        setState(() => _selected = null);
-        _refresh();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Cliente eliminado')));
-      }
+      await _deleteCustomerConfirmed(c);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -222,7 +225,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   key: ValueKey(_selected!.id),
                   customer: _selected!,
                   onClose: () => setState(() => _selected = null),
-                  onDelete: () => _deleteCustomer(_selected!),
+                  onDelete: () => _deleteCustomerConfirmed(_selected!),
                   onUpdated: _refresh,
                 ),
             ],
