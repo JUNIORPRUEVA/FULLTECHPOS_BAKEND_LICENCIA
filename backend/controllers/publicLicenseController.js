@@ -1,7 +1,7 @@
-/**
- * Controlador público de licencias para FullCredit y otras apps SaaS.
+﻿/**
+ * Controlador pÃºblico de licencias para FullCredit y otras apps SaaS.
  * 
- * Endpoints públicos (SIN middleware isAdmin):
+ * Endpoints pÃºblicos (SIN middleware isAdmin):
  *   POST /api/public/license/validate
  *   POST /api/public/licenses/demo/start
  *   GET  /api/public/projects/:code/billing
@@ -45,16 +45,85 @@ function daysBetween(a, b) {
   return Math.max(0, Math.floor(diff / (24 * 60 * 60 * 1000)));
 }
 
+async function resolveOrCreatePublicCustomer({ deviceId, businessName, phone, email }) {
+  const device = asTrimmed(deviceId);
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPhone = normalizePhone(phone);
+  const displayName = asTrimmed(businessName) || 'Cliente FullCredit';
+
+  let customer = null;
+
+  const existingRes = await pool.query(
+    `SELECT DISTINCT c.*
+     FROM customers c
+     JOIN licenses l ON l.customer_id = c.id
+     JOIN license_activations la ON la.license_id = l.id AND la.device_id = $1
+     LIMIT 1`,
+    [device]
+  );
+  customer = existingRes.rows[0] || null;
+
+  if (!customer && normalizedEmail) {
+    customer = await customersModel.findCustomerByContact({
+      contacto_email: normalizedEmail,
+      contacto_telefono: normalizedPhone || null
+    });
+  }
+
+  if (!customer && normalizedPhone) {
+    customer = await customersModel.findCustomerByContact({
+      contacto_email: null,
+      contacto_telefono: normalizedPhone
+    });
+  }
+
+  if (!customer) {
+    customer = await customersModel.createCustomer({
+      nombre_negocio: displayName,
+      contacto_nombre: null,
+      contacto_telefono: normalizedPhone || null,
+      contacto_email: normalizedEmail || null,
+      rol_negocio: null,
+      business_id: null
+    });
+    return customer;
+  }
+
+  const nextName = asTrimmed(customer.nombre_negocio) || displayName;
+  const nextPhone = customer.contacto_telefono || normalizedPhone || null;
+  const nextEmail = customer.contacto_email || normalizedEmail || null;
+
+  if (
+    nextName !== customer.nombre_negocio ||
+    nextPhone !== customer.contacto_telefono ||
+    nextEmail !== customer.contacto_email
+  ) {
+    const updatedRes = await pool.query(
+      `UPDATE customers
+       SET nombre_negocio = $2,
+           contacto_telefono = $3,
+           contacto_email = $4,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [customer.id, nextName, nextPhone, nextEmail]
+    );
+    customer = updatedRes.rows[0] || customer;
+  }
+
+  return customer;
+}
+
 /**
  * Ejecuta una query SQL ignorando errores de tabla no existente (42P01).
- * Útil para consultas a demo_trials que puede no existir en producción.
+ * Ãštil para consultas a demo_trials que puede no existir en producciÃ³n.
  */
 async function queryOptionalTable(sql, params) {
   try {
     return await pool.query(sql, params);
   } catch (error) {
     if (error && error.code === '42P01') {
-      // Tabla no existe, devolver resultado vacío
+      // Tabla no existe, devolver resultado vacÃ­o
       return { rows: [], rowCount: 0 };
     }
     throw error;
@@ -68,11 +137,11 @@ async function queryOptionalTable(sql, params) {
  * Payload: { project_code, device_id }
  * 
  * Respuestas posibles:
- *   - Licencia ACTIVA y vigente → { valid: true, status: 'ACTIVA', ... }
- *   - Demo activo → { valid: true, status: 'DEMO_ACTIVE', ... }
- *   - Demo vencido → { valid: false, status: 'DEMO_EXPIRED', ... }
- *   - Licencia vencida → { valid: false, status: 'EXPIRED', ... }
- *   - Sin licencia → { valid: false, status: 'NO_LICENSE', ... }
+ *   - Licencia ACTIVA y vigente â†’ { valid: true, status: 'ACTIVA', ... }
+ *   - Demo activo â†’ { valid: true, status: 'DEMO_ACTIVE', ... }
+ *   - Demo vencido â†’ { valid: false, status: 'DEMO_EXPIRED', ... }
+ *   - Licencia vencida â†’ { valid: false, status: 'EXPIRED', ... }
+ *   - Sin licencia â†’ { valid: false, status: 'NO_LICENSE', ... }
  */
 async function validateLicense(req, res) {
   try {
@@ -230,7 +299,7 @@ async function validateLicense(req, res) {
           valid: true,
           status: 'DEMO_ACTIVE',
           reason: null,
-          message: `Demo activo. Te quedan ${daysRemaining} días.`,
+          message: `Demo activo. Te quedan ${daysRemaining} dÃ­as.`,
           license_key: demoActivation.license_key,
           project_code: project.code,
           expires_at: expiresAt,
@@ -366,7 +435,7 @@ async function validateLicense(req, res) {
  */
 async function startDemo(req, res) {
   try {
-    // Normalizar campos con múltiples alias
+    // Normalizar campos con mÃºltiples alias
     const project_code = req.body.project_code || req.body.projectCode || '';
     const device_id = req.body.device_id || req.body.deviceId || '';
     const business_name =
@@ -433,7 +502,7 @@ async function startDemo(req, res) {
       // 1) Buscar o crear customer
       let customer = null;
 
-      // Primero buscar por device_id a través de licenses (license_activations NO tiene customer_id)
+      // Primero buscar por device_id a travÃ©s de licenses (license_activations NO tiene customer_id)
       const existingCustomerRes = await client.query(
         `SELECT DISTINCT c.*
          FROM customers c
@@ -468,7 +537,7 @@ async function startDemo(req, res) {
         customer = createdRes.rows[0];
         console.log('[PUBLIC_DEMO_START] customer created:', customer.id);
       } else {
-        // Actualizar datos si viene información nueva
+        // Actualizar datos si viene informaciÃ³n nueva
         if (business_name || phone || email) {
           try {
             await client.query(
@@ -552,7 +621,7 @@ async function startDemo(req, res) {
         }
       }
 
-      // 4) Configuración de demo desde el proyecto
+      // 4) ConfiguraciÃ³n de demo desde el proyecto
       const demoDays = Math.max(1, Number(project.demo_days) || 5);
       const maxDisp = Math.max(1, Number(project.max_dispositivos) || 1);
 
@@ -644,7 +713,7 @@ async function startDemo(req, res) {
         valid: true,
         status: 'DEMO_ACTIVE',
         reason: null,
-        message: `Demo iniciada por ${demoDays} días`,
+        message: `Demo iniciada por ${demoDays} dÃ­as`,
         license_key: license.license_key,
         project_code: project.code,
         expires_at: license.fecha_fin,
@@ -713,13 +782,13 @@ async function startDemo(req, res) {
 
 /**
  * GET /api/public/projects/:code/billing
- * Obtiene la configuración de facturación de un proyecto.
+ * Obtiene la configuraciÃ³n de facturaciÃ³n de un proyecto.
  */
 async function getProjectBillingInfo(req, res) {
   try {
     const code = asTrimmed(req.params.code);
     if (!code) {
-      return res.status(400).json({ success: false, message: 'Código de proyecto requerido' });
+      return res.status(400).json({ success: false, message: 'CÃ³digo de proyecto requerido' });
     }
 
     const project = await projectsModel.getProjectByCode(code);
@@ -750,14 +819,14 @@ async function getProjectBillingInfo(req, res) {
  * POST /api/public/license-payments/create-paypal-order
  * Crea una orden de pago PayPal para comprar tiempo de licencia.
  * 
- * El backend calcula el monto usando la configuración del proyecto.
- * El frontend NO envía el monto.
+ * El backend calcula el monto usando la configuraciÃ³n del proyecto.
+ * El frontend NO envÃ­a el monto.
  * 
  * Payload: { project_code, device_id, months }
  */
 async function createPaymentOrder(req, res) {
   try {
-    const { project_code, device_id, months } = req.body || {};
+    const { project_code, device_id, months, business_name, phone, email } = req.body || {};
     const device = asTrimmed(device_id);
     const projectCode = asTrimmed(project_code);
 
@@ -785,14 +854,14 @@ async function createPaymentOrder(req, res) {
     // Validar months
     const requestedMonths = Math.floor(Number(months));
     if (!Number.isFinite(requestedMonths) || requestedMonths < 1) {
-      return res.status(400).json({ success: false, message: 'months debe ser un número entero positivo' });
+      return res.status(400).json({ success: false, message: 'months debe ser un nÃºmero entero positivo' });
     }
 
     const minMonths = Number(project.min_purchase_months) || 1;
     if (requestedMonths < minMonths) {
       return res.status(400).json({
         success: false,
-        message: `La compra mínima es de ${minMonths} meses para este proyecto`,
+        message: `La compra mÃ­nima es de ${minMonths} meses para este proyecto`,
       });
     }
 
@@ -809,14 +878,25 @@ async function createPaymentOrder(req, res) {
     );
     customerId = customerRes.rows[0]?.customer_id || null;
 
+    let customer = null;
     if (!customerId) {
-      return res.status(404).json({
+      customer = await resolveOrCreatePublicCustomer({
+        deviceId: device,
+        businessName: business_name,
+        phone,
+        email,
+      });
+      customerId = customer?.id || null;
+    }
+
+    if (!customerId) {
+      return res.status(500).json({
         success: false,
-        message: 'No se encontró un cliente asociado a este dispositivo. Debes iniciar demo primero o registrarte.'
+        message: 'No se pudo preparar el cliente para procesar el pago.'
       });
     }
 
-    // Calcular monto usando la configuración del proyecto (NO confiar en frontend)
+    // Calcular monto usando la configuraciÃ³n del proyecto (NO confiar en frontend)
     const purchase = projectsModel.calculateLicensePurchase(project, requestedMonths);
 
     if (purchase.total <= 0) {
@@ -839,14 +919,17 @@ async function createPaymentOrder(req, res) {
       raw_request: {
         device_id: device,
         project_code: project.code,
+        business_name: asTrimmed(business_name) || customer?.nombre_negocio || null,
+        phone: normalizePhone(phone) || customer?.contacto_telefono || null,
+        email: normalizeEmail(email) || customer?.contacto_email || null,
         months: purchase.months,
         monthly_price: purchase.monthly_price,
         total: purchase.total,
         currency: purchase.currency,
       },
     });
-
-    // Validar configuración de PayPal antes de intentar crear la orden
+    
+    // Validar configuraciÃ³n de PayPal antes de intentar crear la orden
     const paypalConfig = paypalService.validatePaypalConfig();
     if (!paypalConfig.ok) {
       console.error('[publicLicense.createPaymentOrder] PayPal no configurado:', paypalConfig.missing);
@@ -856,7 +939,7 @@ async function createPaymentOrder(req, res) {
       });
       return res.status(502).json({
         success: false,
-        message: 'El sistema de pagos PayPal no está configurado. Contacte al administrador.',
+        message: 'El sistema de pagos PayPal no estÃ¡ configurado. Contacte al administrador.',
         detail: `Faltan: ${paypalConfig.missing.join(', ')}`,
         paypal_configured: false,
       });
@@ -881,7 +964,7 @@ async function createPaymentOrder(req, res) {
       });
       return res.status(502).json({
         success: false,
-        message: 'Error al crear la orden en PayPal. Intente de nuevo más tarde.',
+        message: 'Error al crear la orden en PayPal. Intente de nuevo mÃ¡s tarde.',
         detail: paypalError.message,
       });
     }
@@ -939,7 +1022,7 @@ async function capturePayment(req, res) {
       return res.status(404).json({ success: false, message: 'Orden de pago no encontrada' });
     }
 
-    // Verificar que no esté ya pagada
+    // Verificar que no estÃ© ya pagada
     if (String(localOrder.status).toUpperCase() === 'PAID') {
       return res.status(409).json({ success: false, message: 'Esta orden ya fue pagada y procesada' });
     }
@@ -961,7 +1044,7 @@ async function capturePayment(req, res) {
       });
     }
 
-    // Verificar que el pago esté COMPLETED
+    // Verificar que el pago estÃ© COMPLETED
     if (String(captureResult.status).toUpperCase() !== 'COMPLETED') {
       await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
         status: 'FAILED',
@@ -1041,12 +1124,9 @@ async function registerOrFindCustomer(req, res) {
     const { project_code, device_id, business_name, phone, email } = req.body || {};
     const device = asTrimmed(device_id);
     const projectCode = asTrimmed(project_code);
-
     if (!device) {
       return res.status(400).json({ success: false, message: 'device_id es requerido' });
     }
-
-    // Buscar proyecto
     let project = null;
     if (projectCode) {
       project = await projectsModel.getProjectByCode(projectCode);
@@ -1057,40 +1137,12 @@ async function registerOrFindCustomer(req, res) {
     if (!project) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
-
-    // Buscar customer existente por device_id (a través de licenses, NO license_activations.customer_id)
-    let customer = null;
-    const existingRes = await pool.query(
-      `SELECT DISTINCT c.*
-       FROM customers c
-       JOIN licenses l ON l.customer_id = c.id
-       JOIN license_activations la ON la.license_id = l.id AND la.device_id = $1
-       LIMIT 1`,
-      [device]
-    );
-    customer = existingRes.rows[0] || null;
-
-
-    if (!customer && email) {
-      customer = await customersModel.findCustomerByContact({ contacto_email: email });
-    }
-
-    if (!customer) {
-      // Crear nuevo customer
-      const createdRes = await pool.query(
-        `INSERT INTO customers (nombre_negocio, contacto_nombre, contacto_telefono, contacto_email)
-         VALUES ($1, $2, $3, $4)
-         RETURNING *`,
-        [
-          business_name || 'Cliente FullCredit',
-          null,
-          phone || null,
-          email || null
-        ]
-      );
-      customer = createdRes.rows[0];
-    }
-
+    const customer = await resolveOrCreatePublicCustomer({
+      deviceId: device,
+      businessName: business_name,
+      phone,
+      email,
+    });
     return res.json({
       success: true,
       customer_id: customer.id,
@@ -1102,12 +1154,10 @@ async function registerOrFindCustomer(req, res) {
     console.error('[publicLicense.registerOrFindCustomer] Error:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
-}
-
-/**
+}/**
  * GET /api/public/paypal/status
- * Diagnóstico del estado de configuración de PayPal.
- * No requiere autenticación.
+ * DiagnÃ³stico del estado de configuraciÃ³n de PayPal.
+ * No requiere autenticaciÃ³n.
  */
 async function getPaypalStatus(req, res) {
   try {
@@ -1127,14 +1177,14 @@ async function getPaypalStatus(req, res) {
       },
       missing: config.missing,
       message: config.ok
-        ? 'PayPal está configurado correctamente'
-        : `Falta configuración de PayPal: ${config.missing.join(', ')}`,
+        ? 'PayPal estÃ¡ configurado correctamente'
+        : `Falta configuraciÃ³n de PayPal: ${config.missing.join(', ')}`,
     });
   } catch (error) {
     console.error('[publicLicense.getPaypalStatus] Error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error al verificar configuración de PayPal',
+      message: 'Error al verificar configuraciÃ³n de PayPal',
       error: error.message,
     });
   }
@@ -1153,7 +1203,7 @@ async function getPaypalStatus(req, res) {
  * Flujo:
  * 1. Verificar firma del archivo
  * 2. Verificar project_code coincide
- * 3. Verificar licencia existe y está activa
+ * 3. Verificar licencia existe y estÃ¡ activa
  * 4. Verificar no vencida
  * 5. Verificar max_devices
  * 6. Crear license_activation para este device_id
@@ -1184,7 +1234,7 @@ async function importLicenseFromFile(req, res) {
       if (!verification.ok) {
         return res.status(400).json({
           success: false,
-          message: 'Archivo de licencia inválido o modificado. La firma no coincide.',
+          message: 'Archivo de licencia invÃ¡lido o modificado. La firma no coincide.',
           reason: verification.reason
         });
       }
@@ -1192,7 +1242,7 @@ async function importLicenseFromFile(req, res) {
       if (e && e.code === 'MISSING_ENV') {
         return res.status(501).json({
           success: false,
-          message: 'La verificación de licencias no está configurada en el servidor.'
+          message: 'La verificaciÃ³n de licencias no estÃ¡ configurada en el servidor.'
         });
       }
       console.error('[PUBLIC_IMPORT_FILE] Signature verification error:', e);
@@ -1201,7 +1251,7 @@ async function importLicenseFromFile(req, res) {
 
     const payload = license_file.payload;
     if (!payload) {
-      return res.status(400).json({ success: false, message: 'Archivo de licencia inválido: falta payload' });
+      return res.status(400).json({ success: false, message: 'Archivo de licencia invÃ¡lido: falta payload' });
     }
 
     // 2) Verificar project_code
@@ -1218,7 +1268,7 @@ async function importLicenseFromFile(req, res) {
     if (!license) {
       return res.status(404).json({
         success: false,
-        message: 'La licencia del archivo no existe en el sistema. Verifica que el archivo sea válido.'
+        message: 'La licencia del archivo no existe en el sistema. Verifica que el archivo sea vÃ¡lido.'
       });
     }
 
@@ -1236,21 +1286,21 @@ async function importLicenseFromFile(req, res) {
     // 4) Verificar estado
     const licStatus = licensesModel.normalizeLicenseStatus(license.estado);
     if (licStatus === 'BLOQUEADA') {
-      return res.status(400).json({ success: false, message: 'Esta licencia está bloqueada. Contacte a soporte.' });
+      return res.status(400).json({ success: false, message: 'Esta licencia estÃ¡ bloqueada. Contacte a soporte.' });
     }
     if (licStatus === 'ELIMINADA') {
       return res.status(400).json({ success: false, message: 'Esta licencia ha sido eliminada.' });
     }
     if (licStatus === 'VENCIDA') {
-      return res.status(400).json({ success: false, message: 'Esta licencia está vencida.' });
+      return res.status(400).json({ success: false, message: 'Esta licencia estÃ¡ vencida.' });
     }
 
-    // 5) Verificar expiración por fecha
+    // 5) Verificar expiraciÃ³n por fecha
     if (license.fecha_fin) {
       const now = new Date();
       const expiresAt = new Date(license.fecha_fin);
       if (expiresAt.getTime() < now.getTime()) {
-        return res.status(400).json({ success: false, message: 'Esta licencia está vencida.' });
+        return res.status(400).json({ success: false, message: 'Esta licencia estÃ¡ vencida.' });
       }
     }
 
@@ -1264,7 +1314,7 @@ async function importLicenseFromFile(req, res) {
     );
     const currentActivations = actRes.rows[0]?.count || 0;
 
-    // Verificar si este device ya está activado
+    // Verificar si este device ya estÃ¡ activado
     const existingActRes = await pool.query(
       `SELECT id FROM license_activations
        WHERE license_id = $1 AND device_id = $2 AND estado = 'ACTIVA'`,
@@ -1275,7 +1325,7 @@ async function importLicenseFromFile(req, res) {
     if (!alreadyActivated && currentActivations >= maxDevices) {
       return res.status(400).json({
         success: false,
-        message: `Esta licencia ya está activada en ${currentActivations} equipo(s) y el máximo permitido es ${maxDevices}. Contacte al administrador para liberar un dispositivo.`,
+        message: `Esta licencia ya estÃ¡ activada en ${currentActivations} equipo(s) y el mÃ¡ximo permitido es ${maxDevices}. Contacte al administrador para liberar un dispositivo.`,
         max_devices: maxDevices,
         current_activations: currentActivations
       });
@@ -1283,7 +1333,7 @@ async function importLicenseFromFile(req, res) {
 
     // 7) Crear o reactivar activation
     if (alreadyActivated) {
-      // Ya está activada en este device, reactivar
+      // Ya estÃ¡ activada en este device, reactivar
       await pool.query(
         `UPDATE license_activations
          SET estado = 'ACTIVA', activated_at = now(), last_check_at = now()
@@ -1356,3 +1406,6 @@ module.exports = {
   getPaypalStatus,
   importLicenseFromFile
 };
+
+
+
