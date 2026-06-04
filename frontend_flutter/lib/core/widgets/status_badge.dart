@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 
+/// Badge de estado premium rediseñado
 enum StatusType {
   active,
   inactive,
@@ -15,10 +17,16 @@ enum StatusType {
 class StatusBadge extends StatelessWidget {
   final String label;
   final StatusType type;
+  final bool pill;
 
-  const StatusBadge({super.key, required this.label, required this.type});
+  const StatusBadge({
+    super.key,
+    required this.label,
+    required this.type,
+    this.pill = false,
+  });
 
-  factory StatusBadge.fromString(String status) {
+  factory StatusBadge.fromString(String status, {bool pill = false}) {
     final normalized = status.toLowerCase().trim();
     StatusType type;
     switch (normalized) {
@@ -60,26 +68,41 @@ class StatusBadge extends StatelessWidget {
       default:
         type = StatusType.unknown;
     }
-    return StatusBadge(label: status, type: type);
+    return StatusBadge(label: status, type: type, pill: pill);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = _colors();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: colors.$1,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(pill ? 20 : AppSpacing.badgeRadius),
+        border: Border.all(color: colors.$2.withOpacity(0.2)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: colors.$2,
-          letterSpacing: 0.2,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: colors.$2,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: colors.$2,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }

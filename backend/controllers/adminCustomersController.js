@@ -126,7 +126,8 @@ async function deleteCustomer(req, res) {
     return res.json({
       ok: true,
       deletedCustomer: result.deletedCustomer,
-      deletedLicensesCount: result.deletedLicensesCount
+      deletedLicensesCount: result.deletedLicensesCount,
+      deletedPaymentOrdersCount: result.deletedPaymentOrdersCount || 0
     });
   } catch (error) {
     console.error('deleteCustomer error:', error);

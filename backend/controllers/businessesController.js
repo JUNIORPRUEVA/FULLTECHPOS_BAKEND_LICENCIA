@@ -1,7 +1,9 @@
 const { pool } = require('../db/pool');
 const projectsModel = require('../models/projectsModel');
+const licensesModel = require('../models/licensesModel');
 const crypto = require('crypto');
 const { getPrivateKeyPem } = require('../utils/licenseFile');
+const { generateLicenseKey } = require('../utils/licenseKey');
 const licenseChangeBus = require('../services/licenseChangeBus');
 const {
   normalizeBusinessId,
@@ -103,6 +105,125 @@ function isWithinDaysFromNow(iso, days) {
   } catch (_) {
     return false;
   }
+}
+
+async function ensurePersistedTrialLicense({
+  customerId,
+  businessId,
+  project,
+  trialStartAt,
+  trialDays,
+}) {
+  const startIso = safeIsoDate(trialStartAt);
+  const endIso = startIso ? addDaysIso(startIso, trialDays) : null;
+  if (!customerId || !project?.id || !startIso || !endIso) return null;
+
+  const notes = `Auto DEMO (business trial) project=${String(project.code || 'FULLPOS').toUpperCase()} business=${asTrimmed(businessId) || 'N/A'}`;
+
+  const existingRes = await pool.query(
+    `SELECT *
+     FROM licenses
+     WHERE customer_id = $1
+       AND project_id = $2
+       AND tipo = 'DEMO'
+       AND estado::text <> 'ELIMINADA'
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [customerId, project.id]
+  );
+  const existing = existingRes.rows[0] || null;
+
+  const persistUpdate = async (licenseId) => {
+    const attempts = [
+      async () =>
+        pool.query(
+          `UPDATE licenses
+           SET fecha_inicio = $2::timestamp,
+               fecha_fin = $3::timestamp,
+               expires_at = $4::timestamptz,
+               dias_validez = $5,
+               max_dispositivos = 1,
+               estado = 'ACTIVA',
+               notas = $6,
+               activation_source = 'demo'
+           WHERE id = $1
+           RETURNING *`,
+          [licenseId, startIso, endIso, endIso, trialDays, notes]
+        ),
+      async () =>
+        pool.query(
+          `UPDATE licenses
+           SET fecha_inicio = $2::timestamp,
+               fecha_fin = $3::timestamp,
+               dias_validez = $4,
+               max_dispositivos = 1,
+               estado = 'ACTIVA',
+               notas = $5,
+               activation_source = 'demo'
+           WHERE id = $1
+           RETURNING *`,
+          [licenseId, startIso, endIso, trialDays, notes]
+        ),
+      async () =>
+        pool.query(
+          `UPDATE licenses
+           SET fecha_inicio = $2::timestamp,
+               fecha_fin = $3::timestamp,
+               dias_validez = $4,
+               max_dispositivos = 1,
+               estado = 'ACTIVA',
+               notas = $5
+           WHERE id = $1
+           RETURNING *`,
+          [licenseId, startIso, endIso, trialDays, notes]
+        ),
+    ];
+
+    let lastError = null;
+    for (const attempt of attempts) {
+      try {
+        const result = await attempt();
+        return result.rows[0] || null;
+      } catch (error) {
+        lastError = error;
+        if (error && (error.code === '42703' || error.code === '42P01')) continue;
+        throw error;
+      }
+    }
+    throw lastError || new Error('No se pudo persistir la licencia DEMO');
+  };
+
+  if (existing) {
+    if (String(existing.estado || '').trim().toUpperCase() === 'BLOQUEADA') {
+      return existing;
+    }
+    return persistUpdate(existing.id);
+  }
+
+  let created = null;
+  for (let i = 0; i < 6; i += 1) {
+    try {
+      created = await licensesModel.createLicenseWithKey({
+        project_id: project.id,
+        customer_id: customerId,
+        license_key: generateLicenseKey('DEMO'),
+        tipo: 'DEMO',
+        dias_validez: trialDays,
+        max_dispositivos: 1,
+        notas: notes,
+      });
+      break;
+    } catch (error) {
+      if (error && error.code === '23505') continue;
+      throw error;
+    }
+  }
+
+  if (!created) {
+    throw new Error('No se pudo crear la licencia DEMO persistida');
+  }
+
+  return persistUpdate(created.id);
 }
 
 async function register(req, res) {
@@ -457,14 +578,30 @@ async function getLicense(req, res) {
       const trialStartAt = customer.trial_start_at ? new Date(customer.trial_start_at).toISOString() : null;
       const TRIAL_DAYS = 5;
       if (trialStartAt && isWithinDaysFromNow(trialStartAt, TRIAL_DAYS)) {
-        const trialLicense = {
-          license_key: `TRIAL-${businessId}`,
-          tipo: 'TRIAL',
-          estado: 'ACTIVA',
-          fecha_inicio: trialStartAt,
-          fecha_fin: addDaysIso(trialStartAt, TRIAL_DAYS),
-          max_dispositivos: 1
-        };
+        let trialLicense = null;
+        try {
+          trialLicense = await ensurePersistedTrialLicense({
+            customerId: customer.id,
+            businessId,
+            project,
+            trialStartAt,
+            trialDays: TRIAL_DAYS,
+          });
+        } catch (persistError) {
+          console.error('businesses.getLicense persist trial error:', persistError);
+        }
+
+        if (!trialLicense) {
+          trialLicense = {
+            license_key: `TRIAL-${businessId}`,
+            tipo: 'TRIAL',
+            estado: 'ACTIVA',
+            fecha_inicio: trialStartAt,
+            fecha_fin: addDaysIso(trialStartAt, TRIAL_DAYS),
+            max_dispositivos: 1,
+            notas: 'Fallback trial token (non-persisted)',
+          };
+        }
         const payload = buildBusinessLicensePayload({ businessId, license: trialLicense, project });
         const licenseFile = signPayloadEd25519(payload);
         const token = toBase64Url(JSON.stringify(licenseFile));

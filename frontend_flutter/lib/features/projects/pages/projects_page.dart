@@ -72,6 +72,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
     });
     try {
       final projects = await _service.listProjects();
+      // Ordenar proyectos por nombre alfabéticamente
+      projects.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       setState(() {
         _projects = projects;
         _loading = false;

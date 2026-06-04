@@ -328,6 +328,13 @@ async function listLicenses(req, res) {
       return res.status(400).json({ ok: false, message: 'project_id inválido' });
     }
 
+    if (customer_id && isUuid(customer_id)) {
+      const customer = await customersModel.getCustomerById(customer_id);
+      if (customer) {
+        await customersModel.ensurePersistedTrialLicense(customer);
+      }
+    }
+
     const { total, licenses } = await licensesModel.listLicenses({
       limit,
       offset,

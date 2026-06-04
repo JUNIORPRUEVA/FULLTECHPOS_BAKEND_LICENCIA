@@ -92,6 +92,8 @@ class _LicensesPageState extends State<LicensesPage> {
     setState(() => _projectsLoading = true);
     try {
       final projects = await _projectsService.listProjects();
+      // Ordenar proyectos por nombre alfabéticamente
+      projects.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       if (mounted) {
         setState(() {
           _projects = projects;

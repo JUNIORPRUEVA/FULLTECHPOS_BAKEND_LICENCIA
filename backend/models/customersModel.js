@@ -1,8 +1,236 @@
 const { pool } = require('../db/pool');
+const licensesModel = require('./licensesModel');
+const { generateLicenseKey } = require('../utils/licenseKey');
 
 function isPgMissingColumnOrTable(error) {
   const code = error && error.code;
   return code === '42703' || code === '42P01';
+}
+
+async function runOptional(client, sql, params = []) {
+  try {
+    return await client.query(sql, params);
+  } catch (error) {
+    if (isPgMissingColumnOrTable(error)) return null;
+    throw error;
+  }
+}
+
+async function getFullposProject(client = pool) {
+  const result = await runOptional(
+    client,
+    `SELECT id, code, name, demo_days
+     FROM projects
+     WHERE code = 'FULLPOS'
+     LIMIT 1`
+  );
+  return result?.rows?.[0] || null;
+}
+
+function computeTrialWindow(customer, project) {
+  const trialStart = customer?.trial_start_at ? new Date(customer.trial_start_at) : null;
+  if (!trialStart || Number.isNaN(trialStart.getTime())) return null;
+
+  const demoDays = Number(project?.demo_days || 5);
+  const trialEnd = new Date(trialStart.getTime() + demoDays * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const isActive = trialEnd.getTime() >= now.getTime();
+
+  return {
+    trialStart,
+    trialEnd,
+    demoDays,
+    isActive,
+    estado: isActive ? 'ACTIVA' : 'VENCIDA',
+  };
+}
+
+async function createPersistedDemoLicense({ customer, project, trial, client = pool }) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const created = await licensesModel.createLicenseWithKey({
+        project_id: project.id,
+        customer_id: customer.id,
+        license_key: generateLicenseKey(),
+        tipo: 'DEMO',
+        license_type: 'SUSCRIPCION',
+        dias_validez: trial.demoDays,
+        max_dispositivos: 1,
+        notas: `Demo ${trial.isActive ? 'activa' : 'historica'} sincronizada automaticamente desde trial_start_at`,
+      });
+
+      const note = created.notas || `Demo ${trial.isActive ? 'activa' : 'historica'} sincronizada automaticamente desde trial_start_at`;
+      const updateAttempts = [
+        `UPDATE licenses
+         SET fecha_inicio = $2,
+             fecha_fin = $3,
+             expires_at = $3,
+             estado = $4,
+             activation_source = 'trial_auto_persisted',
+             notas = $5
+         WHERE id = $1
+         RETURNING *`,
+        `UPDATE licenses
+         SET fecha_inicio = $2,
+             fecha_fin = $3,
+             estado = $4,
+             activation_source = 'trial_auto_persisted',
+             notas = $5
+         WHERE id = $1
+         RETURNING *`,
+        `UPDATE licenses
+         SET fecha_inicio = $2,
+             fecha_fin = $3,
+             estado = $4,
+             notas = $5
+         WHERE id = $1
+         RETURNING *`,
+      ];
+
+      for (const sql of updateAttempts) {
+        try {
+          const updated = await client.query(sql, [
+            created.id,
+            trial.trialStart,
+            trial.trialEnd,
+            trial.estado,
+            note,
+          ]);
+          return updated.rows[0] || created;
+        } catch (error) {
+          if (!isPgMissingColumnOrTable(error)) throw error;
+        }
+      }
+
+      return created;
+    } catch (error) {
+      lastError = error;
+      if (!(error && error.code === '23505')) throw error;
+    }
+  }
+
+  throw lastError || new Error('No se pudo persistir la licencia demo');
+}
+
+async function ensurePersistedTrialLicense(customer, { client = pool } = {}) {
+  if (!customer?.id || !customer?.trial_start_at) return { changed: false, license: null };
+
+  const project = await getFullposProject(client);
+  if (!project?.id) return { changed: false, license: null };
+
+  const trial = computeTrialWindow(customer, project);
+  if (!trial) return { changed: false, license: null };
+
+  let existing = null;
+  const existingQueries = [
+    {
+      sql: `SELECT *
+            FROM licenses
+            WHERE customer_id = $1
+              AND project_id = $2
+              AND tipo = 'DEMO'
+              AND estado::text <> 'ELIMINADA'
+            ORDER BY created_at DESC
+            LIMIT 1`,
+      params: [customer.id, project.id],
+    },
+    {
+      sql: `SELECT *
+            FROM licenses
+            WHERE customer_id = $1
+              AND tipo = 'DEMO'
+              AND estado::text <> 'ELIMINADA'
+            ORDER BY created_at DESC
+            LIMIT 1`,
+      params: [customer.id],
+    }
+  ];
+
+  for (const attempt of existingQueries) {
+    try {
+      const existingRes = await client.query(attempt.sql, attempt.params);
+      existing = existingRes.rows[0] || null;
+      break;
+    } catch (error) {
+      if (!isPgMissingColumnOrTable(error)) throw error;
+    }
+  }
+
+  if (!existing) {
+    const created = await createPersistedDemoLicense({ customer, project, trial, client });
+    return { changed: true, license: created };
+  }
+
+  const currentStatus = String(existing.estado || '').trim().toUpperCase();
+  const needsUpdate =
+    !existing.fecha_inicio ||
+    !existing.fecha_fin ||
+    currentStatus !== trial.estado ||
+    Number(existing.dias_validez || 0) !== trial.demoDays;
+
+  if (!needsUpdate) {
+    return { changed: false, license: existing };
+  }
+
+  const note = existing.notas || `Demo ${trial.isActive ? 'activa' : 'historica'} sincronizada automaticamente desde trial_start_at`;
+  const updateAttempts = [
+    `UPDATE licenses
+     SET fecha_inicio = $2,
+         fecha_fin = $3,
+         expires_at = $3,
+         dias_validez = $4,
+         estado = $5,
+         activation_source = COALESCE(activation_source, 'trial_auto_persisted'),
+         notas = $6
+     WHERE id = $1
+     RETURNING *`,
+    `UPDATE licenses
+     SET fecha_inicio = $2,
+         fecha_fin = $3,
+         dias_validez = $4,
+         estado = $5,
+         activation_source = COALESCE(activation_source, 'trial_auto_persisted'),
+         notas = $6
+     WHERE id = $1
+     RETURNING *`,
+    `UPDATE licenses
+     SET fecha_inicio = $2,
+         fecha_fin = $3,
+         dias_validez = $4,
+         estado = $5,
+         notas = $6
+     WHERE id = $1
+     RETURNING *`,
+  ];
+
+  for (const sql of updateAttempts) {
+    try {
+      const updated = await client.query(sql, [
+        existing.id,
+        trial.trialStart,
+        trial.trialEnd,
+        trial.demoDays,
+        trial.estado,
+        note,
+      ]);
+      return { changed: true, license: updated.rows[0] || existing };
+    } catch (error) {
+      if (!isPgMissingColumnOrTable(error)) throw error;
+    }
+  }
+
+  return { changed: false, license: existing };
+}
+
+async function ensurePersistedTrialLicenses(customers, { client = pool } = {}) {
+  let changed = false;
+  for (const customer of customers || []) {
+    const result = await ensurePersistedTrialLicense(customer, { client });
+    if (result.changed) changed = true;
+  }
+  return changed;
 }
 
 function buildCustomersSelectSql(includeLicenseSummary) {
@@ -117,21 +345,40 @@ async function listCustomers({ limit, offset }) {
   const totalRes = await pool.query('SELECT COUNT(*)::int AS total FROM customers');
   const total = totalRes.rows[0]?.total || 0;
 
-  const customers = await queryCustomers({
+  let customers = await queryCustomers({
     params: [limit, offset],
     orderLimitSql: `ORDER BY c.created_at DESC
                     LIMIT $1 OFFSET $2`
   });
 
+  const changed = await ensurePersistedTrialLicenses(customers);
+  if (changed) {
+    customers = await queryCustomers({
+      params: [limit, offset],
+      orderLimitSql: `ORDER BY c.created_at DESC
+                      LIMIT $1 OFFSET $2`
+    });
+  }
+
   return { total, customers };
 }
 
 async function getCustomerById(customerId) {
-  const rows = await queryCustomers({
+  let rows = await queryCustomers({
     whereSql: 'WHERE c.id = $1',
     params: [customerId],
     orderLimitSql: 'LIMIT 1'
   });
+  if (rows[0]) {
+    const changed = await ensurePersistedTrialLicenses(rows);
+    if (changed) {
+      rows = await queryCustomers({
+        whereSql: 'WHERE c.id = $1',
+        params: [customerId],
+        orderLimitSql: 'LIMIT 1'
+      });
+    }
+  }
   return rows[0] || null;
 }
 
@@ -209,45 +456,115 @@ async function deleteCustomerCascade(customerId) {
   try {
     await client.query('BEGIN');
 
-    // Verificar si tiene licencias activas (no vencidas, no eliminadas)
-    const activeLicenses = await client.query(
-      `SELECT COUNT(*)::int AS count FROM licenses
-       WHERE customer_id = $1
-         AND estado::text <> 'ELIMINADA'
-         AND (estado::text <> 'VENCIDA' OR estado::text = 'VENCIDA')
-         AND (estado::text <> 'ACTIVA' OR (estado::text = 'ACTIVA' AND (fecha_fin IS NULL OR fecha_fin >= NOW())))`,
+    const customerLicensesRes = await client.query(
+      `SELECT id FROM licenses WHERE customer_id = $1`,
       [customerId]
     );
+    const licenseIds = customerLicensesRes.rows.map((row) => row.id).filter(Boolean);
 
-    // Verificar si tiene pagos asociados
-    const payments = await client.query(
-      `SELECT COUNT(*)::int AS count FROM license_payment_orders
+    await runOptional(
+      client,
+      `UPDATE company_subscriptions
+       SET customer_id = NULL
        WHERE customer_id = $1`,
       [customerId]
     );
 
-    const activeCount = activeLicenses.rows[0]?.count || 0;
-    const paymentsCount = payments.rows[0]?.count || 0;
+    if (licenseIds.length > 0) {
+      await runOptional(
+        client,
+        `DELETE FROM company_licenses
+         WHERE license_id = ANY($1::uuid[])`,
+        [licenseIds]
+      );
 
-    if (activeCount > 0) {
-      await client.query('ROLLBACK');
-      const err = new Error(`No se puede eliminar el cliente porque tiene ${activeCount} licencia(s) activa(s).`);
-      err.code = 'CUSTOMER_HAS_ACTIVE_LICENSES';
-      err.statusCode = 409;
-      throw err;
+      await runOptional(
+        client,
+        `DELETE FROM sync_logs
+         WHERE license_id = ANY($1::uuid[])`,
+        [licenseIds]
+      );
+
+      await runOptional(
+        client,
+        `UPDATE company_subscriptions
+         SET license_id = NULL
+         WHERE license_id = ANY($1::uuid[])`,
+        [licenseIds]
+      );
+
+      await runOptional(
+        client,
+        `UPDATE subscription_payments
+         SET license_id = NULL
+         WHERE license_id = ANY($1::uuid[])`,
+        [licenseIds]
+      );
+
+      await runOptional(
+        client,
+        `UPDATE paypal_orders
+         SET customer_id = CASE WHEN customer_id = $1 THEN NULL ELSE customer_id END,
+             license_id = CASE WHEN license_id = ANY($2::uuid[]) THEN NULL ELSE license_id END
+         WHERE customer_id = $1
+            OR license_id = ANY($2::uuid[])`,
+        [customerId, licenseIds]
+      );
+
+      await runOptional(
+        client,
+        `UPDATE licenses
+         SET payment_order_id = NULL
+         WHERE customer_id = $1`,
+        [customerId]
+      );
+
+      try {
+        await client.query(
+          `DELETE FROM demo_trials
+           WHERE customer_id = $1
+              OR license_id = ANY($2::uuid[])`,
+          [customerId, licenseIds]
+        );
+      } catch (error) {
+        if (!(error && error.code === '42P01')) throw error;
+      }
+    } else {
+      await runOptional(
+        client,
+        `UPDATE paypal_orders
+         SET customer_id = NULL
+         WHERE customer_id = $1`,
+        [customerId]
+      );
+
+      try {
+        await client.query(
+          `DELETE FROM demo_trials WHERE customer_id = $1`,
+          [customerId]
+        );
+      } catch (error) {
+        if (!(error && error.code === '42P01')) throw error;
+      }
     }
 
-    if (paymentsCount > 0) {
-      await client.query('ROLLBACK');
-      const err = new Error(`No se puede eliminar el cliente porque tiene ${paymentsCount} pago(s) asociado(s).`);
-      err.code = 'CUSTOMER_HAS_PAYMENTS';
-      err.statusCode = 409;
-      throw err;
+    let deletedPaymentOrdersCount = 0;
+    try {
+      const delPaymentsRes = await client.query(
+        `DELETE FROM license_payment_orders
+         WHERE customer_id = $1
+         RETURNING id`,
+        [customerId]
+      );
+      deletedPaymentOrdersCount = (delPaymentsRes.rows || []).length;
+    } catch (error) {
+      if (!(error && error.code === '42P01')) throw error;
     }
 
-    // Delete licenses first (soft delete)
     const delLicensesRes = await client.query(
-      "UPDATE licenses SET estado = 'ELIMINADA' WHERE customer_id = $1 RETURNING id",
+      `DELETE FROM licenses
+       WHERE customer_id = $1
+       RETURNING id`,
       [customerId]
     );
     const deletedLicensesCount = (delLicensesRes.rows || []).length;
@@ -263,7 +580,11 @@ async function deleteCustomerCascade(customerId) {
     }
 
     await client.query('COMMIT');
-    return { deletedCustomer: delCustomerRes.rows[0], deletedLicensesCount };
+    return {
+      deletedCustomer: delCustomerRes.rows[0],
+      deletedLicensesCount,
+      deletedPaymentOrdersCount,
+    };
   } catch (e) {
     try {
       await client.query('ROLLBACK');
@@ -278,6 +599,18 @@ async function deleteCustomerCascade(customerId) {
  * Obtiene todas las licencias de un cliente con información del proyecto.
  */
 async function getCustomerLicenses(customerId) {
+  const customerRes = await pool.query(
+    `SELECT *
+     FROM customers
+     WHERE id = $1
+     LIMIT 1`,
+    [customerId]
+  );
+  const customer = customerRes.rows[0] || null;
+  if (customer) {
+    await ensurePersistedTrialLicense(customer);
+  }
+
   const tryQueries = [
     { includeProjects: true, includeBusinessId: true },
     { includeProjects: true, includeBusinessId: false },
@@ -418,5 +751,7 @@ module.exports = {
   getCustomerPayments,
   countCustomerActiveLicenses,
   countCustomerPayments,
-  updateCustomer
+  updateCustomer,
+  ensurePersistedTrialLicense,
+  ensurePersistedTrialLicenses
 };

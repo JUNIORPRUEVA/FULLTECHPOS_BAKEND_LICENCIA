@@ -11,6 +11,7 @@ import '../services/customers_service.dart';
 import '../widgets/customer_detail_drawer.dart';
 import '../widgets/customer_list_item.dart';
 
+/// Página de clientes rediseñada con estilo premium
 class CustomersPage extends StatefulWidget {
   final String? initialCustomerId;
 
@@ -43,7 +44,6 @@ class _CustomersPageState extends State<CustomersPage> {
     super.didChangeDependencies();
     if (!_initialSelectionDone && widget.initialCustomerId != null) {
       _initialSelectionDone = true;
-      // Esperar a que se carguen los clientes y seleccionar el indicado
       _future.then((customers) {
         if (!mounted) return;
         final found = customers.where(
@@ -177,119 +177,8 @@ class _CustomersPageState extends State<CustomersPage> {
               Expanded(
                 child: Column(
                   children: [
-                    // Toolbar
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: AppColors.surface,
-                        border: Border(
-                          bottom: BorderSide(color: AppColors.border),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          // Search
-                          Expanded(
-                            child: SizedBox(
-                              height: 34,
-                              child: TextField(
-                                controller: _searchCtrl,
-                                onChanged: (v) => setState(() => _query = v),
-                                style: const TextStyle(fontSize: 13),
-                                decoration: InputDecoration(
-                                  hintText: 'Buscar cliente...',
-                                  prefixIcon: const Icon(
-                                    Icons.search_rounded,
-                                    size: 16,
-                                  ),
-                                  contentPadding: EdgeInsets.zero,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.border,
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.border,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          PopupMenuButton<String>(
-                            tooltip: 'Filtro licencia',
-                            onSelected: (v) =>
-                                setState(() => _licenseFilter = v),
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(
-                                value: 'TODOS',
-                                child: Text('Todas las licencias'),
-                              ),
-                              PopupMenuItem(
-                                value: 'ACTIVA',
-                                child: Text('Licencia activa'),
-                              ),
-                              PopupMenuItem(
-                                value: 'VENCIDA',
-                                child: Text('Licencia vencida'),
-                              ),
-                              PopupMenuItem(
-                                value: 'BLOQUEADA',
-                                child: Text('Licencia bloqueada'),
-                              ),
-                              PopupMenuItem(
-                                value: 'PENDIENTE',
-                                child: Text('Licencia pendiente'),
-                              ),
-                              PopupMenuItem(
-                                value: 'SIN_LICENCIA',
-                                child: Text('Sin licencia'),
-                              ),
-                            ],
-                            icon: const Icon(Icons.more_vert_rounded, size: 18),
-                          ),
-                          // Refresh
-                          IconButton(
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            onPressed: _refresh,
-                            color: AppColors.textSecondary,
-                            tooltip: 'Actualizar',
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Count
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: 6,
-                      ),
-                      color: AppColors.surfaceVariant,
-                      child: Row(
-                        children: [
-                          Text(
-                            '${filtered.length} cliente${filtered.length != 1 ? 's' : ''}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Toolbar premium
+                    _buildToolbar(filtered.length),
                     // List
                     Expanded(
                       child: filtered.isEmpty
@@ -303,9 +192,10 @@ class _CustomersPageState extends State<CustomersPage> {
                               icon: Icons.people_outline_rounded,
                             )
                           : ListView.separated(
+                              padding: const EdgeInsets.all(8),
                               itemCount: filtered.length,
                               separatorBuilder: (context, _) =>
-                                  const Divider(height: 1),
+                                  const SizedBox(height: 4),
                               itemBuilder: (_, i) {
                                 final c = filtered[i];
                                 return CustomerListItem(
@@ -338,6 +228,126 @@ class _CustomersPageState extends State<CustomersPage> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildToolbar(int totalCount) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: const Border(
+          bottom: BorderSide(color: AppColors.border),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowSm,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Search
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _query = v),
+                style: const TextStyle(fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Buscar cliente...',
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: AppColors.textMuted,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                    borderSide: BorderSide(
+                      color: AppColors.border.withOpacity(0.7),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.surfaceElevated,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          // Filter
+          PopupMenuButton<String>(
+            tooltip: 'Filtro licencia',
+            onSelected: (v) => setState(() => _licenseFilter = v),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'TODOS',
+                child: Text('Todas las licencias'),
+              ),
+              PopupMenuItem(
+                value: 'ACTIVA',
+                child: Text('Licencia activa'),
+              ),
+              PopupMenuItem(
+                value: 'VENCIDA',
+                child: Text('Licencia vencida'),
+              ),
+              PopupMenuItem(
+                value: 'BLOQUEADA',
+                child: Text('Licencia bloqueada'),
+              ),
+              PopupMenuItem(
+                value: 'PENDIENTE',
+                child: Text('Licencia pendiente'),
+              ),
+              PopupMenuItem(
+                value: 'SIN_LICENCIA',
+                child: Text('Sin licencia'),
+              ),
+            ],
+            icon: const Icon(Icons.filter_list_rounded, size: 20),
+            color: AppColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: AppColors.border),
+            ),
+          ),
+          const SizedBox(width: 4),
+          // Refresh
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _refresh,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: const Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
