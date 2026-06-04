@@ -269,15 +269,128 @@ function buildCustomersSelectSql(includeLicenseSummary) {
          FALSE AS has_license
      ) license_summary ON TRUE`;
 
+  const commercialJoin = `
+     LEFT JOIN LATERAL (
+       SELECT
+         EXISTS (
+           SELECT 1
+           FROM licenses lf
+           WHERE lf.customer_id = c.id
+             AND lf.tipo = 'FULL'
+             AND lf.estado::text <> 'ELIMINADA'
+         ) AS has_full_license,
+         EXISTS (
+           SELECT 1
+           FROM licenses lf
+           WHERE lf.customer_id = c.id
+             AND lf.tipo = 'FULL'
+             AND lf.estado::text = 'ACTIVA'
+             AND (lf.fecha_fin IS NULL OR lf.fecha_fin >= NOW())
+         ) AS has_active_full_license,
+         EXISTS (
+           SELECT 1
+           FROM licenses lf
+           WHERE lf.customer_id = c.id
+             AND lf.tipo = 'FULL'
+             AND lf.estado::text = 'BLOQUEADA'
+         ) AS has_blocked_full_license,
+         EXISTS (
+           SELECT 1
+           FROM licenses ld
+           WHERE ld.customer_id = c.id
+             AND ld.tipo = 'DEMO'
+             AND ld.estado::text <> 'ELIMINADA'
+         ) AS has_demo_license,
+         EXISTS (
+           SELECT 1
+           FROM licenses ld
+           WHERE ld.customer_id = c.id
+             AND ld.tipo = 'DEMO'
+             AND ld.estado::text = 'ACTIVA'
+             AND (ld.fecha_fin IS NULL OR ld.fecha_fin >= NOW())
+         ) AS has_active_demo_license,
+         (
+           SELECT MAX(lf.created_at)
+           FROM licenses lf
+           WHERE lf.customer_id = c.id
+             AND lf.tipo = 'FULL'
+             AND lf.estado::text <> 'ELIMINADA'
+         ) AS last_full_purchase_at,
+         (
+           SELECT COUNT(*)::int
+           FROM licenses lf
+           WHERE lf.customer_id = c.id
+             AND lf.tipo = 'FULL'
+             AND lf.estado::text <> 'ELIMINADA'
+         ) AS full_license_count,
+         (
+           SELECT COUNT(*)::int
+           FROM licenses ld
+           WHERE ld.customer_id = c.id
+             AND ld.tipo = 'DEMO'
+             AND ld.estado::text <> 'ELIMINADA'
+         ) AS demo_license_count,
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM licenses lf
+             WHERE lf.customer_id = c.id
+               AND lf.tipo = 'FULL'
+               AND lf.estado::text = 'ACTIVA'
+               AND (lf.fecha_fin IS NULL OR lf.fecha_fin >= NOW())
+           ) THEN 'CLIENTE_ACTIVO'
+           WHEN EXISTS (
+             SELECT 1
+             FROM licenses lf
+             WHERE lf.customer_id = c.id
+               AND lf.tipo = 'FULL'
+               AND lf.estado::text = 'BLOQUEADA'
+           ) THEN 'CLIENTE_BLOQUEADO'
+           WHEN EXISTS (
+             SELECT 1
+             FROM licenses lf
+             WHERE lf.customer_id = c.id
+               AND lf.tipo = 'FULL'
+               AND lf.estado::text <> 'ELIMINADA'
+           ) THEN 'CLIENTE_VENCIDO'
+           WHEN EXISTS (
+             SELECT 1
+             FROM licenses ld
+             WHERE ld.customer_id = c.id
+               AND ld.tipo = 'DEMO'
+               AND ld.estado::text = 'ACTIVA'
+               AND (ld.fecha_fin IS NULL OR ld.fecha_fin >= NOW())
+           ) THEN 'DEMO_ACTIVA'
+           WHEN EXISTS (
+             SELECT 1
+             FROM licenses ld
+             WHERE ld.customer_id = c.id
+               AND ld.tipo = 'DEMO'
+               AND ld.estado::text <> 'ELIMINADA'
+           ) THEN 'SOLO_DEMO'
+           ELSE 'SIN_MOVIMIENTO'
+         END AS commercial_status
+     ) commercial_summary ON TRUE`;
+
   return `SELECT
       c.*,
       license_summary.license_id,
       license_summary.license_tipo,
       license_summary.license_status,
       license_summary.has_active_license,
-      license_summary.has_license
+      license_summary.has_license,
+      commercial_summary.has_full_license,
+      commercial_summary.has_active_full_license,
+      commercial_summary.has_blocked_full_license,
+      commercial_summary.has_demo_license,
+      commercial_summary.has_active_demo_license,
+      commercial_summary.last_full_purchase_at,
+      commercial_summary.full_license_count,
+      commercial_summary.demo_license_count,
+      commercial_summary.commercial_status
      FROM customers c
-     ${licenseJoin}`;
+     ${licenseJoin}
+     ${commercialJoin}`;
 }
 
 async function queryCustomers({ whereSql = '', params = [], orderLimitSql = '' } = {}) {

@@ -45,6 +45,29 @@ class StatusBadge extends StatelessWidget {
       case 'vencido':
         type = StatusType.expired;
         break;
+      case 'sin licencia activa':
+      case 'demo vencida':
+        type = StatusType.expired;
+        break;
+      case 'sin licencia':
+        type = StatusType.inactive;
+        break;
+      case 'compró':
+      case 'cliente_activo':
+        type = StatusType.active;
+        break;
+      case 'compró y venció':
+      case 'cliente_vencido':
+      case 'solo demo':
+        type = StatusType.expired;
+        break;
+      case 'en demo':
+      case 'demo_activa':
+        type = StatusType.demo;
+        break;
+      case 'sin movimiento':
+        type = StatusType.inactive;
+        break;
       case 'blocked':
       case 'bloqueada':
       case 'bloqueado':

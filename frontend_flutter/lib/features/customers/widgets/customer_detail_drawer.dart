@@ -320,7 +320,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                         fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -938,14 +938,10 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
   // ═══════════════════════════════════════════════════════════════
   Widget _buildDetailView() {
     final customer = _currentCustomer!;
-    final statusText = customer.hasActiveLicense
-        ? 'Activa'
-        : customer.hasLicense
-            ? (customer.licenseStatus ?? 'Inactiva')
-            : 'Sin licencia';
+    final statusText = customer.displayLicenseStatus;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -982,23 +978,23 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Text(
                   customer.nombreNegocio,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                     letterSpacing: -0.3,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 StatusBadge.fromString(statusText, pill: true),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
 
           // ── Información del cliente ──
           _buildInfoCard('Información del cliente', [
@@ -1017,18 +1013,14 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               _buildInfoRow(
                   Icons.category_outlined, 'Rol', customer.rolNegocio!),
           ]),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
 
           // ── Licencia principal ──
           _buildInfoCard('Licencia principal', [
             _buildInfoRow(
               Icons.vpn_key_outlined,
               'Estado',
-              customer.hasActiveLicense
-                  ? 'Activa'
-                  : customer.hasLicense
-                      ? (customer.licenseStatus ?? 'Inactiva')
-                      : 'Sin licencia',
+              statusText,
               valueColor: customer.hasActiveLicense
                   ? AppColors.success
                   : AppColors.textSecondary,
@@ -1037,7 +1029,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               _buildInfoRow(
                   Icons.category_outlined, 'Tipo', customer.licenseTipo!),
           ]),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
 
           // ── IDs del sistema ──
           _buildInfoCard('IDs del sistema', [
@@ -1051,15 +1043,15 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
             _buildInfoRow(
               Icons.business_outlined,
               'Business ID',
-              customer.businessId ?? '—',
-              mono: true,
-              copyable: customer.businessId != null,
+              customer.businessId ?? 'No asignado',
+              mono: customer.hasBusinessId,
+              copyable: customer.hasBusinessId,
             ),
           ]),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           // ── Acciones ──
-          _buildActionsSection(),
+          _buildActionsSection(compact: true),
         ],
       ),
     );
@@ -1077,7 +1069,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
             child: Text(
               title,
               style: const TextStyle(
@@ -1089,7 +1081,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
             ),
           ),
           ...children,
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
         ],
       ),
     );
@@ -1104,18 +1096,18 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     Color? valueColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 10),
           SizedBox(
-            width: 80,
+            width: 72,
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -1124,7 +1116,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
             child: Text(
               value,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: valueColor ?? AppColors.textPrimary,
                 fontFamily: mono ? 'monospace' : null,
@@ -1156,7 +1148,60 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
   // ═══════════════════════════════════════════════════════════════
   // SECCIÓN DE ACCIONES
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildActionsSection() {
+  Widget _buildActionsSection({bool compact = false}) {
+    final actions = <Widget>[
+      _buildActionButton(
+        icon: Icons.vpn_key_outlined,
+        label: 'Ver licencias',
+        subtitle: 'Gestiona las licencias',
+        onTap: _viewLicenses,
+        compact: compact,
+      ),
+      _buildActionButton(
+        icon: Icons.add_circle_outline,
+        label: 'Crear licencia',
+        subtitle: 'Asigna una licencia',
+        onTap: _createLicense,
+        compact: compact,
+      ),
+      _buildActionButton(
+        icon: Icons.business_outlined,
+        label: 'Asignar Business ID',
+        subtitle: 'Genera o regenera el ID',
+        onTap: _assignBusinessId,
+        compact: compact,
+      ),
+      _buildActionButton(
+        icon: Icons.edit_outlined,
+        label: 'Editar cliente',
+        subtitle: 'Modifica los datos',
+        onTap: _editCustomer,
+        compact: compact,
+      ),
+      _buildActionButton(
+        icon: Icons.open_in_full_outlined,
+        label: 'Vista completa',
+        subtitle: 'Ver todo el detalle',
+        onTap: _viewFullDetail,
+        compact: compact,
+      ),
+      _buildActionButton(
+        icon: Icons.refresh_rounded,
+        label: 'Reset token',
+        subtitle: 'Genera un nuevo token',
+        onTap: _resetToken,
+        compact: compact,
+      ),
+      _buildActionButton(
+        icon: Icons.delete_outline,
+        label: 'Eliminar cliente',
+        subtitle: 'Borrado permanente',
+        onTap: _deleteCustomer,
+        danger: true,
+        compact: compact,
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1169,56 +1214,29 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
             letterSpacing: 0.3,
           ),
         ),
-        const SizedBox(height: 12),
-        _buildActionButton(
-          icon: Icons.vpn_key_outlined,
-          label: 'Ver licencias',
-          subtitle: 'Gestiona las licencias de este cliente',
-          onTap: _viewLicenses,
-        ),
-        const SizedBox(height: 8),
-        _buildActionButton(
-          icon: Icons.add_circle_outline,
-          label: 'Crear licencia',
-          subtitle: 'Asigna una nueva licencia al cliente',
-          onTap: _createLicense,
-        ),
-        const SizedBox(height: 8),
-        _buildActionButton(
-          icon: Icons.business_outlined,
-          label: 'Asignar Business ID',
-          subtitle: 'Genera o regenera el identificador único',
-          onTap: _assignBusinessId,
-        ),
-        const SizedBox(height: 8),
-        _buildActionButton(
-          icon: Icons.edit_outlined,
-          label: 'Editar cliente',
-          subtitle: 'Modifica los datos del cliente',
-          onTap: _editCustomer,
-        ),
-        const SizedBox(height: 8),
-        _buildActionButton(
-          icon: Icons.open_in_full_outlined,
-          label: 'Vista completa',
-          subtitle: 'Ver toda la información detallada',
-          onTap: _viewFullDetail,
-        ),
-        const SizedBox(height: 8),
-        _buildActionButton(
-          icon: Icons.refresh_rounded,
-          label: 'Reset token',
-          subtitle: 'Genera un nuevo token de reset',
-          onTap: _resetToken,
-        ),
-        const SizedBox(height: 16),
-        _buildActionButton(
-          icon: Icons.delete_outline,
-          label: 'Eliminar cliente',
-          subtitle: 'Elimina permanentemente este cliente',
-          onTap: _deleteCustomer,
-          danger: true,
-        ),
+        SizedBox(height: compact ? 8 : 12),
+        if (compact)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth - 8) / 2;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: actions
+                    .map((action) => SizedBox(width: itemWidth, child: action))
+                    .toList(),
+              );
+            },
+          )
+        else
+          Column(
+            children: [
+              for (var i = 0; i < actions.length; i++) ...[
+                actions[i],
+                if (i != actions.length - 1) const SizedBox(height: 8),
+              ]
+            ],
+          ),
       ],
     );
   }
@@ -1229,6 +1247,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     required String subtitle,
     required VoidCallback onTap,
     bool danger = false,
+    bool compact = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1244,12 +1263,12 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(compact ? 10 : 14),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: compact ? 30 : 36,
+                  height: compact ? 30 : 36,
                   decoration: BoxDecoration(
                     color: danger
                         ? AppColors.error.withOpacity(0.1)
@@ -1258,11 +1277,11 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                   ),
                   child: Icon(
                     icon,
-                    size: 18,
+                    size: compact ? 16 : 18,
                     color: danger ? AppColors.error : AppColors.primary,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: compact ? 8 : 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1270,25 +1289,29 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                       Text(
                         label,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: compact ? 12 : 13,
                           fontWeight: FontWeight.w600,
                           color: danger ? AppColors.error : AppColors.textPrimary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: compact ? 1 : 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: compact ? 10 : 11,
                           color: AppColors.textMuted,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  size: 18,
+                  size: compact ? 16 : 18,
                   color: danger ? AppColors.error.withOpacity(0.5) : AppColors.textMuted,
                 ),
               ],

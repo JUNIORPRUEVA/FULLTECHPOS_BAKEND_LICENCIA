@@ -84,6 +84,15 @@ class _CustomersPageState extends State<CustomersPage> {
     if (_licenseFilter != 'TODOS') {
       out = out.where((c) {
         final status = (c.licenseStatus ?? '').toUpperCase();
+        final commercial = (c.commercialStatus ?? '').toUpperCase();
+        if (_licenseFilter == 'COMPRARON') return c.hasFullLicense;
+        if (_licenseFilter == 'NO_COMPRARON') return !c.hasFullLicense;
+        if (_licenseFilter == 'SOLO_DEMO') {
+          return commercial == 'DEMO_ACTIVA' || commercial == 'SOLO_DEMO';
+        }
+        if (_licenseFilter == 'CLIENTE_ACTIVO') return commercial == 'CLIENTE_ACTIVO';
+        if (_licenseFilter == 'CLIENTE_VENCIDO') return commercial == 'CLIENTE_VENCIDO';
+        if (_licenseFilter == 'CLIENTE_BLOQUEADO') return commercial == 'CLIENTE_BLOQUEADO';
         if (_licenseFilter == 'SIN_LICENCIA') return !c.hasLicense;
         if (_licenseFilter == 'ACTIVA') return status == 'ACTIVA';
         if (_licenseFilter == 'VENCIDA') return status == 'VENCIDA';
@@ -148,7 +157,12 @@ class _CustomersPageState extends State<CustomersPage> {
           customer: customer,
           width: double.infinity,
           onClose: () => Navigator.of(context).pop(),
-          onDelete: () => _deleteCustomer(customer),
+          onDelete: () {
+            if (!mounted) return;
+            Navigator.of(context).pop();
+            setState(() => _selected = null);
+            _refresh();
+          },
           onUpdated: _refresh,
         ),
       ),
@@ -225,7 +239,11 @@ class _CustomersPageState extends State<CustomersPage> {
                   key: ValueKey(_selected!.id),
                   customer: _selected!,
                   onClose: () => setState(() => _selected = null),
-                  onDelete: () => _deleteCustomerConfirmed(_selected!),
+                  onDelete: () {
+                    if (!mounted) return;
+                    setState(() => _selected = null);
+                    _refresh();
+                  },
                   onUpdated: _refresh,
                 ),
             ],
@@ -303,7 +321,31 @@ class _CustomersPageState extends State<CustomersPage> {
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: 'TODOS',
-                child: Text('Todas las licencias'),
+                child: Text('Todos los clientes'),
+              ),
+              PopupMenuItem(
+                value: 'COMPRARON',
+                child: Text('Compraron'),
+              ),
+              PopupMenuItem(
+                value: 'NO_COMPRARON',
+                child: Text('No compraron'),
+              ),
+              PopupMenuItem(
+                value: 'SOLO_DEMO',
+                child: Text('Solo demo'),
+              ),
+              PopupMenuItem(
+                value: 'CLIENTE_ACTIVO',
+                child: Text('Cliente activo'),
+              ),
+              PopupMenuItem(
+                value: 'CLIENTE_VENCIDO',
+                child: Text('Cliente vencido'),
+              ),
+              PopupMenuItem(
+                value: 'CLIENTE_BLOQUEADO',
+                child: Text('Cliente bloqueado'),
               ),
               PopupMenuItem(
                 value: 'ACTIVA',

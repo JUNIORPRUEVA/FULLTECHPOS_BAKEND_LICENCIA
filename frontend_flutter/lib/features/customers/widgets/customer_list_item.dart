@@ -82,7 +82,7 @@ class CustomerListItem extends StatelessWidget {
               ),
             ),
             // Business ID indicator
-            if (customer.businessId != null)
+            if (customer.hasBusinessId)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -91,7 +91,7 @@ class CustomerListItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
-                  'Vinculado',
+                  'Business ID',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -99,9 +99,11 @@ class CustomerListItem extends StatelessWidget {
                   ),
                 ),
               ),
-            if (customer.licenseStatus != null) ...[
+            const SizedBox(width: 6),
+            StatusBadge.fromString(customer.displayCommercialStatus),
+            if (customer.hasLicense || customer.hasActiveLicense) ...[
               const SizedBox(width: 6),
-              StatusBadge.fromString(customer.licenseStatus!),
+              StatusBadge.fromString(customer.displayLicenseStatus),
             ],
           ],
         ),
