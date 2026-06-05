@@ -140,6 +140,35 @@ async function getAccessToken() {
   return String(data.access_token || '');
 }
 
+async function generateClientToken() {
+  const accessToken = await getAccessToken();
+  const url = `${getBaseUrl()}/v1/identity/generate-token`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'PayPal-Request-Id': `client-token-${Date.now()}`,
+    },
+    body: '{}',
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(
+      `PayPal generateClientToken error ${response.status}: ${text || response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  const clientToken = String(data.client_token || data.clientToken || '').trim();
+  if (!clientToken) {
+    throw new Error('PayPal no devolvió client_token');
+  }
+  return clientToken;
+}
+
 /**
  * Crea una orden de pago en PayPal.
  * @param {Object} params
@@ -326,6 +355,7 @@ async function verifyOrder(orderId) {
 
 module.exports = {
   getAccessToken,
+  generateClientToken,
   createOrder,
   captureOrder,
   verifyOrder,

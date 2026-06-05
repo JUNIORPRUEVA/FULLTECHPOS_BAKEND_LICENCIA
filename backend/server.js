@@ -266,6 +266,275 @@ const licensesModel = require('./models/licensesModel');
 const paypalService = require('./services/paypalService');
 const FULLPOS_PROTOCOL_URL = 'fullpos://payment/result';
 
+function getPublicBaseUrl(req) {
+  const protoHeader = String(req.headers['x-forwarded-proto'] || '').trim();
+  const proto = protoHeader || req.protocol || 'https';
+  const host = String(req.headers['x-forwarded-host'] || req.get('host') || '').trim();
+  return `${proto}://${host}`.replace(/\/+$/, '');
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+app.get('/paypal/card-checkout', async (req, res) => {
+  try {
+    const paymentOrderId = String(req.query.payment_order_id || '').trim();
+    const paypalOrderId = String(req.query.paypal_order_id || '').trim();
+
+    let localOrder = null;
+    if (paymentOrderId) {
+      localOrder = await licensePaymentOrdersModel.getPaymentOrderById(paymentOrderId);
+    }
+    if (!localOrder && paypalOrderId) {
+      localOrder = await licensePaymentOrdersModel.getPaymentOrderByProviderOrderId(paypalOrderId);
+    }
+
+    if (!localOrder) {
+      return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago no disponible</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}.card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}h1{color:#dc2626;margin:0 0 14px}p{color:#475569;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 22px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px}</style></head>
+<body><div class="card"><h1>No encontramos tu compra</h1><p>Esta orden ya no está disponible. Vuelve a FULLPOS e intenta crear una compra nueva.</p><a href="${FULLPOS_PROTOCOL_URL}?status=missing_order" class="btn">Volver a FULLPOS</a></div></body></html>`);
+    }
+
+    if (String(localOrder.status || '').toUpperCase() === 'PAID') {
+      return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago confirmado</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}.card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}h1{color:#16a34a;margin:0 0 14px}p{color:#475569;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 22px;background:#16a34a;color:#fff;text-decoration:none;border-radius:10px}</style></head>
+<body><div class="card"><h1>Pago ya confirmado</h1><p>Tu licencia ya está activa. Puedes volver a FULLPOS.</p><a href="${FULLPOS_PROTOCOL_URL}?status=paid" class="btn">Volver a FULLPOS</a></div></body></html>`);
+    }
+
+    const clientToken = await paypalService.generateClientToken();
+    const clientId = String(process.env.PAYPAL_CLIENT_ID || '').trim();
+    const currency = escapeHtml(String(localOrder.currency || 'USD').toUpperCase());
+    const amount = escapeHtml(Number(localOrder.total_amount || 0).toFixed(2));
+    const months = escapeHtml(localOrder.months);
+    const paymentId = escapeHtml(localOrder.id);
+    const orderId = escapeHtml(localOrder.provider_order_id || paypalOrderId);
+    const appBackUrl = `${FULLPOS_PROTOCOL_URL}?status=cancelled`;
+    const fallbackPaypalUrl = escapeHtml(localOrder.checkout_url || '');
+    const publicBaseUrl = getPublicBaseUrl(req);
+    const captureUrl = `${publicBaseUrl}/api/public/license-payments/capture-paypal-order`;
+
+    if (!clientId || !orderId) {
+      return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago no disponible</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}.card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}h1{color:#dc2626;margin:0 0 14px}p{color:#475569;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 22px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px}</style></head>
+<body><div class="card"><h1>No pudimos preparar el pago</h1><p>Faltan datos para mostrar el formulario de tarjeta. Vuelve a FULLPOS e intenta de nuevo.</p><a href="${FULLPOS_PROTOCOL_URL}?status=error" class="btn">Volver a FULLPOS</a></div></body></html>`);
+    }
+
+    return res.type('html').send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Pagar licencia</title>
+  <script src="https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&components=buttons,card-fields&currency=${encodeURIComponent(currency)}&intent=capture&commit=true" data-client-token="${escapeHtml(clientToken)}"></script>
+  <style>
+    :root{color-scheme:light}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#eef5ff 0%,#f8fbff 55%,#fff8f1 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:#142033}
+    .shell{width:min(100%,960px);display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:20px}
+    .panel{background:rgba(255,255,255,.94);border:1px solid rgba(209,226,238,.95);border-radius:24px;box-shadow:0 18px 48px rgba(15,23,42,.12)}
+    .main{padding:28px}
+    .aside{padding:24px}
+    h1{margin:0 0 8px;font-size:34px;line-height:1.05}
+    .lead{margin:0 0 22px;color:#5b6b82;line-height:1.55}
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-weight:700;font-size:12px;margin-bottom:16px}
+    .summary{display:grid;gap:12px;margin-bottom:22px}
+    .summaryCard{padding:14px 16px;border-radius:16px;background:#f8fbff;border:1px solid #d9e2ee}
+    .summaryLabel{font-size:12px;color:#6b7b91;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .summaryValue{margin-top:6px;font-size:20px;font-weight:800}
+    .fieldLabel{display:block;font-size:12px;font-weight:700;color:#6b7b91;margin:10px 0 6px}
+    .paypal-field{min-height:48px;border:1px solid #cfdceb;border-radius:14px;padding:14px 16px;background:#fff}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .payBtn{margin-top:18px;width:100%;border:none;border-radius:14px;background:#b96534;color:#fff;font-weight:800;font-size:17px;padding:16px 18px;cursor:pointer;transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease;box-shadow:0 12px 24px rgba(185,101,52,.24)}
+    .payBtn:hover{transform:translateY(-1px)}
+    .payBtn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+    .hint{margin-top:12px;font-size:13px;color:#5b6b82;line-height:1.5}
+    .error,.success{display:none;margin-top:14px;padding:14px 16px;border-radius:14px;font-size:14px;line-height:1.5}
+    .error{background:#fff1f1;border:1px solid #fecaca;color:#b91c1c}
+    .success{background:#edfdf3;border:1px solid #bbf7d0;color:#166534}
+    .linkBtn{display:inline-flex;align-items:center;justify-content:center;width:100%;margin-top:12px;padding:12px 16px;border-radius:12px;text-decoration:none;font-weight:700;border:1px solid #d9e2ee;color:#153e75;background:#fff}
+    .mini{font-size:12px;color:#6b7b91;line-height:1.5}
+    .spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.32);border-top-color:#fff;border-radius:999px;animation:spin .75s linear infinite}
+    .payBtn.loading .spinner{display:inline-block}
+    .payBtn.loading .btnText{opacity:.9}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media (max-width:860px){.shell{grid-template-columns:1fr}.aside{order:-1}.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="panel main">
+      <div class="badge">Pago rápido con tarjeta</div>
+      <h1>Completa tu compra</h1>
+      <p class="lead">Ingresa tu tarjeta y confirma el pago. Al aprobarse, FULLPOS activará tu licencia automáticamente.</p>
+
+      <label class="fieldLabel" for="card-name-field-container">Nombre en la tarjeta</label>
+      <div id="card-name-field-container" class="paypal-field"></div>
+
+      <label class="fieldLabel" for="card-number-field-container">Número de tarjeta</label>
+      <div id="card-number-field-container" class="paypal-field"></div>
+
+      <div class="row">
+        <div>
+          <label class="fieldLabel" for="card-expiry-field-container">Vencimiento</label>
+          <div id="card-expiry-field-container" class="paypal-field"></div>
+        </div>
+        <div>
+          <label class="fieldLabel" for="card-cvv-field-container">CVV</label>
+          <div id="card-cvv-field-container" class="paypal-field"></div>
+        </div>
+      </div>
+
+      <button id="payButton" class="payBtn" type="button" disabled>
+        <span class="spinner"></span>
+        <span class="btnText">Pagar ahora</span>
+      </button>
+
+      <div id="errorBox" class="error"></div>
+      <div id="successBox" class="success"></div>
+
+      <a class="linkBtn" href="${fallbackPaypalUrl || `${FULLPOS_PROTOCOL_URL}?status=cancelled`}">${fallbackPaypalUrl ? 'Prefiero pagar con PayPal' : 'Volver a FULLPOS'}</a>
+      <p class="hint">Si el pago se aprueba, esta ventana te permitirá volver a FULLPOS al instante.</p>
+    </section>
+
+    <aside class="panel aside">
+      <div class="summary">
+        <div class="summaryCard">
+          <div class="summaryLabel">Total a pagar</div>
+          <div class="summaryValue">${amount} ${currency}</div>
+        </div>
+        <div class="summaryCard">
+          <div class="summaryLabel">Tiempo de licencia</div>
+          <div class="summaryValue">${months} meses</div>
+        </div>
+      </div>
+      <p class="mini">Orden interna: ${paymentId}<br/>Orden PayPal: ${orderId}</p>
+      <p class="mini" style="margin-top:18px">Si prefieres no usar tarjeta aquí, puedes abrir el checkout tradicional de PayPal con el botón alternativo.</p>
+      <a class="linkBtn" href="${appBackUrl}">Cancelar y volver</a>
+    </aside>
+  </div>
+
+  <script>
+    const orderId = ${JSON.stringify(String(localOrder.provider_order_id || paypalOrderId))};
+    const paymentOrderId = ${JSON.stringify(String(localOrder.id))};
+    const captureUrl = ${JSON.stringify(captureUrl)};
+    const fullposPaidUrl = ${JSON.stringify(`${FULLPOS_PROTOCOL_URL}?status=paid`)};
+    const fallbackPaypalUrl = ${JSON.stringify(String(localOrder.checkout_url || ''))};
+    const payButton = document.getElementById('payButton');
+    const errorBox = document.getElementById('errorBox');
+    const successBox = document.getElementById('successBox');
+
+    function setError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = 'block';
+      successBox.style.display = 'none';
+    }
+
+    function setSuccess(message) {
+      successBox.textContent = message;
+      successBox.style.display = 'block';
+      errorBox.style.display = 'none';
+    }
+
+    function setLoading(value) {
+      payButton.disabled = value;
+      payButton.classList.toggle('loading', value);
+    }
+
+    (async function bootstrap() {
+      try {
+        if (!window.paypal || !window.paypal.CardFields) {
+          throw new Error('PayPal no pudo cargar el formulario de tarjeta.');
+        }
+
+        const cardFields = window.paypal.CardFields({
+          createOrder: () => orderId,
+          onApprove: async () => {
+            setLoading(true);
+            try {
+              const response = await fetch(captureUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({
+                  payment_order_id: paymentOrderId,
+                  paypal_order_id: orderId,
+                }),
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok || data.success === false) {
+                throw new Error((data && (data.message || data.detail)) || 'No pudimos confirmar el pago.');
+              }
+              setSuccess('Pago confirmado. Ya puedes volver a FULLPOS.');
+              window.location.href = fullposPaidUrl;
+            } catch (error) {
+              setError(error.message || 'No pudimos confirmar el pago. Intenta nuevamente.');
+            } finally {
+              setLoading(false);
+            }
+          },
+          onError: (error) => {
+            console.error('paypal card fields error', error);
+            setError('No pudimos procesar la tarjeta. Revisa los datos e intenta otra vez.');
+            setLoading(false);
+          }
+        });
+
+        if (!cardFields.isEligible()) {
+          if (fallbackPaypalUrl) {
+            window.location.href = fallbackPaypalUrl;
+            return;
+          }
+          throw new Error('Este método no está disponible ahora mismo para esta compra.');
+        }
+
+        await cardFields.NameField().render('#card-name-field-container');
+        await cardFields.NumberField().render('#card-number-field-container');
+        await cardFields.ExpiryField().render('#card-expiry-field-container');
+        await cardFields.CVVField().render('#card-cvv-field-container');
+
+        payButton.disabled = false;
+        payButton.addEventListener('click', async () => {
+          setError('');
+          errorBox.style.display = 'none';
+          setLoading(true);
+          try {
+            await cardFields.submit();
+          } catch (error) {
+            console.error('paypal card submit error', error);
+            setError(error.message || 'Revisa los datos de la tarjeta e intenta nuevamente.');
+            setLoading(false);
+          }
+        });
+      } catch (error) {
+        console.error('paypal card bootstrap error', error);
+        if (fallbackPaypalUrl) {
+          setError('No pudimos abrir el pago directo con tarjeta. Te llevaremos al checkout normal de PayPal.');
+          setTimeout(() => { window.location.href = fallbackPaypalUrl; }, 1200);
+          return;
+        }
+        setError(error.message || 'No pudimos abrir el formulario de pago.');
+      }
+    })();
+  </script>
+</body>
+</html>`);
+  } catch (error) {
+    console.error('[paypal/card-checkout] Error:', error);
+    return res.type('html').send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Error</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}.card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}h1{color:#dc2626;margin:0 0 14px}p{color:#475569;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 22px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px}</style></head>
+<body><div class="card"><h1>No pudimos abrir el pago</h1><p>Intenta nuevamente desde FULLPOS. Si el problema continúa, usa el checkout normal de PayPal.</p><a href="${FULLPOS_PROTOCOL_URL}?status=error" class="btn">Volver a FULLPOS</a></div></body></html>`);
+  }
+});
+
 /**
  * GET /paypal/success
  * Ruta de retorno después de pago exitoso en PayPal.

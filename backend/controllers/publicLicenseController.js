@@ -1100,10 +1100,20 @@ async function createPaymentOrder(req, res) {
       })]
     );
 
+    const protoHeader = String(req.headers['x-forwarded-proto'] || '').trim();
+    const proto = protoHeader || req.protocol || 'https';
+    const host = String(req.headers['x-forwarded-host'] || req.get('host') || '').trim();
+    const publicBaseUrl = `${proto}://${host}`.replace(/\/+$/, '');
+    const cardCheckoutUrl =
+      `${publicBaseUrl}/paypal/card-checkout?payment_order_id=${encodeURIComponent(localOrder.id)}` +
+      `&paypal_order_id=${encodeURIComponent(paypalOrder.id)}`;
+
     return res.json({
       success: true,
       payment_order_id: localOrder.id,
       paypal_order_id: paypalOrder.id,
+      preferred_checkout_url: cardCheckoutUrl,
+      card_checkout_url: cardCheckoutUrl,
       checkout_url: paypalOrder.checkout_url,
       amount: purchase.total,
       currency: purchase.currency,
