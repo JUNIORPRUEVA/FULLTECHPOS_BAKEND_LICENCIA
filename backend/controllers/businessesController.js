@@ -120,6 +120,21 @@ async function ensurePersistedTrialLicense({
 
   const notes = `Auto DEMO (business trial) project=${String(project.code || 'FULLPOS').toUpperCase()} business=${asTrimmed(businessId) || 'N/A'}`;
 
+  const deletedRes = await pool.query(
+    `SELECT id
+     FROM licenses
+     WHERE customer_id = $1
+       AND project_id = $2
+       AND tipo = 'DEMO'
+       AND estado::text = 'ELIMINADA'
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [customerId, project.id]
+  );
+  if (deletedRes.rows[0]) {
+    return null;
+  }
+
   const existingRes = await pool.query(
     `SELECT *
      FROM licenses

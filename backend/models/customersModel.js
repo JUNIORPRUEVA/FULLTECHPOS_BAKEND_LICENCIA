@@ -125,6 +125,46 @@ async function ensurePersistedTrialLicense(customer, { client = pool } = {}) {
   if (!trial) return { changed: false, license: null };
 
   let existing = null;
+  let hasDeletedMarker = false;
+
+  const deletedMarkerQueries = [
+    {
+      sql: `SELECT id
+            FROM licenses
+            WHERE customer_id = $1
+              AND project_id = $2
+              AND tipo = 'DEMO'
+              AND estado::text = 'ELIMINADA'
+            ORDER BY created_at DESC
+            LIMIT 1`,
+      params: [customer.id, project.id],
+    },
+    {
+      sql: `SELECT id
+            FROM licenses
+            WHERE customer_id = $1
+              AND tipo = 'DEMO'
+              AND estado::text = 'ELIMINADA'
+            ORDER BY created_at DESC
+            LIMIT 1`,
+      params: [customer.id],
+    }
+  ];
+
+  for (const attempt of deletedMarkerQueries) {
+    try {
+      const deletedRes = await client.query(attempt.sql, attempt.params);
+      hasDeletedMarker = Boolean(deletedRes.rows[0]);
+      break;
+    } catch (error) {
+      if (!isPgMissingColumnOrTable(error)) throw error;
+    }
+  }
+
+  if (hasDeletedMarker) {
+    return { changed: false, license: null };
+  }
+
   const existingQueries = [
     {
       sql: `SELECT *
