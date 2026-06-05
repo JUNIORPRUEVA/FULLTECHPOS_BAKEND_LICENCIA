@@ -114,6 +114,106 @@ async function resolveOrCreatePublicCustomer({ deviceId, businessName, phone, em
   return customer;
 }
 
+async function resolvePublicCustomerForPurchase({
+  businessId,
+  deviceId,
+  businessName,
+  businessType,
+  ownerName,
+  phone,
+  email,
+}) {
+  const normalizedBusinessId = asTrimmed(businessId);
+  const normalizedDeviceId = asTrimmed(deviceId);
+  const normalizedBusinessName = asTrimmed(businessName) || 'Cliente FullPOS';
+  const normalizedBusinessType = asTrimmed(businessType) || null;
+  const normalizedOwnerName = asTrimmed(ownerName) || null;
+  const normalizedPhone = normalizePhone(phone) || null;
+  const normalizedEmail = normalizeEmail(email) || null;
+
+  let customer = null;
+
+  if (normalizedBusinessId) {
+    try {
+      customer = await customersModel.getCustomerByBusinessId(normalizedBusinessId);
+    } catch (error) {
+      if (!(error && error.code === 'MIGRATION_PENDING')) throw error;
+    }
+  }
+
+  if (!customer && normalizedDeviceId) {
+    const byDeviceRes = await pool.query(
+      `SELECT DISTINCT c.*
+       FROM customers c
+       JOIN licenses l ON l.customer_id = c.id
+       JOIN license_activations la ON la.license_id = l.id AND la.device_id = $1
+       LIMIT 1`,
+      [normalizedDeviceId]
+    );
+    customer = byDeviceRes.rows[0] || null;
+  }
+
+  if (!customer) {
+    customer = await resolveOrCreatePublicCustomer({
+      deviceId: normalizedDeviceId,
+      businessName: normalizedBusinessName,
+      phone: normalizedPhone,
+      email: normalizedEmail,
+    });
+  }
+
+  if (!customer) return null;
+
+  const hasBusinessIdColumn = Object.prototype.hasOwnProperty.call(customer, 'business_id');
+  const nextBusinessId = normalizedBusinessId || asTrimmed(customer.business_id);
+  const nextBusinessName = normalizedBusinessName || asTrimmed(customer.nombre_negocio) || 'Cliente FullPOS';
+  const nextOwnerName = normalizedOwnerName || asTrimmed(customer.contacto_nombre) || null;
+  const nextPhone = normalizedPhone || customer.contacto_telefono || null;
+  const nextEmail = normalizedEmail || customer.contacto_email || null;
+  const nextRole = normalizedBusinessType || customer.rol_negocio || null;
+
+  const fields = [];
+  const params = [customer.id];
+
+  if (nextBusinessName !== customer.nombre_negocio) {
+    params.push(nextBusinessName);
+    fields.push(`nombre_negocio = $${params.length}`);
+  }
+  if (nextOwnerName !== customer.contacto_nombre) {
+    params.push(nextOwnerName);
+    fields.push(`contacto_nombre = $${params.length}`);
+  }
+  if (nextPhone !== customer.contacto_telefono) {
+    params.push(nextPhone);
+    fields.push(`contacto_telefono = $${params.length}`);
+  }
+  if (nextEmail !== customer.contacto_email) {
+    params.push(nextEmail);
+    fields.push(`contacto_email = $${params.length}`);
+  }
+  if (nextRole !== customer.rol_negocio) {
+    params.push(nextRole);
+    fields.push(`rol_negocio = $${params.length}`);
+  }
+  if (hasBusinessIdColumn && nextBusinessId && nextBusinessId !== customer.business_id) {
+    params.push(nextBusinessId);
+    fields.push(`business_id = $${params.length}`);
+  }
+
+  if (fields.length > 0) {
+    const updatedRes = await pool.query(
+      `UPDATE customers
+       SET ${fields.join(', ')}, updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      params
+    );
+    customer = updatedRes.rows[0] || customer;
+  }
+
+  return customer;
+}
+
 /**
  * Ejecuta una query SQL ignorando errores de tabla no existente (42P01).
  * Ãštil para consultas a demo_trials que puede no existir en producciÃ³n.
@@ -826,12 +926,26 @@ async function getProjectBillingInfo(req, res) {
  */
 async function createPaymentOrder(req, res) {
   try {
-    const { project_code, device_id, months, business_name, phone, email } = req.body || {};
+    const {
+      project_code,
+      device_id,
+      months,
+      business_id,
+      business_name,
+      business_type,
+      owner_name,
+      phone,
+      email,
+    } = req.body || {};
     const device = asTrimmed(device_id);
     const projectCode = asTrimmed(project_code);
+    const businessId = asTrimmed(business_id);
 
-    if (!device) {
-      return res.status(400).json({ success: false, message: 'device_id es requerido' });
+    if (!device && !businessId) {
+      return res.status(400).json({
+        success: false,
+        message: 'device_id o business_id es requerido',
+      });
     }
 
     // Buscar proyecto
@@ -865,29 +979,16 @@ async function createPaymentOrder(req, res) {
       });
     }
 
-    // Resolver customer_id por device_id
-    let customerId = null;
-    const customerRes = await pool.query(
-      `SELECT DISTINCT l.customer_id
-       FROM license_activations a
-       JOIN licenses l ON l.id = a.license_id
-       WHERE a.device_id = $1
-         AND l.customer_id IS NOT NULL
-       LIMIT 1`,
-      [device]
-    );
-    customerId = customerRes.rows[0]?.customer_id || null;
-
-    let customer = null;
-    if (!customerId) {
-      customer = await resolveOrCreatePublicCustomer({
-        deviceId: device,
-        businessName: business_name,
-        phone,
-        email,
-      });
-      customerId = customer?.id || null;
-    }
+    const customer = await resolvePublicCustomerForPurchase({
+      businessId,
+      deviceId: device,
+      businessName: business_name,
+      businessType: business_type,
+      ownerName: owner_name,
+      phone,
+      email,
+    });
+    const customerId = customer?.id || null;
 
     if (!customerId) {
       return res.status(500).json({
@@ -917,9 +1018,12 @@ async function createPaymentOrder(req, res) {
       currency: purchase.currency,
       provider: 'paypal',
       raw_request: {
+        business_id: businessId || customer?.business_id || null,
         device_id: device,
         project_code: project.code,
         business_name: asTrimmed(business_name) || customer?.nombre_negocio || null,
+        business_type: asTrimmed(business_type) || customer?.rol_negocio || null,
+        owner_name: asTrimmed(owner_name) || customer?.contacto_nombre || null,
         phone: normalizePhone(phone) || customer?.contacto_telefono || null,
         email: normalizeEmail(email) || customer?.contacto_email || null,
         months: purchase.months,
@@ -1121,11 +1225,21 @@ async function capturePayment(req, res) {
  */
 async function registerOrFindCustomer(req, res) {
   try {
-    const { project_code, device_id, business_name, phone, email } = req.body || {};
+    const {
+      project_code,
+      device_id,
+      business_id,
+      business_name,
+      business_type,
+      owner_name,
+      phone,
+      email,
+    } = req.body || {};
     const device = asTrimmed(device_id);
+    const businessId = asTrimmed(business_id);
     const projectCode = asTrimmed(project_code);
-    if (!device) {
-      return res.status(400).json({ success: false, message: 'device_id es requerido' });
+    if (!device && !businessId) {
+      return res.status(400).json({ success: false, message: 'device_id o business_id es requerido' });
     }
     let project = null;
     if (projectCode) {
@@ -1137,9 +1251,12 @@ async function registerOrFindCustomer(req, res) {
     if (!project) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
-    const customer = await resolveOrCreatePublicCustomer({
+    const customer = await resolvePublicCustomerForPurchase({
+      businessId,
       deviceId: device,
       businessName: business_name,
+      businessType: business_type,
+      ownerName: owner_name,
       phone,
       email,
     });
@@ -1148,7 +1265,8 @@ async function registerOrFindCustomer(req, res) {
       customer_id: customer.id,
       customer_name: customer.nombre_negocio || customer.contacto_nombre,
       customer_email: customer.contacto_email,
-      customer_phone: customer.contacto_telefono
+      customer_phone: customer.contacto_telefono,
+      business_id: customer.business_id || businessId || null,
     });
   } catch (error) {
     console.error('[publicLicense.registerOrFindCustomer] Error:', error);
