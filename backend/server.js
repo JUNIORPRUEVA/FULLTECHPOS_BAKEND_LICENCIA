@@ -361,10 +361,24 @@ app.get('/paypal/success', async (req, res) => {
     }
 
     // Otro estado
+    const finalStatus = String(localOrder.status || '').toUpperCase();
+    const isFailed = finalStatus === 'FAILED';
+    const isCancelled = finalStatus === 'CANCELLED';
+    const title = isFailed
+      ? 'No pudimos confirmar tu pago'
+      : isCancelled
+        ? 'Pago cancelado'
+        : `Estado: ${finalStatus || 'DESCONOCIDO'}`;
+    const message = isFailed
+      ? 'Tu pago todavía no quedó confirmado en el sistema. Vuelve a FULLPOS y usa "Ya pagué, verificar ahora". Si no terminaste el pago, vuelve a PayPal e inténtalo otra vez.'
+      : isCancelled
+        ? 'El pago fue cancelado. Puedes volver a FULLPOS e intentarlo de nuevo cuando quieras.'
+        : 'Vuelve a FULLPOS para revisar el estado de tu licencia o verificar el pago nuevamente.';
+    const accent = isFailed ? '#e67e22' : (isCancelled ? '#e67e22' : '#555');
     return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Estado de pago</title>
-<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#555;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
-<body><div class="card"><h1>ℹ️ Estado: ${localOrder.status}</h1><p>Si tienes dudas, contacta a soporte.</p><a href="/" class="btn">Ir al inicio</a></div></body></html>`);
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:520px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:${accent};margin:0 0 16px}p{color:#555;line-height:1.6}.ref{margin-top:14px;font-size:12px;color:#7b8794}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
+<body><div class="card"><h1>${title}</h1><p>${message}</p><div class="ref">Referencia PayPal: ${localOrder.provider_order_id || token}</div><a href="/" class="btn">Volver al sistema</a></div></body></html>`);
   } catch (error) {
     console.error('[paypal/success] Error:', error);
     return res.type('html').send(`<!DOCTYPE html>
