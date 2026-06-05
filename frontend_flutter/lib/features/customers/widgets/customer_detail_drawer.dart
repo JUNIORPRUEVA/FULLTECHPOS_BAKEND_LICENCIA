@@ -58,11 +58,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     _licensesService = LicensesService(sessionManager: session);
     _projectsService = ProjectsService(sessionManager: session);
     _currentCustomer = widget.customer;
-  }
-
-  String get _initial {
-    final name = (_currentCustomer?.nombreNegocio ?? '').trim();
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
+    _loadLicenseHistory();
   }
 
   Future<void> _refreshCustomer() async {
@@ -84,14 +80,28 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
 
   Future<void> _viewLicenses() async {
     setState(() {
-      _loadingLicenses = true;
-      _errorLicenses = null;
       _activeView = 'licenses';
       _selectedLicense = null;
     });
+    await _loadLicenseHistory();
+  }
+
+  Future<void> _loadLicenseHistory() async {
+    setState(() {
+      _loadingLicenses = true;
+      _errorLicenses = null;
+    });
     try {
-      final licenses =
-          await _customerService.getCustomerLicenses(_currentCustomer!.id);
+      final licenses = await _customerService.getCustomerLicenses(
+        _currentCustomer!.id,
+      );
+      licenses.sort((a, b) {
+        final aDate =
+            a.createdAt ?? a.expiresAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate =
+            b.createdAt ?? b.expiresAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDate.compareTo(aDate);
+      });
       if (mounted) {
         setState(() {
           _licenses = licenses;
@@ -154,7 +164,10 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           const SnackBar(content: Text('Licencia creada correctamente')),
         );
         await _refreshCustomer();
-        await _viewLicenses();
+        await _loadLicenseHistory();
+        if (mounted) {
+          setState(() => _activeView = 'licenses');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -734,7 +747,8 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Licencia activada correctamente')),
         );
-        await _viewLicenses();
+        await _refreshCustomer();
+        await _loadLicenseHistory();
       }
     } catch (e) {
       if (mounted) {
@@ -753,7 +767,8 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         setState(() => _loadingAction = false);
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Licencia bloqueada')));
-        await _viewLicenses();
+        await _refreshCustomer();
+        await _loadLicenseHistory();
       }
     } catch (e) {
       if (mounted) {
@@ -772,7 +787,8 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         setState(() => _loadingAction = false);
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Licencia desbloqueada')));
-        await _viewLicenses();
+        await _refreshCustomer();
+        await _loadLicenseHistory();
       }
     } catch (e) {
       if (mounted) {
@@ -791,7 +807,8 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         setState(() => _loadingAction = false);
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Licencia extendida $days días')));
-        await _viewLicenses();
+        await _refreshCustomer();
+        await _loadLicenseHistory();
       }
     } catch (e) {
       if (mounted) {
@@ -803,6 +820,10 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
   }
 
   Future<void> _deleteLicense(License license) async {
+    await _confirmDeleteLicense(license);
+  }
+
+  Future<bool> _confirmDeleteLicense(License license) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -819,7 +840,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true) return false;
 
     setState(() => _loadingAction = true);
     try {
@@ -828,15 +849,154 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         setState(() => _loadingAction = false);
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Licencia eliminada')));
-        await _viewLicenses();
+        await _refreshCustomer();
+        await _loadLicenseHistory();
       }
+      return true;
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
+      return false;
     }
+  }
+
+  Future<void> _ensureProjectsLoaded() async {
+    if (_projects.isNotEmpty || _projectsLoading) return;
+
+    setState(() => _projectsLoading = true);
+    try {
+      final projects = await _projectsService.listProjects();
+      projects.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+      if (mounted) {
+        setState(() {
+          _projects = projects;
+          _projectsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _projectsLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar proyectos: $e')),
+        );
+      }
+    }
+  }
+
+  Future<bool> _updateLicenseFromValues(
+    License license,
+    LicenseFormValues values,
+  ) async {
+    setState(() => _loadingAction = true);
+    try {
+      final body = <String, dynamic>{
+        'customer_id': values.customerId,
+        'tipo': values.tipo,
+        'dias_validez': values.diasValidez,
+      };
+      if (values.projectId != null) body['project_id'] = values.projectId;
+      if (values.notas != null) body['notas'] = values.notas;
+
+      await _licensesService.updateLicense(license.id, body);
+      if (mounted) {
+        setState(() => _loadingAction = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Licencia actualizada correctamente')),
+        );
+        await _refreshCustomer();
+        await _loadLicenseHistory();
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingAction = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al actualizar licencia: $e')),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<void> _openEditLicenseDialog(License license) async {
+    await _ensureProjectsLoaded();
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: SizedBox(
+          width: 860,
+          height: 760,
+          child: LicenseFormPanel(
+            customers: [_currentCustomer!],
+            projects: _projects,
+            loading: _loadingAction,
+            projectsLoading: _projectsLoading,
+            initialValues: LicenseFormValues(
+              customerId: license.customerId ?? _currentCustomer!.id,
+              projectId: license.projectId,
+              projectCode: license.projectCode,
+              projectName: license.projectName,
+              tipo: license.licenseType ?? 'FULL',
+              diasValidez:
+                  int.tryParse(license.raw?['dias_validez']?.toString() ?? '') ??
+                  30,
+              notas: license.notes,
+              autoActivate: false,
+            ),
+            title: 'Editar licencia',
+            submitLabel: 'Guardar cambios',
+            onSubmit: (values) async {
+              final updated = await _updateLicenseFromValues(license, values);
+              if (updated && dialogContext.mounted) {
+                Navigator.of(dialogContext).pop();
+              }
+            },
+            onClose: () => Navigator.of(dialogContext).pop(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openLicenseDialog(License license) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: SizedBox(
+          width: 860,
+          height: 780,
+          child: LicenseDetailPanel(
+            license: license,
+            onClose: () => Navigator.of(dialogContext).pop(),
+            onEdit: () async {
+              Navigator.of(dialogContext).pop();
+              await _openEditLicenseDialog(license);
+            },
+            onActivate: () => _activateLicense(license),
+            onBlock: () => _blockLicense(license),
+            onUnblock: () => _unblockLicense(license),
+            onExtend: (days) => _extendLicense(license, days),
+            onDelete: () async {
+              final deleted = await _confirmDeleteLicense(license);
+              if (deleted && dialogContext.mounted) {
+                Navigator.of(dialogContext).pop();
+              }
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -941,65 +1101,16 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     final statusText = customer.displayLicenseStatus;
 
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, 10, AppSpacing.md, AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Avatar + Estado ──
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryDark],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(AppSpacing.avatarRadius),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      _initial,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  customer.nombreNegocio,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 6),
-                StatusBadge.fromString(statusText, pill: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
+          _buildCompactSummary(customer, statusText),
+          const SizedBox(height: 8),
 
           // ── Información del cliente ──
           _buildInfoCard('Información del cliente', [
-            _buildInfoRow(Icons.store_outlined, 'Negocio',
-                customer.nombreNegocio),
             if (customer.contactoNombre != null)
               _buildInfoRow(Icons.person_outline, 'Contacto',
                   customer.contactoNombre!),
@@ -1013,23 +1124,11 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               _buildInfoRow(
                   Icons.category_outlined, 'Rol', customer.rolNegocio!),
           ]),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // ── Licencia principal ──
-          _buildInfoCard('Licencia principal', [
-            _buildInfoRow(
-              Icons.vpn_key_outlined,
-              'Estado',
-              statusText,
-              valueColor: customer.hasActiveLicense
-                  ? AppColors.success
-                  : AppColors.textSecondary,
-            ),
-            if (customer.licenseTipo != null)
-              _buildInfoRow(
-                  Icons.category_outlined, 'Tipo', customer.licenseTipo!),
-          ]),
-          const SizedBox(height: 10),
+          
+          const SizedBox(height: 8),
 
           // ── IDs del sistema ──
           _buildInfoCard('IDs del sistema', [
@@ -1048,11 +1147,299 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               copyable: customer.hasBusinessId,
             ),
           ]),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // ── Acciones ──
           _buildActionsSection(compact: true),
+          const SizedBox(height: 8),
+
+          // ── Historial de licencias ──
+          Expanded(child: _buildEmbeddedLicenseHistory()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompactSummary(Customer customer, String statusText) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  customer.displayCommercialStatus,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  customer.licenseTipo ?? 'Sin licencia comercial',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          StatusBadge.fromString(statusText, pill: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmbeddedLicenseHistory() {
+    final total = _licenses.length;
+    final activeCount = _licenses.where((license) => license.isActive).length;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Historial de licencias',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$total registro${total == 1 ? '' : 's'} · $activeCount activa${activeCount == 1 ? '' : 's'}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 28,
+                  child: OutlinedButton.icon(
+                    onPressed: _viewLicenses,
+                    icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                    label: const Text('Abrir', style: TextStyle(fontSize: 11)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _loadingLicenses
+                ? const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : _errorLicenses != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: AppColors.error,
+                                size: 26,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _errorLicenses!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.error,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              OutlinedButton.icon(
+                                onPressed: _loadLicenseHistory,
+                                icon: const Icon(
+                                  Icons.refresh_rounded,
+                                  size: 14,
+                                ),
+                                label: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _licenses.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.vpn_key_off_outlined,
+                                    size: 28,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Este cliente aún no tiene licencias registradas.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  OutlinedButton.icon(
+                                    onPressed: _createLicense,
+                                    icon: const Icon(
+                                      Icons.add_rounded,
+                                      size: 14,
+                                    ),
+                                    label: const Text('Crear licencia'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+                            itemCount: _licenses.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 8),
+                            itemBuilder: (_, index) =>
+                                _buildEmbeddedLicenseTile(_licenses[index]),
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmbeddedLicenseTile(License license) {
+    final dateLabel = license.expiresAt != null
+        ? 'Vence ${DateFormat('dd/MM/yyyy').format(license.expiresAt!.toLocal())}'
+        : (license.createdAt != null
+            ? 'Creada ${DateFormat('dd/MM/yyyy').format(license.createdAt!.toLocal())}'
+            : 'Sin fecha');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openLicenseDialog(license),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowMd.withOpacity(0.06),
+                blurRadius: 4,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.vpn_key_rounded,
+                  size: 17,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            license.displayProjectName,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (license.status != null)
+                          StatusBadge.fromString(license.status!),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${license.licenseType ?? 'LICENCIA'} · ${license.shortKey}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      dateLabel,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1502,6 +1889,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         _activeView = 'licenses';
         _selectedLicense = null;
       }),
+      onEdit: () => _openEditLicenseDialog(license),
       onActivate: () => _activateLicense(license),
       onBlock: () => _blockLicense(license),
       onUnblock: () => _unblockLicense(license),
