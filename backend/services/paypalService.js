@@ -56,6 +56,22 @@ function getClientSecret() {
   return String(process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '').trim();
 }
 
+function getLandingPagePreference() {
+  const value = String(
+    process.env.PAYPAL_LANDING_PAGE ||
+      process.env.PAYPAL_CHECKOUT_LANDING_PAGE ||
+      'GUEST_CHECKOUT'
+  )
+    .trim()
+    .toUpperCase();
+
+  if (['LOGIN', 'GUEST_CHECKOUT', 'BILLING', 'NO_PREFERENCE'].includes(value)) {
+    return value;
+  }
+
+  return 'GUEST_CHECKOUT';
+}
+
 /**
  * Valida que la configuración de PayPal esté completa.
  * @returns {{ ok: boolean, missing: string[], mode: string, baseUrl: string, clientIdConfigured: boolean, clientSecretConfigured: boolean, returnUrl: string, cancelUrl: string, webhookIdConfigured: boolean, brandName: string }}
@@ -138,6 +154,7 @@ async function createOrder({ amount, currency, description, metadata }) {
   const returnUrl = String(process.env.PAYPAL_RETURN_URL || '').trim() || 'https://example.com/paypal/success';
   const cancelUrl = String(process.env.PAYPAL_CANCEL_URL || '').trim() || 'https://example.com/paypal/cancel';
   const brandName = String(process.env.PAYPAL_BRAND_NAME || 'Appyra').trim();
+  const landingPage = getLandingPagePreference();
 
   const payload = {
     intent: 'CAPTURE',
@@ -156,7 +173,8 @@ async function createOrder({ amount, currency, description, metadata }) {
           payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
           brand_name: brandName,
           locale: 'es-DO',
-          landing_page: 'LOGIN',
+          landing_page: landingPage,
+          shipping_preference: 'NO_SHIPPING',
           user_action: 'PAY_NOW',
           return_url: returnUrl,
           cancel_url: cancelUrl,
@@ -314,4 +332,5 @@ module.exports = {
   validatePaypalConfig,
   getPaypalMode,
   getBaseUrl,
+  getLandingPagePreference,
 };
