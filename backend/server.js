@@ -488,8 +488,13 @@ app.get('/paypal/card-checkout', async (req, res) => {
         });
 
         if (!cardFields.isEligible()) {
+          if (fallbackPaypalUrl) {
+            setError('Te estamos llevando a PayPal para completar el pago de forma segura.');
+            window.location.href = fallbackPaypalUrl;
+            return;
+          }
           payButton.disabled = true;
-          throw new Error('El pago directo con tarjeta no está disponible en esta sesión. Si quieres, usa el botón "Prefiero pagar con PayPal".');
+          throw new Error('El pago directo con tarjeta no está disponible en esta sesión. Intenta nuevamente en unos segundos.');
         }
 
         await cardFields.NameField().render('#card-name-field-container');
@@ -512,6 +517,13 @@ app.get('/paypal/card-checkout', async (req, res) => {
         });
       } catch (error) {
         console.error('paypal card bootstrap error', error);
+        if (fallbackPaypalUrl) {
+          setError('No pudimos abrir el pago con tarjeta aquí. Te estamos llevando a PayPal.');
+          setTimeout(() => {
+            window.location.href = fallbackPaypalUrl;
+          }, 900);
+          return;
+        }
         setError(error.message || 'No pudimos abrir el formulario de pago.');
       }
     })();
@@ -806,7 +818,7 @@ app.get('/api/public/version', (req, res) => {
   res.json({
     success: true,
     service: 'appyra-license-backend',
-    version: 'card-checkout-no-auto-fallback-2026-06-04',
+    version: 'card-checkout-auto-fallback-2026-06-04',
     has_public_license_routes: true,
     has_demo_start: true,
     has_migration_043: true,
