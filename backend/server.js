@@ -545,7 +545,7 @@ app.get('/api/public/version', (req, res) => {
   res.json({
     success: true,
     service: 'appyra-license-backend',
-    version: 'fullcredit-demo-fix-2026-06-01',
+    version: 'demo-delete-marker-fix-2026-06-04',
     has_public_license_routes: true,
     has_demo_start: true,
     has_migration_043: true,
