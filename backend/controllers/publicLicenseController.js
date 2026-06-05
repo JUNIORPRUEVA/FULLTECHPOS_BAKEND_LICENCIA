@@ -45,6 +45,27 @@ function daysBetween(a, b) {
   return Math.max(0, Math.floor(diff / (24 * 60 * 60 * 1000)));
 }
 
+async function updateCustomerCompat(customerId, assignments, params) {
+  try {
+    return await pool.query(
+      `UPDATE customers
+       SET ${assignments}, updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      params
+    );
+  } catch (error) {
+    if (!(error && error.code === '42703')) throw error;
+    return pool.query(
+      `UPDATE customers
+       SET ${assignments}
+       WHERE id = $1
+       RETURNING *`,
+      params
+    );
+  }
+}
+
 async function resolveOrCreatePublicCustomer({ deviceId, businessName, phone, email }) {
   const device = asTrimmed(deviceId);
   const normalizedEmail = normalizeEmail(email);
@@ -98,14 +119,11 @@ async function resolveOrCreatePublicCustomer({ deviceId, businessName, phone, em
     nextPhone !== customer.contacto_telefono ||
     nextEmail !== customer.contacto_email
   ) {
-    const updatedRes = await pool.query(
-      `UPDATE customers
-       SET nombre_negocio = $2,
-           contacto_telefono = $3,
-           contacto_email = $4,
-           updated_at = now()
-       WHERE id = $1
-       RETURNING *`,
+    const updatedRes = await updateCustomerCompat(
+      customer.id,
+      `nombre_negocio = $2,
+       contacto_telefono = $3,
+       contacto_email = $4`,
       [customer.id, nextName, nextPhone, nextEmail]
     );
     customer = updatedRes.rows[0] || customer;
@@ -201,11 +219,9 @@ async function resolvePublicCustomerForPurchase({
   }
 
   if (fields.length > 0) {
-    const updatedRes = await pool.query(
-      `UPDATE customers
-       SET ${fields.join(', ')}, updated_at = now()
-       WHERE id = $1
-       RETURNING *`,
+    const updatedRes = await updateCustomerCompat(
+      customer.id,
+      fields.join(', '),
       params
     );
     customer = updatedRes.rows[0] || customer;

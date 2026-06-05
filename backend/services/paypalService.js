@@ -190,17 +190,26 @@ async function createOrder({ amount, currency, description, metadata }) {
 
   const data = await response.json();
 
-  // Extraer checkout_url (approve link)
+  // Extraer checkout_url.
+  // PayPal puede devolver rel=approve o rel=payer-action según el flujo.
   let checkoutUrl = '';
   if (Array.isArray(data.links)) {
-    const approveLink = data.links.find(l => String(l.rel || '').toLowerCase() === 'approve');
-    if (approveLink) {
-      checkoutUrl = String(approveLink.href || '');
+    const prioritizedLink = data.links.find((link) => {
+      const rel = String(link.rel || '').toLowerCase();
+      return rel === 'approve' || rel === 'payer-action';
+    });
+    if (prioritizedLink) {
+      checkoutUrl = String(prioritizedLink.href || '');
     }
   }
 
   if (!checkoutUrl) {
-    throw new Error('PayPal no devolvió un link de aprobación (approve). Verifica la configuración de la app PayPal.');
+    const rels = Array.isArray(data.links)
+      ? data.links.map((link) => String(link.rel || '')).filter(Boolean)
+      : [];
+    throw new Error(
+      `PayPal no devolvió un enlace de aprobación usable. Links recibidos: ${rels.join(', ') || 'ninguno'}.`
+    );
   }
 
   return {
