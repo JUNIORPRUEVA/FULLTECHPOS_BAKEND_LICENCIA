@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../layout/responsive_layout.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/app_bar_account_menu.dart';
 import '../widgets/app_sidebar.dart';
 
 /// AdminShell rediseñado con sidebar colapsable y layout premium
@@ -128,6 +129,8 @@ class _AdminShellState extends State<AdminShell> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: AppSpacing.md),
+          const AppBarAccountMenu(),
         ],
       ),
     );

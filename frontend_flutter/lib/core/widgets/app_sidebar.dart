@@ -22,18 +22,40 @@ class AppSidebarItem {
   });
 }
 
-const List<AppSidebarItem> sidebarItems = [
+/// Item del sidebar que puede tener sub-opciones (flyout)
+class AppSidebarGroupItem {
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
+  final List<AppSidebarItem> children;
+
+  const AppSidebarGroupItem({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+    required this.children,
+  });
+}
+
+const List<dynamic> sidebarItems = [
   AppSidebarItem(
     label: 'Panel',
     icon: Icons.dashboard_outlined,
     activeIcon: Icons.dashboard_rounded,
     route: '/admin/panel',
   ),
-  AppSidebarItem(
+  AppSidebarGroupItem(
     label: 'Clientes',
     icon: Icons.people_outline_rounded,
     activeIcon: Icons.people_rounded,
-    route: '/admin/clientes',
+    children: [
+      AppSidebarItem(
+        label: 'Lista de Clientes',
+        icon: Icons.list_alt_outlined,
+        activeIcon: Icons.list_alt_rounded,
+        route: '/admin/clientes',
+      ),
+    ],
   ),
   AppSidebarItem(
     label: 'Licencias',
@@ -93,6 +115,7 @@ class AppSidebarState extends State<AppSidebar>
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
+    // Inicia colapsado por defecto (no se llama a forward)
     _widthAnim = Tween<double>(
       begin: AppSpacing.sidebarCollapsedWidth,
       end: AppSpacing.sidebarExpandedWidth,
@@ -157,16 +180,26 @@ class AppSidebarState extends State<AppSidebar>
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
                     ...sidebarItems.map((item) {
+                      if (item is AppSidebarGroupItem) {
+                        return _SidebarGroupTile(
+                          group: item,
+                          currentRoute: widget.currentRoute,
+                          expanded: _expanded,
+                          opacityAnim: _opacityAnim,
+                          onItemTap: widget.onItemTap,
+                        );
+                      }
+                      final sidebarItem = item as AppSidebarItem;
                       final isActive =
-                          widget.currentRoute.startsWith(item.route);
+                          widget.currentRoute.startsWith(sidebarItem.route);
                       return _SidebarTile(
-                        item: item,
+                        item: sidebarItem,
                         isActive: isActive,
                         expanded: _expanded,
                         opacityAnim: _opacityAnim,
                         onTap: () {
                           widget.onItemTap?.call();
-                          context.go(item.route);
+                          context.go(sidebarItem.route);
                         },
                       );
                     }),
@@ -406,7 +439,341 @@ class _LogoutButton extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECCIÓN CONFIGURACIÓN (colapsable)
+// FLYOUT OVERLAY (menú emergente reutilizable)
+// ═══════════════════════════════════════════════════════════════
+class _FlyoutOverlay extends StatelessWidget {
+  final Widget child;
+
+  const _FlyoutOverlay({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(10),
+      color: AppColors.sidebarBg,
+      surfaceTintColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: 180,
+          maxWidth: 220,
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TILE DE GRUPO CON FLYOUT (para sidebar colapsado)
+// ═══════════════════════════════════════════════════════════════
+class _SidebarGroupTile extends StatefulWidget {
+  final AppSidebarGroupItem group;
+  final String currentRoute;
+  final bool expanded;
+  final Animation<double> opacityAnim;
+  final VoidCallback? onItemTap;
+
+  const _SidebarGroupTile({
+    required this.group,
+    required this.currentRoute,
+    required this.expanded,
+    required this.opacityAnim,
+    this.onItemTap,
+  });
+
+  @override
+  State<_SidebarGroupTile> createState() => _SidebarGroupTileState();
+}
+
+class _SidebarGroupTileState extends State<_SidebarGroupTile> {
+  bool _hovered = false;
+  bool _groupExpanded = false;
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+
+  bool get _hasActiveChild => widget.group.children.any(
+        (item) => widget.currentRoute.startsWith(item.route),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _groupExpanded = _hasActiveChild;
+  }
+
+  @override
+  void didUpdateWidget(covariant _SidebarGroupTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentRoute != widget.currentRoute && _hasActiveChild) {
+      _groupExpanded = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _showFlyout(BuildContext context) {
+    _removeOverlay();
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // Fondo transparente para capturar taps y cerrar
+          GestureDetector(
+            onTap: () => _removeOverlay(),
+            child: Container(color: Colors.transparent),
+          ),
+          // Flyout posicionado con CompositedTransformFollower
+          Positioned(
+            left: AppSpacing.sidebarCollapsedWidth + 4,
+            top: _getTilePosition(context),
+            child: _FlyoutOverlay(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header del flyout
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.sidebarActive.withOpacity(0.1),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        topRight: Radius.circular(10),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          widget.group.activeIcon,
+                          size: 16,
+                          color: AppColors.sidebarActiveText,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.group.label,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.sidebarActiveText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Opciones del grupo
+                  ...widget.group.children.map((item) {
+                    final isChildActive =
+                        widget.currentRoute.startsWith(item.route);
+                    return _FlyoutItem(
+                      item: item,
+                      isActive: isChildActive,
+                      onTap: () {
+                        _removeOverlay();
+                        widget.onItemTap?.call();
+                        context.go(item.route);
+                      },
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  double _getTilePosition(BuildContext context) {
+    // Obtenemos la posición del RenderBox de este widget
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final position = renderBox.localToGlobal(Offset.zero);
+      return position.dy;
+    }
+    // Fallback: cálculo estimado
+    final index = sidebarItems.indexOf(widget.group);
+    return 56.0 + 8.0 + (index * 48.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = _hasActiveChild;
+    final bg = isActive
+        ? AppColors.sidebarActive
+        : _hovered
+            ? AppColors.sidebarHover
+            : Colors.transparent;
+    final fg = isActive
+        ? AppColors.sidebarActiveText
+        : AppColors.sidebarText;
+    final iconColor = isActive
+        ? AppColors.sidebarIconActive
+        : AppColors.sidebarIcon;
+
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: () {
+            if (widget.expanded) {
+              // Modo expandido: toggle del submenú interno
+              setState(() => _groupExpanded = !_groupExpanded);
+            } else {
+              // Modo colapsado: mostrar flyout
+              _showFlyout(context);
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            margin: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.expanded ? 12 : 0,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: widget.expanded
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isActive ? widget.group.activeIcon : widget.group.icon,
+                  size: 18,
+                  color: iconColor,
+                ),
+                if (widget.expanded) ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FadeTransition(
+                      opacity: widget.opacityAnim,
+                      child: Text(
+                        widget.group.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: fg,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _groupExpanded
+                        ? Icons.keyboard_arrow_down_rounded
+                        : Icons.keyboard_arrow_right_rounded,
+                    size: 18,
+                    color: fg,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ITEM DE FLYOUT (submenú emergente)
+// ═══════════════════════════════════════════════════════════════
+class _FlyoutItem extends StatefulWidget {
+  final AppSidebarItem item;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _FlyoutItem({
+    required this.item,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  State<_FlyoutItem> createState() => _FlyoutItemState();
+}
+
+class _FlyoutItemState extends State<_FlyoutItem> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = widget.isActive
+        ? AppColors.sidebarActive
+        : _hovered
+            ? AppColors.sidebarHover
+            : Colors.transparent;
+    final fg = widget.isActive
+        ? AppColors.sidebarActiveText
+        : AppColors.sidebarText;
+    final iconColor = widget.isActive
+        ? AppColors.sidebarIconActive
+        : AppColors.sidebarIcon;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: Row(
+            children: [
+              Icon(
+                widget.isActive ? widget.item.activeIcon : widget.item.icon,
+                size: 16,
+                color: iconColor,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                widget.item.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight:
+                      widget.isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECCIÓN CONFIGURACIÓN (colapsable con flyout)
 // ═══════════════════════════════════════════════════════════════
 class _SettingsSection extends StatefulWidget {
   final String currentRoute;
@@ -428,6 +795,8 @@ class _SettingsSection extends StatefulWidget {
 class _SettingsSectionState extends State<_SettingsSection> {
   bool _settingsExpanded = false;
   bool _hovered = false;
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink();
 
   bool get _hasActiveChild => settingsSidebarItems.any(
         (item) => widget.currentRoute.startsWith(item.route),
@@ -448,6 +817,99 @@ class _SettingsSectionState extends State<_SettingsSection> {
   }
 
   @override
+  void dispose() {
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _showFlyout(BuildContext context) {
+    _removeOverlay();
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          GestureDetector(
+            onTap: () => _removeOverlay(),
+            child: Container(color: Colors.transparent),
+          ),
+          Positioned(
+            left: AppSpacing.sidebarCollapsedWidth + 4,
+            top: _getTilePosition(context),
+            child: _FlyoutOverlay(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header del flyout
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.sidebarActive.withOpacity(0.1),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        topRight: Radius.circular(10),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.settings_outlined,
+                          size: 16,
+                          color: AppColors.sidebarActiveText,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Configuración',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.sidebarActiveText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Opciones
+                  ...settingsSidebarItems.map((item) {
+                    final isChildActive =
+                        widget.currentRoute.startsWith(item.route);
+                    return _FlyoutItem(
+                      item: item,
+                      isActive: isChildActive,
+                      onTap: () {
+                        _removeOverlay();
+                        widget.onItemTap?.call();
+                        context.go(item.route);
+                      },
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  double _getTilePosition(BuildContext context) {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final position = renderBox.localToGlobal(Offset.zero);
+      return position.dy;
+    }
+    return MediaQuery.of(context).size.height - 200;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isActive = _hasActiveChild;
     final bg = isActive
@@ -459,103 +921,108 @@ class _SettingsSectionState extends State<_SettingsSection> {
         ? AppColors.sidebarActiveText
         : AppColors.sidebarText;
 
-    return Column(
-      children: [
-        Container(
-          height: 1,
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          color: AppColors.sidebarBorder,
-        ),
-        MouseRegion(
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() => _hovered = false),
-          child: GestureDetector(
-            onTap: () {
-              if (widget.expanded) {
-                setState(() => _settingsExpanded = !_settingsExpanded);
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              margin: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 2,
-              ),
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.expanded ? 12 : 0,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: widget.expanded
-                    ? MainAxisAlignment.start
-                    : MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.settings_outlined,
-                    size: 18,
-                    color: fg,
-                  ),
-                  if (widget.expanded) ...[
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FadeTransition(
-                        opacity: widget.opacityAnim,
-                        child: Text(
-                          'Configuración',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: isActive
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                            color: fg,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: Column(
+        children: [
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            color: AppColors.sidebarBorder,
+          ),
+          MouseRegion(
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: GestureDetector(
+              onTap: () {
+                if (widget.expanded) {
+                  setState(() => _settingsExpanded = !_settingsExpanded);
+                } else {
+                  _showFlyout(context);
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.expanded ? 12 : 0,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: widget.expanded
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.center,
+                  children: [
                     Icon(
-                      _settingsExpanded
-                          ? Icons.keyboard_arrow_down_rounded
-                          : Icons.keyboard_arrow_right_rounded,
+                      Icons.settings_outlined,
                       size: 18,
                       color: fg,
                     ),
+                    if (widget.expanded) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: widget.opacityAnim,
+                          child: Text(
+                            'Configuración',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isActive
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: fg,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        _settingsExpanded
+                            ? Icons.keyboard_arrow_down_rounded
+                            : Icons.keyboard_arrow_right_rounded,
+                        size: 18,
+                        color: fg,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
-        ),
-        if (widget.expanded)
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 140),
-            crossFadeState: _settingsExpanded
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: Column(
-              children: settingsSidebarItems.map((item) {
-                final isChildActive =
-                    widget.currentRoute.startsWith(item.route);
-                return _SidebarTile(
-                  item: item,
-                  isActive: isChildActive,
-                  expanded: widget.expanded,
-                  opacityAnim: widget.opacityAnim,
-                  indent: 8,
-                  onTap: () {
-                    widget.onItemTap?.call();
-                    context.go(item.route);
-                  },
-                );
-              }).toList(),
+          if (widget.expanded)
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 140),
+              crossFadeState: _settingsExpanded
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: Column(
+                children: settingsSidebarItems.map((item) {
+                  final isChildActive =
+                      widget.currentRoute.startsWith(item.route);
+                  return _SidebarTile(
+                    item: item,
+                    isActive: isChildActive,
+                    expanded: widget.expanded,
+                    opacityAnim: widget.opacityAnim,
+                    indent: 8,
+                    onTap: () {
+                      widget.onItemTap?.call();
+                      context.go(item.route);
+                    },
+                  );
+                }).toList(),
+              ),
+              secondChild: const SizedBox(width: double.infinity),
             ),
-            secondChild: const SizedBox(width: double.infinity),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -616,9 +1083,7 @@ class _SidebarTileState extends State<_SidebarTile> {
             horizontal: widget.expanded ? 12 : 0,
             vertical: 10,
           ).copyWith(
-            left: widget.expanded
-                ? 12 + widget.indent
-                : 0,
+            left: widget.expanded ? 12 + widget.indent : 0,
           ),
           decoration: BoxDecoration(
             color: bg,

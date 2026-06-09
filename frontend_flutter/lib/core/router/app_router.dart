@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../features/auth/pages/fullpos_splash_screen.dart';
 import '../../features/auth/pages/login_page.dart';
+import '../../features/cloud_admin/configs/resource_configs.dart';
+import '../../features/cloud_admin/pages/cloud_resource_page.dart';
 import '../../features/customers/pages/customers_page.dart';
 import '../../features/dashboard/pages/dashboard_page.dart';
 import '../../features/licenses/pages/licenses_page.dart';
 import '../../features/payments/pages/payments_page.dart';
 import '../../features/projects/pages/projects_page.dart';
-import '../../features/cloud_admin/pages/cloud_resource_page.dart';
-import '../../features/cloud_admin/configs/resource_configs.dart';
 import '../auth/auth_service.dart';
 import '../layout/admin_shell.dart';
-import '../widgets/loading_view.dart';
 
 class AppRouter {
   AppRouter._();
@@ -40,7 +41,7 @@ class AppRouter {
         GoRoute(
           path: '/splash',
           builder: (context, state) =>
-              const Scaffold(body: LoadingView(message: 'Validando sesión...')),
+              const Scaffold(body: FullposSplashScreen()),
         ),
         GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
         ShellRoute(
@@ -68,10 +69,6 @@ class AppRouter {
                 return LicensesPage(initialLicenseId: licenseId);
               },
             ),
-            // GoRoute(
-            //   path: '/admin/configuracion-licencias',
-            //   builder: (context, state) => const CloudLicenseConfigPage(),
-            // ),
             GoRoute(
               path: '/admin/proyectos',
               builder: (context, state) => const ProjectsPage(),
@@ -81,10 +78,6 @@ class AppRouter {
               builder: (context, state) =>
                   CloudResourcePage(config: userResourceConfig),
             ),
-            // GoRoute(
-            //   path: '/admin/configuracion-tienda',
-            //   builder: (context, state) => const CloudStoreSettingsPage(),
-            // ),
             GoRoute(
               path: '/admin/pagos',
               builder: (context, state) => const PaymentsPage(),
