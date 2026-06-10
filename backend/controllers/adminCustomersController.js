@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { pool } = require('../db/pool');
 const customersModel = require('../models/customersModel');
 const {
@@ -642,23 +643,13 @@ async function resetToken(req, res) {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
 
-    // Guardar token en la base de datos (en tabla password_reset_tokens o similar)
-    try {
-      await pool.query(
-        `INSERT INTO password_reset_tokens (customer_id, token, expires_at, used)
-         VALUES ($1, $2, $3, false)
-         ON CONFLICT (customer_id) DO UPDATE SET token = $2, expires_at = $3, used = false, created_at = NOW()`,
-        [customerId, token, expiresAt]
-      );
-    } catch (e) {
-      // Si la tabla no existe, intentar con una tabla genérica o simplemente devolver el token
-      if (e && e.code === '42P01') {
-        // Tabla no existe, devolvemos el token sin persistir
-        console.warn('resetToken: password_reset_tokens table does not exist, returning token without persistence');
-      } else {
-        throw e;
-      }
-    }
+    // Guardar token en la base de datos (en tabla password_reset_tokens)
+    await pool.query(
+      `INSERT INTO password_reset_tokens (customer_id, token, expires_at, used)
+       VALUES ($1, $2, $3, false)
+       ON CONFLICT (customer_id) DO UPDATE SET token = $2, expires_at = $3, used = false, updated_at = NOW()`,
+      [customerId, token, expiresAt]
+    );
 
     return res.json({
       success: true,

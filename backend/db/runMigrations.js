@@ -86,7 +86,8 @@ async function runMigrations({ endPool = true } = {}) {
     '041_seed_fullcredit_project.sql',
     '042_add_project_billing_settings.sql',
     '043_add_demo_trials_table.sql',
-    '044_add_business_id_guardrails.sql'
+    '044_add_business_id_guardrails.sql',
+    '045_create_password_reset_tokens_table.sql'
   ]);
 
   const selectedFiles = licenseOnly

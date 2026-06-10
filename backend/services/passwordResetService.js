@@ -200,7 +200,115 @@ async function confirmSupportToken({ businessId, username, token }) {
   }
 }
 
+/**
+ * Valida y consume un token de reset generado por el admin para un cliente.
+ * El cliente FULLPOS envía el token junto con su business_id.
+ * Busca el customer_id por business_id, luego busca el token en password_reset_tokens.
+ * Si es válido y no ha expirado, lo marca como usado y devuelve un reset_proof (JWT).
+ */
+async function validateAdminToken({ businessId, token }) {
+  const normalizedBusinessId = String(businessId || '').trim();
+  const normalizedToken = String(token || '').trim();
+
+  if (!normalizedBusinessId || !normalizedToken) {
+    const err = new Error('business_id y token son requeridos');
+    err.status = 400;
+    throw err;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Buscar el customer por business_id
+    const customer = await findCustomerByBusinessId(client, normalizedBusinessId);
+    if (!customer) {
+      await client.query('ROLLBACK');
+      const err = new Error('Negocio no encontrado');
+      err.status = 404;
+      throw err;
+    }
+
+    const customerId = customer.id;
+
+    // Buscar el token en password_reset_tokens (con FOR UPDATE para lock)
+    const res = await client.query(
+      `SELECT customer_id, token, expires_at, used
+       FROM password_reset_tokens
+       WHERE customer_id = $1
+         AND token = $2
+       LIMIT 1
+       FOR UPDATE`,
+      [customerId, normalizedToken]
+    );
+
+    if (!res.rows || res.rows.length === 0) {
+      await client.query('ROLLBACK');
+      const err = new Error('Token inválido');
+      err.status = 400;
+      throw err;
+    }
+
+    const row = res.rows[0];
+
+    if (row.used) {
+      await client.query('ROLLBACK');
+      const err = new Error('El token ya fue utilizado');
+      err.status = 409;
+      throw err;
+    }
+
+    const expiresAt = new Date(row.expires_at);
+    if (Number.isNaN(expiresAt.getTime()) || Date.now() > expiresAt.getTime()) {
+      // Marcar como expirado
+      await client.query(
+        `UPDATE password_reset_tokens SET used = true, updated_at = NOW() WHERE customer_id = $1`,
+        [customerId]
+      );
+      await client.query('COMMIT');
+      const err = new Error('El token expiró, solicita uno nuevo a soporte');
+      err.status = 410;
+      throw err;
+    }
+
+    // Marcar token como usado
+    await client.query(
+      `UPDATE password_reset_tokens SET used = true, updated_at = NOW() WHERE customer_id = $1`,
+      [customerId]
+    );
+
+    await client.query('COMMIT');
+
+    // Generar JWT como prueba de reset
+    const resetProof = jwt.sign(
+      {
+        customerId,
+        businessId: normalizedBusinessId,
+        purpose: 'admin_password_reset'
+      },
+      getJwtSecret(),
+      {
+        expiresIn: '10m'
+      }
+    );
+
+    return {
+      resetProof,
+      expiresIn: '10m',
+      customerId
+    };
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   createSupportResetToken,
-  confirmSupportToken
+  confirmSupportToken,
+  validateAdminToken
 };
