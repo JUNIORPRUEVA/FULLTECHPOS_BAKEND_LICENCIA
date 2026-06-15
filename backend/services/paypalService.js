@@ -178,10 +178,23 @@ async function generateClientToken() {
  * @param {Object} [params.metadata] - Metadatos adicionales (se guardan en custom_id / invoice_id)
  * @returns {Promise<Object>} { id, status, links, checkout_url }
  */
-async function createOrder({ amount, currency, description, metadata }) {
+async function createOrder({
+  amount,
+  currency,
+  description,
+  metadata,
+  returnUrl: returnUrlOverride,
+  cancelUrl: cancelUrlOverride,
+}) {
   const accessToken = await getAccessToken();
-  const returnUrl = String(process.env.PAYPAL_RETURN_URL || '').trim() || 'https://example.com/paypal/success';
-  const cancelUrl = String(process.env.PAYPAL_CANCEL_URL || '').trim() || 'https://example.com/paypal/cancel';
+  const returnUrl =
+    String(returnUrlOverride || '').trim() ||
+    String(process.env.PAYPAL_RETURN_URL || '').trim() ||
+    'https://example.com/paypal/success';
+  const cancelUrl =
+    String(cancelUrlOverride || '').trim() ||
+    String(process.env.PAYPAL_CANCEL_URL || '').trim() ||
+    'https://example.com/paypal/cancel';
   const brandName = String(process.env.PAYPAL_BRAND_NAME || 'Appyra').trim();
   const landingPage = getLandingPagePreference();
 

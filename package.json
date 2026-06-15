@@ -9,6 +9,7 @@
     "dev": "node backend/server.js",
     "test": "npm run test:payments",
     "test:payments": "node --test tests/paypal-payments.test.js",
+    "test:fullcredit-card": "node --test tests/fullcredit-card-payments.test.js",
     "test:business-id": "node --test tests/business-id-policy.test.js",
     "migrate": "node backend/db/runMigrations.js",
     "business-id:diagnostics": "node scripts/business-id-diagnostics.js",

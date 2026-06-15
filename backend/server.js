@@ -63,6 +63,7 @@ const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const supportRequestRoutes = require('./routes/supportRequestRoutes');
 const publicLicenseRoutes = require('./routes/publicLicenseRoutes');
+const fullcreditCardPaymentsRoutes = require('./routes/fullcreditCardPaymentsRoutes');
 
 // Módulos opcionales (solo cuando se usa el backend completo)
 const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
@@ -539,6 +540,76 @@ app.get('/paypal/card-checkout', async (req, res) => {
   }
 });
 
+app.get('/paypal/fullcredit/success', (req, res) => {
+  const paymentOrderId = String(req.query.payment_order_id || '').trim();
+  const paymentToken = String(req.query.payment_token || '').trim();
+  res.type('html').send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Confirmando cobro FullCredit</title>
+  <style>
+    body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}
+    .card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}
+    h1{color:#0f766e;margin:0 0 14px}p{color:#475569;line-height:1.6}.error{color:#b91c1c}
+  </style>
+</head>
+<body><div class="card"><h1 id="title">Confirmando pago...</h1><p id="message">Espera mientras verificamos el cobro con PayPal.</p></div>
+<script>
+(async function () {
+  const title = document.getElementById('title');
+  const message = document.getElementById('message');
+  try {
+    const response = await fetch('/api/public/fullcredit/card-payments/orders/capture', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        payment_order_id: ${JSON.stringify(paymentOrderId)},
+        payment_token: ${JSON.stringify(paymentToken)}
+      })
+    });
+    const body = await response.json();
+    if (!response.ok || !body.success) throw new Error(body.message || 'No se pudo confirmar.');
+    title.textContent = 'Pago confirmado';
+    message.textContent = 'El cobro FULLCREDIT fue aprobado. Regresa a FullCredit y pulsa "Verificar pago".';
+  } catch (error) {
+    title.textContent = 'Pago pendiente de verificación';
+    title.className = 'error';
+    message.textContent = error.message || 'Regresa a FullCredit e intenta verificar nuevamente.';
+  }
+})();
+</script></body></html>`);
+});
+
+app.get('/paypal/fullcredit/cancel', (req, res) => {
+  const paymentOrderId = String(req.query.payment_order_id || '').trim();
+  const paymentToken = String(req.query.payment_token || '').trim();
+  res.type('html').send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cobro FullCredit cancelado</title>
+  <style>
+    body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}
+    .card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}
+    h1{color:#b45309;margin:0 0 14px}p{color:#475569;line-height:1.6}
+  </style>
+</head>
+<body><div class="card"><h1>Pago cancelado</h1><p>No se realizó ningún cobro. Puedes cerrar esta página y regresar a FullCredit.</p></div>
+<script>
+fetch('/api/public/fullcredit/card-payments/orders/cancel', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    payment_order_id: ${JSON.stringify(paymentOrderId)},
+    payment_token: ${JSON.stringify(paymentToken)}
+  })
+}).catch(function () {});
+</script></body></html>`);
+});
+
 /**
  * GET /paypal/success
  * Ruta de retorno después de pago exitoso en PayPal.
@@ -812,6 +883,7 @@ app.use('/api/public', publicAssetsRoutes);
 // Rate limit: 60 req/min per IP (tight enough for license validation)
 const publicLicenseLimiter = rateLimit({ windowMs: 60_000, max: 60, message: 'Límite de peticiones alcanzado. Espere un momento.' });
 app.use('/api/public', publicLicenseLimiter, publicLicenseRoutes);
+app.use('/api/public', publicLicenseLimiter, fullcreditCardPaymentsRoutes);
 
 // Endpoint público de versión para confirmar deploy
 app.get('/api/public/version', (req, res) => {

@@ -118,6 +118,12 @@ async function updateProject(req, res) {
       if (!curr || curr.length > 10) {
         return res.status(400).json({ success: false, message: 'Moneda inválida' });
       }
+      if (['FULLPOS', 'FULLCREDIT'].includes(String(project.code || '').toUpperCase()) && curr !== 'USD') {
+        return res.status(400).json({
+          success: false,
+          message: `${project.code} está configurado exclusivamente en USD`
+        });
+      }
     }
 
     const data = {
@@ -192,6 +198,12 @@ async function updateBillingSettings(req, res) {
       const curr = String(body.currency || '').trim().toUpperCase();
       if (!curr || curr.length > 10) {
         return res.status(400).json({ ok: false, message: 'currency inválido' });
+      }
+      if (['FULLPOS', 'FULLCREDIT'].includes(String(project.code || '').toUpperCase()) && curr !== 'USD') {
+        return res.status(400).json({
+          ok: false,
+          message: `${project.code} está configurado exclusivamente en USD`
+        });
       }
     }
 
