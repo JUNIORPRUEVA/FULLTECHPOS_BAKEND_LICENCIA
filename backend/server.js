@@ -63,7 +63,6 @@ const publicAssetsRoutes = require('./routes/publicAssetsRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const supportRequestRoutes = require('./routes/supportRequestRoutes');
 const publicLicenseRoutes = require('./routes/publicLicenseRoutes');
-const fullcreditCardPaymentsRoutes = require('./routes/fullcreditCardPaymentsRoutes');
 
 // Módulos opcionales (solo cuando se usa el backend completo)
 const authRoutes = LICENSE_ONLY ? null : require('./routes/authRoutes');
@@ -265,7 +264,10 @@ app.get('/health/db', async (req, res) => {
 const licensePaymentOrdersModel = require('./models/licensePaymentOrdersModel');
 const licensesModel = require('./models/licensesModel');
 const paypalService = require('./services/paypalService');
-const FULLPOS_PROTOCOL_URL = 'fullpos://payment/result';
+const {
+  FULLPOS_PROTOCOL_URL,
+  paymentAppForOrder,
+} = require('./services/paymentAppResolver');
 
 function getPublicBaseUrl(req) {
   const protoHeader = String(req.headers['x-forwarded-proto'] || '').trim();
@@ -303,11 +305,13 @@ app.get('/paypal/card-checkout', async (req, res) => {
 <body><div class="card"><h1>No encontramos tu compra</h1><p>Esta orden ya no está disponible. Vuelve a FULLPOS e intenta crear una compra nueva.</p><a href="${FULLPOS_PROTOCOL_URL}?status=missing_order" class="btn">Volver a FULLPOS</a></div></body></html>`);
     }
 
+    const paymentApp = paymentAppForOrder(localOrder);
+
     if (String(localOrder.status || '').toUpperCase() === 'PAID') {
       return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago confirmado</title>
 <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}.card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}h1{color:#16a34a;margin:0 0 14px}p{color:#475569;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 22px;background:#16a34a;color:#fff;text-decoration:none;border-radius:10px}</style></head>
-<body><div class="card"><h1>Pago ya confirmado</h1><p>Tu licencia ya está activa. Puedes volver a FULLPOS.</p><a href="${FULLPOS_PROTOCOL_URL}?status=paid" class="btn">Volver a FULLPOS</a></div></body></html>`);
+<body><div class="card"><h1>Pago ya confirmado</h1><p>Tu licencia ya está activa. Puedes volver a ${paymentApp.name}.</p><a href="${paymentApp.protocolUrl}?status=paid" class="btn">Volver a ${paymentApp.name}</a></div></body></html>`);
     }
 
     const clientToken = await paypalService.generateClientToken();
@@ -317,7 +321,7 @@ app.get('/paypal/card-checkout', async (req, res) => {
     const months = escapeHtml(localOrder.months);
     const paymentId = escapeHtml(localOrder.id);
     const orderId = escapeHtml(localOrder.provider_order_id || paypalOrderId);
-    const appBackUrl = `${FULLPOS_PROTOCOL_URL}?status=cancelled`;
+    const appBackUrl = `${paymentApp.protocolUrl}?status=cancelled`;
     const fallbackPaypalUrl = escapeHtml(localOrder.checkout_url || '');
     const publicBaseUrl = getPublicBaseUrl(req);
     const captureUrl = `${publicBaseUrl}/api/public/license-payments/capture-paypal-order`;
@@ -326,7 +330,7 @@ app.get('/paypal/card-checkout', async (req, res) => {
       return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago no disponible</title>
 <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}.card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}h1{color:#dc2626;margin:0 0 14px}p{color:#475569;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 22px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px}</style></head>
-<body><div class="card"><h1>No pudimos preparar el pago</h1><p>Faltan datos para mostrar el formulario de tarjeta. Vuelve a FULLPOS e intenta de nuevo.</p><a href="${FULLPOS_PROTOCOL_URL}?status=error" class="btn">Volver a FULLPOS</a></div></body></html>`);
+<body><div class="card"><h1>No pudimos preparar el pago</h1><p>Faltan datos para mostrar el formulario de tarjeta. Vuelve a ${paymentApp.name} e intenta de nuevo.</p><a href="${paymentApp.protocolUrl}?status=error" class="btn">Volver a ${paymentApp.name}</a></div></body></html>`);
     }
 
     return res.type('html').send(`<!DOCTYPE html>
@@ -375,7 +379,7 @@ app.get('/paypal/card-checkout', async (req, res) => {
     <section class="panel main">
       <div class="badge">Pago rápido con tarjeta</div>
       <h1>Completa tu compra</h1>
-      <p class="lead">Ingresa tu tarjeta y confirma el pago. Al aprobarse, FULLPOS activará tu licencia automáticamente.</p>
+      <p class="lead">Ingresa tu tarjeta y confirma el pago. Al aprobarse, ${paymentApp.name} activará tu licencia automáticamente.</p>
 
       <label class="fieldLabel" for="card-name-field-container">Nombre en la tarjeta</label>
       <div id="card-name-field-container" class="paypal-field"></div>
@@ -402,8 +406,8 @@ app.get('/paypal/card-checkout', async (req, res) => {
       <div id="errorBox" class="error"></div>
       <div id="successBox" class="success"></div>
 
-      <a class="linkBtn" href="${fallbackPaypalUrl || `${FULLPOS_PROTOCOL_URL}?status=cancelled`}">${fallbackPaypalUrl ? 'Prefiero pagar con PayPal' : 'Volver a FULLPOS'}</a>
-      <p class="hint">Si el pago se aprueba, esta ventana te permitirá volver a FULLPOS al instante.</p>
+      <a class="linkBtn" href="${fallbackPaypalUrl || `${paymentApp.protocolUrl}?status=cancelled`}">${fallbackPaypalUrl ? 'Prefiero pagar con PayPal' : `Volver a ${paymentApp.name}`}</a>
+      <p class="hint">Si el pago se aprueba, esta ventana te permitirá volver a ${paymentApp.name} al instante.</p>
     </section>
 
     <aside class="panel aside">
@@ -427,7 +431,7 @@ app.get('/paypal/card-checkout', async (req, res) => {
     const orderId = ${JSON.stringify(String(localOrder.provider_order_id || paypalOrderId))};
     const paymentOrderId = ${JSON.stringify(String(localOrder.id))};
     const captureUrl = ${JSON.stringify(captureUrl)};
-    const fullposPaidUrl = ${JSON.stringify(`${FULLPOS_PROTOCOL_URL}?status=paid`)};
+    const appPaidUrl = ${JSON.stringify(`${paymentApp.protocolUrl}?status=paid`)};
     const fallbackPaypalUrl = ${JSON.stringify(String(localOrder.checkout_url || ''))};
     const payButton = document.getElementById('payButton');
     const errorBox = document.getElementById('errorBox');
@@ -473,8 +477,8 @@ app.get('/paypal/card-checkout', async (req, res) => {
               if (!response.ok || data.success === false) {
                 throw new Error((data && (data.message || data.detail)) || 'No pudimos confirmar el pago.');
               }
-              setSuccess('Pago confirmado. Ya puedes volver a FULLPOS.');
-              window.location.href = fullposPaidUrl;
+               setSuccess('Pago confirmado. Ya puedes volver a ${paymentApp.name}.');
+               window.location.href = appPaidUrl;
             } catch (error) {
               setError(error.message || 'No pudimos confirmar el pago. Intenta nuevamente.');
             } finally {
@@ -540,76 +544,6 @@ app.get('/paypal/card-checkout', async (req, res) => {
   }
 });
 
-app.get('/paypal/fullcredit/success', (req, res) => {
-  const paymentOrderId = String(req.query.payment_order_id || '').trim();
-  const paymentToken = String(req.query.payment_token || '').trim();
-  res.type('html').send(`<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Confirmando cobro FullCredit</title>
-  <style>
-    body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}
-    .card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}
-    h1{color:#0f766e;margin:0 0 14px}p{color:#475569;line-height:1.6}.error{color:#b91c1c}
-  </style>
-</head>
-<body><div class="card"><h1 id="title">Confirmando pago...</h1><p id="message">Espera mientras verificamos el cobro con PayPal.</p></div>
-<script>
-(async function () {
-  const title = document.getElementById('title');
-  const message = document.getElementById('message');
-  try {
-    const response = await fetch('/api/public/fullcredit/card-payments/orders/capture', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        payment_order_id: ${JSON.stringify(paymentOrderId)},
-        payment_token: ${JSON.stringify(paymentToken)}
-      })
-    });
-    const body = await response.json();
-    if (!response.ok || !body.success) throw new Error(body.message || 'No se pudo confirmar.');
-    title.textContent = 'Pago confirmado';
-    message.textContent = 'El cobro FULLCREDIT fue aprobado. Regresa a FullCredit y pulsa "Verificar pago".';
-  } catch (error) {
-    title.textContent = 'Pago pendiente de verificación';
-    title.className = 'error';
-    message.textContent = error.message || 'Regresa a FullCredit e intenta verificar nuevamente.';
-  }
-})();
-</script></body></html>`);
-});
-
-app.get('/paypal/fullcredit/cancel', (req, res) => {
-  const paymentOrderId = String(req.query.payment_order_id || '').trim();
-  const paymentToken = String(req.query.payment_token || '').trim();
-  res.type('html').send(`<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Cobro FullCredit cancelado</title>
-  <style>
-    body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f6f8fb}
-    .card{background:#fff;border-radius:18px;padding:36px;max-width:540px;text-align:center;box-shadow:0 12px 40px rgba(15,23,42,.12)}
-    h1{color:#b45309;margin:0 0 14px}p{color:#475569;line-height:1.6}
-  </style>
-</head>
-<body><div class="card"><h1>Pago cancelado</h1><p>No se realizó ningún cobro. Puedes cerrar esta página y regresar a FullCredit.</p></div>
-<script>
-fetch('/api/public/fullcredit/card-payments/orders/cancel', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify({
-    payment_order_id: ${JSON.stringify(paymentOrderId)},
-    payment_token: ${JSON.stringify(paymentToken)}
-  })
-}).catch(function () {});
-</script></body></html>`);
-});
-
 /**
  * GET /paypal/success
  * Ruta de retorno después de pago exitoso en PayPal.
@@ -643,12 +577,14 @@ app.get('/paypal/success', async (req, res) => {
 <body><div class="card"><h1>❌ Orden no encontrada</h1><p>No encontramos esta orden de pago en nuestro sistema. Contacta a soporte si ya realizaste el pago.</p><a href="${FULLPOS_PROTOCOL_URL}?status=missing_order" class="btn">Volver a FULLPOS</a></div></body></html>`);
     }
 
+    const paymentApp = paymentAppForOrder(localOrder);
+
     // Si ya está PAID, mostrar confirmación
     if (String(localOrder.status).toUpperCase() === 'PAID') {
       return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago confirmado</title>
 <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}.icon{font-size:64px;margin-bottom:16px}h1{color:#27ae60;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#27ae60;color:#fff;text-decoration:none;border-radius:6px}</style></head>
-<body><div class="card"><div class="icon">✅</div><h1>Pago ya confirmado</h1><p>Tu licencia ya está activa. Puedes cerrar esta ventana y volver a la aplicación.</p><a href="${FULLPOS_PROTOCOL_URL}?status=paid" class="btn">Volver a FULLPOS</a></div></body></html>`);
+<body><div class="card"><div class="icon">✅</div><h1>Pago ya confirmado</h1><p>Tu licencia ya está activa. Puedes volver a ${paymentApp.name}.</p><a href="${paymentApp.protocolUrl}?status=paid" class="btn">Volver a ${paymentApp.name}</a></div></body></html>`);
     }
 
     // Si está PENDING, capturar el pago
@@ -664,7 +600,7 @@ app.get('/paypal/success', async (req, res) => {
           return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago pendiente</title>
 <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e67e22;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
-<body><div class="card"><h1>⏳ Pago pendiente</h1><p>El pago todavía no ha sido confirmado por PayPal. Estado: ${captureResult.status}. Vuelve a intentar desde la aplicación.</p><a href="${FULLPOS_PROTOCOL_URL}?status=pending" class="btn">Volver a FULLPOS</a></div></body></html>`);
+<body><div class="card"><h1>⏳ Pago pendiente</h1><p>El pago todavía no ha sido confirmado por PayPal. Estado: ${captureResult.status}. Vuelve a intentar desde la aplicación.</p><a href="${paymentApp.protocolUrl}?status=pending" class="btn">Volver a ${paymentApp.name}</a></div></body></html>`);
         }
 
         // Captura exitosa: actualizar orden local
@@ -677,13 +613,32 @@ app.get('/paypal/success', async (req, res) => {
 
         // Activar o extender licencia
         try {
-          await licensesModel.activateOrExtendPaidLicense({
+          const license = await licensesModel.activateOrExtendPaidLicense({
             customerId: localOrder.customer_id,
             projectId: localOrder.project_id,
             months: localOrder.months,
             paymentOrderId: localOrder.id,
             maxDevices: 1,
           });
+          const rawRequest =
+            localOrder.raw_request && typeof localOrder.raw_request === 'object'
+              ? localOrder.raw_request
+              : {};
+          const deviceId = String(rawRequest.device_id || '').trim();
+          if (deviceId) {
+            await pool.query(
+              `INSERT INTO license_activations (
+                 license_id, project_id, device_id, estado, activated_at, last_check_at
+               )
+               VALUES ($1, $2, $3, 'ACTIVA', now(), now())
+               ON CONFLICT (license_id, device_id)
+               DO UPDATE SET
+                 project_id = EXCLUDED.project_id,
+                 estado = 'ACTIVA',
+                 last_check_at = now()`,
+              [license.id, localOrder.project_id, deviceId]
+            );
+          }
         } catch (licenseError) {
           console.error('[paypal/success] License activation error:', licenseError.message);
         }
@@ -691,7 +646,7 @@ app.get('/paypal/success', async (req, res) => {
         return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Pago exitoso</title>
 <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}.icon{font-size:64px;margin-bottom:16px}h1{color:#27ae60;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#27ae60;color:#fff;text-decoration:none;border-radius:6px}</style></head>
-<body><div class="card"><div class="icon">✅</div><h1>Pago confirmado</h1><p>Tu licencia fue activada correctamente. Puedes cerrar esta ventana y volver a la aplicación.</p><a href="${FULLPOS_PROTOCOL_URL}?status=paid" class="btn">Volver a FULLPOS</a></div></body></html>`);
+<body><div class="card"><div class="icon">✅</div><h1>Pago confirmado</h1><p>Tu licencia fue activada correctamente. Puedes volver a ${paymentApp.name}.</p><a href="${paymentApp.protocolUrl}?status=paid" class="btn">Volver a ${paymentApp.name}</a></div></body></html>`);
       } catch (captureError) {
         console.error('[paypal/success] Capture error:', captureError.message);
         await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
@@ -701,7 +656,7 @@ app.get('/paypal/success', async (req, res) => {
         return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Error al capturar</title>
 <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:480px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:#e74c3c;margin:0 0 16px}p{color:#555;line-height:1.6}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
-<body><div class="card"><h1>❌ Error al procesar el pago</h1><p>Ocurrió un error al capturar tu pago. Por favor, intenta nuevamente desde la aplicación o contacta a soporte.</p><a href="${FULLPOS_PROTOCOL_URL}?status=failed" class="btn">Volver a FULLPOS</a></div></body></html>`);
+<body><div class="card"><h1>❌ Error al procesar el pago</h1><p>Ocurrió un error al capturar tu pago. Por favor, intenta nuevamente desde la aplicación o contacta a soporte.</p><a href="${paymentApp.protocolUrl}?status=failed" class="btn">Volver a ${paymentApp.name}</a></div></body></html>`);
       }
     }
 
@@ -715,15 +670,15 @@ app.get('/paypal/success', async (req, res) => {
         ? 'Pago cancelado'
         : `Estado: ${finalStatus || 'DESCONOCIDO'}`;
     const message = isFailed
-      ? 'Tu pago todavía no quedó confirmado en el sistema. Vuelve a FULLPOS y usa "Ya pagué, verificar ahora". Si no terminaste el pago, vuelve a PayPal e inténtalo otra vez.'
+      ? `Tu pago todavía no quedó confirmado en el sistema. Vuelve a ${paymentApp.name} y usa "Ya pagué, verificar ahora". Si no terminaste el pago, vuelve a PayPal e inténtalo otra vez.`
       : isCancelled
-        ? 'El pago fue cancelado. Puedes volver a FULLPOS e intentarlo de nuevo cuando quieras.'
-        : 'Vuelve a FULLPOS para revisar el estado de tu licencia o verificar el pago nuevamente.';
+        ? `El pago fue cancelado. Puedes volver a ${paymentApp.name} e intentarlo de nuevo cuando quieras.`
+        : `Vuelve a ${paymentApp.name} para revisar el estado de tu licencia o verificar el pago nuevamente.`;
     const accent = isFailed ? '#e67e22' : (isCancelled ? '#e67e22' : '#555');
     return res.type('html').send(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Estado de pago</title>
 <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px;max-width:520px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}h1{color:${accent};margin:0 0 16px}p{color:#555;line-height:1.6}.ref{margin-top:14px;font-size:12px;color:#7b8794}.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px}</style></head>
-<body><div class="card"><h1>${title}</h1><p>${message}</p><div class="ref">Referencia PayPal: ${localOrder.provider_order_id || token}</div><a href="${FULLPOS_PROTOCOL_URL}?status=${encodeURIComponent((finalStatus || 'unknown').toLowerCase())}" class="btn">Volver a FULLPOS</a></div></body></html>`);
+<body><div class="card"><h1>${title}</h1><p>${message}</p><div class="ref">Referencia PayPal: ${localOrder.provider_order_id || token}</div><a href="${paymentApp.protocolUrl}?status=${encodeURIComponent((finalStatus || 'unknown').toLowerCase())}" class="btn">Volver a ${paymentApp.name}</a></div></body></html>`);
   } catch (error) {
     console.error('[paypal/success] Error:', error);
     return res.type('html').send(`<!DOCTYPE html>
@@ -883,7 +838,6 @@ app.use('/api/public', publicAssetsRoutes);
 // Rate limit: 60 req/min per IP (tight enough for license validation)
 const publicLicenseLimiter = rateLimit({ windowMs: 60_000, max: 60, message: 'Límite de peticiones alcanzado. Espere un momento.' });
 app.use('/api/public', publicLicenseLimiter, publicLicenseRoutes);
-app.use('/api/public', publicLicenseLimiter, fullcreditCardPaymentsRoutes);
 
 // Endpoint público de versión para confirmar deploy
 app.get('/api/public/version', (req, res) => {

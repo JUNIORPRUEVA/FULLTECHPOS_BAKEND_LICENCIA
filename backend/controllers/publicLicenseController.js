@@ -931,6 +931,105 @@ async function getProjectBillingInfo(req, res) {
   }
 }
 
+async function finalizePaidLicenseOrder(localOrder) {
+  let result = await pool.query(
+    `SELECT l.*, c.business_id
+       FROM licenses l
+       LEFT JOIN customers c ON c.id = l.customer_id
+      WHERE l.payment_order_id = $1
+      ORDER BY l.created_at DESC
+      LIMIT 1`,
+    [localOrder.id]
+  );
+  let license = result.rows[0] || null;
+
+  if (!license) {
+    const created = await licensesModel.activateOrExtendPaidLicense({
+      customerId: localOrder.customer_id,
+      projectId: localOrder.project_id,
+      months: localOrder.months,
+      paymentOrderId: localOrder.id,
+      maxDevices: 1,
+    });
+    result = await pool.query(
+      `SELECT l.*, c.business_id
+         FROM licenses l
+         LEFT JOIN customers c ON c.id = l.customer_id
+        WHERE l.id = $1
+        LIMIT 1`,
+      [created.id]
+    );
+    license = result.rows[0] || created;
+  }
+
+  const rawRequest =
+    localOrder.raw_request && typeof localOrder.raw_request === 'object'
+      ? localOrder.raw_request
+      : {};
+  const deviceId = asTrimmed(rawRequest.device_id);
+  if (deviceId) {
+    await pool.query(
+      `INSERT INTO license_activations (
+         license_id, project_id, device_id, estado, activated_at, last_check_at
+       )
+       VALUES ($1, $2, $3, 'ACTIVA', now(), now())
+       ON CONFLICT (license_id, device_id)
+       DO UPDATE SET
+         project_id = EXCLUDED.project_id,
+         estado = 'ACTIVA',
+         last_check_at = now()`,
+      [license.id, localOrder.project_id, deviceId]
+    );
+  }
+
+  return license;
+}
+
+function paidLicenseResponse(localOrder, license, { idempotent = false } = {}) {
+  const expiresAt = license.fecha_fin || license.expires_at || null;
+  const expiresDate = expiresAt ? new Date(expiresAt) : null;
+  const daysRemaining =
+    expiresDate && Number.isFinite(expiresDate.getTime())
+      ? Math.max(0, Math.ceil((expiresDate.getTime() - Date.now()) / 86400000))
+      : 0;
+
+  return {
+    success: true,
+    valid: true,
+    status: 'ACTIVE',
+    payment_captured: true,
+    idempotent,
+    payment_order_id: localOrder.id,
+    paypal_order_id: localOrder.provider_order_id,
+    capture_id: localOrder.provider_capture_id || null,
+    message: 'Pago confirmado. Licencia activada correctamente.',
+    license_key: license.license_key,
+    project_code: localOrder.project_code,
+    expires_at: expiresAt,
+    days_remaining: daysRemaining,
+    max_devices: Number(license.max_dispositivos) || 1,
+    demo_active: false,
+    payment_required: false,
+    customer_id: localOrder.customer_id,
+    project_id: localOrder.project_id,
+    business_id: license.business_id || null,
+    license: {
+      id: license.id,
+      license_key: license.license_key,
+      status: license.estado,
+      estado: license.estado,
+      activated_at: license.fecha_inicio,
+      expires_at: expiresAt,
+      months: localOrder.months,
+      monthly_price: Number(localOrder.monthly_price),
+      total_amount: Number(localOrder.total_amount),
+      currency: localOrder.currency,
+      license_version: Number(license.license_version) || 1,
+      license_updated_at: license.updated_at,
+    },
+  };
+}
+
 /**
  * POST /api/public/license-payments/create-paypal-order
  * Crea una orden de pago PayPal para comprar tiempo de licencia.
@@ -1154,7 +1253,17 @@ async function capturePayment(req, res) {
 
     // Verificar que no estÃ© ya pagada
     if (String(localOrder.status).toUpperCase() === 'PAID') {
-      return res.status(409).json({ success: false, message: 'Esta orden ya fue pagada y procesada' });
+      try {
+        const license = await finalizePaidLicenseOrder(localOrder);
+        return res.json(paidLicenseResponse(localOrder, license, { idempotent: true }));
+      } catch (recoveryError) {
+        console.error('[publicLicense.capturePayment] Paid order recovery error:', recoveryError);
+        return res.status(500).json({
+          success: false,
+          payment_captured: true,
+          message: 'El pago está confirmado, pero la licencia requiere recuperación.',
+        });
+      }
     }
 
     // Capturar orden en PayPal
@@ -1186,6 +1295,25 @@ async function capturePayment(req, res) {
       });
     }
 
+    const amountMatches =
+      Math.abs(Number(captureResult.amount) - Number(localOrder.total_amount)) < 0.005;
+    const currencyMatches =
+      String(captureResult.currency || '').toUpperCase() ===
+      String(localOrder.currency || '').toUpperCase();
+    if (!captureResult.capture_id || !amountMatches || !currencyMatches) {
+      await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
+        status: 'FAILED',
+        raw_response: {
+          captureResult,
+          error: 'PayPal amount/currency verification failed',
+        },
+      });
+      return res.status(409).json({
+        success: false,
+        message: 'PayPal no confirmó exactamente el monto y la moneda esperados.',
+      });
+    }
+
     // Actualizar orden local como PAID
     const updatedOrder = await licensePaymentOrdersModel.capturePaymentOrder(localOrder.id, {
       provider_capture_id: captureResult.capture_id,
@@ -1197,12 +1325,10 @@ async function capturePayment(req, res) {
     // Activar o extender la licencia
     let license;
     try {
-      license = await licensesModel.activateOrExtendPaidLicense({
-        customerId: localOrder.customer_id,
-        projectId: localOrder.project_id,
-        months: localOrder.months,
-        paymentOrderId: localOrder.id,
-        maxDevices: 1,
+      license = await finalizePaidLicenseOrder({
+        ...localOrder,
+        provider_capture_id: captureResult.capture_id,
+        status: updatedOrder.status,
       });
     } catch (licenseError) {
       console.error('[publicLicense.capturePayment] License activation error:', licenseError);
@@ -1216,27 +1342,16 @@ async function capturePayment(req, res) {
       });
     }
 
-    return res.json({
-      success: true,
-      payment_captured: true,
-      payment_order_id: localOrder.id,
-      paypal_order_id: localOrder.provider_order_id,
-      capture_id: captureResult.capture_id,
-      license: {
-        id: license.id,
-        license_key: license.license_key,
-        status: license.estado,
-        estado: license.estado,
-        activated_at: license.fecha_inicio,
-        expires_at: license.fecha_fin,
-        months: localOrder.months,
-        monthly_price: Number(localOrder.monthly_price),
-        total_amount: Number(localOrder.total_amount),
-        currency: localOrder.currency,
-        license_version: Number(license.license_version) || 1,
-        license_updated_at: license.updated_at
-      }
-    });
+    return res.json(
+      paidLicenseResponse(
+        {
+          ...localOrder,
+          provider_capture_id: captureResult.capture_id,
+          status: updatedOrder.status,
+        },
+        license
+      )
+    );
   } catch (error) {
     console.error('[publicLicense.capturePayment] Error:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
