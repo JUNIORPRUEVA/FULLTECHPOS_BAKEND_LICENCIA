@@ -1,14 +1,15 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/auth/session_manager.dart';
 import '../models/project.dart';
+import '../models/project_profile.dart';
 
 class ProjectsService {
   final ApiClient _client;
   final SessionManager _sessionManager;
 
   ProjectsService({required SessionManager sessionManager})
-      : _sessionManager = sessionManager,
-        _client = ApiClient(sessionManager: sessionManager);
+    : _sessionManager = sessionManager,
+      _client = ApiClient(sessionManager: sessionManager);
 
   /// Inicializa el SessionManager si no lo está.
   Future<void> _ensureInit() => _sessionManager.init();
@@ -40,23 +41,22 @@ class ProjectsService {
     required bool isPaidProject,
     required bool allowDemo,
     required bool isActive,
+    required ProjectProfile profile,
   }) async {
     await _ensureInit();
-    final data = await _client.patch(
-      '/api/admin/projects/$projectId',
-      {
-        'name': name,
-        'code': code,
-        'description': description,
-        'monthly_price': monthlyPrice,
-        'currency': currency,
-        'demo_days': demoDays,
-        'min_purchase_months': minPurchaseMonths,
-        'is_paid_project': isPaidProject,
-        'allow_demo': allowDemo,
-        'is_active': isActive,
-      },
-    );
+    final data = await _client.patch('/api/admin/projects/$projectId', {
+      'name': name,
+      'code': code,
+      'description': description,
+      'monthly_price': monthlyPrice,
+      'currency': currency,
+      'demo_days': demoDays,
+      'min_purchase_months': minPurchaseMonths,
+      'is_paid_project': isPaidProject,
+      'allow_demo': allowDemo,
+      'is_active': isActive,
+      'product_profile': profile.toJson(),
+    });
     return Project.fromJson(data['project'] as Map<String, dynamic>? ?? data);
   }
 
@@ -71,18 +71,16 @@ class ProjectsService {
     required bool isActive,
   }) async {
     await _ensureInit();
-    final data = await _client.patch(
-      '/api/admin/projects/$projectId/billing-settings',
-      {
-        'monthly_price': monthlyPrice,
-        'currency': currency,
-        'demo_days': demoDays,
-        'min_purchase_months': minPurchaseMonths,
-        'is_paid_project': isPaidProject,
-        'allow_demo': allowDemo,
-        'is_active': isActive,
-      },
-    );
+    final data = await _client
+        .patch('/api/admin/projects/$projectId/billing-settings', {
+          'monthly_price': monthlyPrice,
+          'currency': currency,
+          'demo_days': demoDays,
+          'min_purchase_months': minPurchaseMonths,
+          'is_paid_project': isPaidProject,
+          'allow_demo': allowDemo,
+          'is_active': isActive,
+        });
     return Project.fromJson(data['project'] as Map<String, dynamic>? ?? data);
   }
 }

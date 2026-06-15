@@ -126,6 +126,22 @@ async function updateProject(req, res) {
       }
     }
 
+    if (body.product_profile !== undefined) {
+      const profile = body.product_profile;
+      if (profile == null || Array.isArray(profile) || typeof profile !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: 'El perfil del producto debe ser un objeto válido'
+        });
+      }
+      if (Buffer.byteLength(JSON.stringify(profile), 'utf8') > 200000) {
+        return res.status(400).json({
+          success: false,
+          message: 'El perfil del producto excede el tamaño permitido'
+        });
+      }
+    }
+
     const data = {
       name: body.name !== undefined ? String(body.name).trim() : undefined,
       code: body.code !== undefined ? projectsModel.normalizeCode(body.code) : undefined,
@@ -136,7 +152,8 @@ async function updateProject(req, res) {
       min_purchase_months: body.min_purchase_months !== undefined ? Math.floor(Number(body.min_purchase_months)) : undefined,
       is_paid_project: body.is_paid_project !== undefined ? Boolean(body.is_paid_project) : undefined,
       allow_demo: body.allow_demo !== undefined ? Boolean(body.allow_demo) : undefined,
-      is_active: body.is_active !== undefined ? Boolean(body.is_active) : undefined
+      is_active: body.is_active !== undefined ? Boolean(body.is_active) : undefined,
+      product_profile: body.product_profile !== undefined ? body.product_profile : undefined
     };
 
     const updated = await projectsModel.updateProject(projectId, data);

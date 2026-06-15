@@ -68,7 +68,8 @@ async function updateProject(projectId, data) {
     min_purchase_months,
     is_paid_project,
     allow_demo,
-    is_active
+    is_active,
+    product_profile
   } = data;
 
   const res = await pool.query(
@@ -84,6 +85,7 @@ async function updateProject(projectId, data) {
        is_paid_project = COALESCE($9, is_paid_project),
        allow_demo = COALESCE($10, allow_demo),
        is_active = COALESCE($11, is_active),
+       product_profile = COALESCE($12, product_profile),
        updated_at = now()
      WHERE id = $1
      RETURNING *`,
@@ -98,7 +100,8 @@ async function updateProject(projectId, data) {
       min_purchase_months != null ? min_purchase_months : null,
       is_paid_project != null ? is_paid_project : null,
       allow_demo != null ? allow_demo : null,
-      is_active != null ? is_active : null
+      is_active != null ? is_active : null,
+      product_profile !== undefined ? product_profile : null
     ]
   );
   return res.rows[0] || null;

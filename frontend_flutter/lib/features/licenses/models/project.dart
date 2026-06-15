@@ -1,3 +1,5 @@
+import 'project_profile.dart';
+
 class Project {
   final String id;
   final String code;
@@ -14,6 +16,7 @@ class Project {
   final int minPurchaseMonths;
   final bool isPaidProject;
   final bool allowDemo;
+  final ProjectProfile profile;
 
   const Project({
     required this.id,
@@ -29,6 +32,7 @@ class Project {
     this.minPurchaseMonths = 3,
     this.isPaidProject = true,
     this.allowDemo = true,
+    this.profile = const ProjectProfile(),
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
@@ -50,6 +54,7 @@ class Project {
       minPurchaseMonths: _parseInt(json['min_purchase_months'], 3),
       isPaidProject: json['is_paid_project'] == true,
       allowDemo: json['allow_demo'] == true,
+      profile: ProjectProfile.fromJson(json['product_profile']),
     );
   }
 
@@ -66,6 +71,7 @@ class Project {
       'min_purchase_months': minPurchaseMonths,
       'is_paid_project': isPaidProject,
       'allow_demo': allowDemo,
+      'product_profile': profile.toJson(),
     };
   }
 
@@ -85,6 +91,7 @@ class Project {
     int? minPurchaseMonths,
     bool? isPaidProject,
     bool? allowDemo,
+    ProjectProfile? profile,
   }) {
     return Project(
       id: id ?? this.id,
@@ -100,6 +107,7 @@ class Project {
       minPurchaseMonths: minPurchaseMonths ?? this.minPurchaseMonths,
       isPaidProject: isPaidProject ?? this.isPaidProject,
       allowDemo: allowDemo ?? this.allowDemo,
+      profile: profile ?? this.profile,
     );
   }
 
