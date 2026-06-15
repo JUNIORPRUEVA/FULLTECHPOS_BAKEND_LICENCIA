@@ -289,17 +289,14 @@ class _ProjectsPageState extends State<ProjectsPage> {
               : const [],
         );
       }).toList(),
-      gallery: _lines(_galleryCtrl.text)
-          .map((line) {
-            final parts = line.split('|').map((item) => item.trim()).toList();
-            return ProjectMedia(
-              title: parts.first,
-              asset: parts.length > 1 ? parts[1] : '',
-              caption: parts.length > 2 ? parts[2] : '',
-            );
-          })
-          .where((item) => item.asset.isNotEmpty)
-          .toList(),
+      gallery: _lines(_galleryCtrl.text).map((line) {
+        final parts = line.split('|').map((item) => item.trim()).toList();
+        return ProjectMedia(
+          title: parts.first,
+          asset: parts.length > 1 ? parts[1] : '',
+          caption: parts.length > 2 ? parts[2] : '',
+        );
+      }).toList(),
     );
   }
 
@@ -1192,7 +1189,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 _buildTextField(
                   controller: _galleryCtrl,
                   label: 'Galería',
-                  hintText: 'Título | imagen o URL | descripción',
+                  hintText:
+                      'Título | URL de imagen (puede quedar vacía) | descripción',
                   maxLines: 5,
                 ),
                 const SizedBox(height: AppSpacing.lg),

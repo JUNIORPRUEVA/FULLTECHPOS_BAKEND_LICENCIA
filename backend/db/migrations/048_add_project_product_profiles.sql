@@ -79,7 +79,12 @@ SET
       }
     ],
     "gallery": [
-      {"title": "Identidad FULLCREDIT", "asset": "assets/projects/fullcredit_logo.png", "caption": "Aplicación móvil para la gestión integral de créditos."}
+      {"title": "Identidad FULLCREDIT", "asset": "assets/projects/fullcredit_logo.png", "caption": "Aplicación móvil para la gestión integral de créditos."},
+      {"title": "Pantalla principal", "asset": "", "caption": "Pega aquí el enlace de la pantalla principal de FULLCREDIT."},
+      {"title": "Clientes y cartera", "asset": "", "caption": "Pega aquí el enlace de una imagen del módulo de clientes y cartera."},
+      {"title": "Creación de préstamo", "asset": "", "caption": "Pega aquí el enlace del proceso de creación y calendario de cuotas."},
+      {"title": "Cobros y recibos", "asset": "", "caption": "Pega aquí el enlace de una imagen del registro de pagos o recibos."},
+      {"title": "Reportes y caja", "asset": "", "caption": "Pega aquí el enlace de una imagen de reportes o cierre de caja."}
     ]
   }
   $profile$::jsonb,
@@ -169,7 +174,12 @@ SET
       }
     ],
     "gallery": [
-      {"title": "Identidad FULLPOS", "asset": "assets/projects/fullpos_logo.png", "caption": "Sistema de punto de venta y administración comercial."}
+      {"title": "Identidad FULLPOS", "asset": "assets/projects/fullpos_logo.png", "caption": "Sistema de punto de venta y administración comercial."},
+      {"title": "Pantalla de ventas", "asset": "", "caption": "Pega aquí el enlace de la pantalla de ventas y facturación."},
+      {"title": "Productos e inventario", "asset": "", "caption": "Pega aquí el enlace de una imagen del catálogo o inventario."},
+      {"title": "Factura y ticket", "asset": "", "caption": "Pega aquí el enlace de una factura, ticket o vista de cobro."},
+      {"title": "Caja y cierre", "asset": "", "caption": "Pega aquí el enlace de una imagen de apertura o cierre de caja."},
+      {"title": "Reportes y administración", "asset": "", "caption": "Pega aquí el enlace de reportes, usuarios o configuración."}
     ]
   }
   $profile$::jsonb,
