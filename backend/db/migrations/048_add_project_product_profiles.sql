@@ -16,6 +16,10 @@ SET
     "audience": "Prestamistas independientes, financieras pequeñas, cobradores y negocios que administran crédito directo.",
     "platforms": ["Android"],
     "hero_asset": "assets/projects/fullcredit_logo.png",
+    "release_download_url": "",
+    "image_1_url": "",
+    "image_2_url": "",
+    "image_3_url": "",
     "benefits": [
       "Controla la cartera y el balance pendiente desde un solo lugar.",
       "Reduce errores al calcular cuotas, intereses, atrasos y pagos.",
@@ -73,18 +77,30 @@ SET
         "steps": ["Revisa cobros, gastos y aportes registrados.", "Abre Caja y selecciona cerrar.", "Cuenta el efectivo real.", "Ingresa el monto declarado y compara la diferencia.", "Confirma el cierre y conserva el resumen."]
       },
       {
+        "title": "Revisar atrasos y reportes",
+        "description": "Da seguimiento a la cartera antes de salir a cobrar.",
+        "steps": ["Abre Reportes o el panel principal.", "Consulta préstamos vencidos y cuotas próximas.", "Filtra por cliente, fecha o estado.", "Prioriza los clientes con atraso.", "Usa el reporte para planificar llamadas, visitas y cobros del día."]
+      },
+      {
+        "title": "Configurar impresora Bluetooth",
+        "description": "Prepara recibos y contratos impresos desde Android.",
+        "steps": ["Empareja la impresora desde Android.", "Abre Configuración en FULLCREDIT.", "Selecciona la impresora y el formato de recibo.", "Imprime una prueba.", "Ajusta tamaño o alineación si el recibo sale cortado."]
+      },
+      {
+        "title": "Configurar módulos y comunicación",
+        "description": "Deja activa la operación que usará el negocio.",
+        "steps": ["Abre Configuración.", "Revisa valores por defecto de préstamos, moneda y caja.", "Activa o desactiva módulos según el negocio.", "Configura WhatsApp o mensajes si se utilizarán recordatorios.", "Guarda y realiza una prueba con un cliente de ejemplo."]
+      },
+      {
         "title": "Comprar y activar licencia",
         "description": "Activa FULLCREDIT desde la propia aplicación.",
         "steps": ["Abre Licencia y selecciona comprar.", "Elige la cantidad de meses permitida por APYRA.", "Selecciona PayPal o transferencia bancaria disponible para República Dominicana.", "Con PayPal, completa el pago y vuelve a verificar; la licencia se activa automáticamente.", "Con transferencia, continúa por WhatsApp y entrega el comprobante para validación."]
       }
     ],
     "gallery": [
-      {"title": "Identidad FULLCREDIT", "asset": "assets/projects/fullcredit_logo.png", "caption": "Aplicación móvil para la gestión integral de créditos."},
-      {"title": "Pantalla principal", "asset": "", "caption": "Pega aquí el enlace de la pantalla principal de FULLCREDIT."},
-      {"title": "Clientes y cartera", "asset": "", "caption": "Pega aquí el enlace de una imagen del módulo de clientes y cartera."},
-      {"title": "Creación de préstamo", "asset": "", "caption": "Pega aquí el enlace del proceso de creación y calendario de cuotas."},
-      {"title": "Cobros y recibos", "asset": "", "caption": "Pega aquí el enlace de una imagen del registro de pagos o recibos."},
-      {"title": "Reportes y caja", "asset": "", "caption": "Pega aquí el enlace de una imagen de reportes o cierre de caja."}
+      {"title": "Imagen 1 - Pantalla principal", "asset": "", "caption": "Pega aquí el enlace de la pantalla principal de FULLCREDIT."},
+      {"title": "Imagen 2 - Proceso de préstamo", "asset": "", "caption": "Pega aquí el enlace del proceso de préstamo, cuotas o contrato."},
+      {"title": "Imagen 3 - Cobros y reportes", "asset": "", "caption": "Pega aquí el enlace de cobros, recibos, caja o reportes."}
     ]
   }
   $profile$::jsonb,
@@ -101,6 +117,10 @@ SET
     "audience": "Tiendas, minimarkets, restaurantes, comercios, distribuidores y empresas que necesitan vender y controlar inventario desde Windows.",
     "platforms": ["Windows"],
     "hero_asset": "assets/projects/fullpos_logo.png",
+    "release_download_url": "",
+    "image_1_url": "",
+    "image_2_url": "",
+    "image_3_url": "",
     "benefits": [
       "Agiliza la facturación con búsqueda, códigos de barras y múltiples tickets.",
       "Mantiene precios, costos, ITBIS, existencias y categorías organizados.",
@@ -168,18 +188,30 @@ SET
         "steps": ["Conecta la impresora e instala el controlador oficial.", "Imprime una página de prueba desde Windows.", "En FULLPOS abre Configuración e Impresora.", "Selecciona impresora, ancho y formato.", "Realiza una venta de prueba y ajusta tamaño o fuente si es necesario."]
       },
       {
+        "title": "Configurar usuarios y permisos",
+        "description": "Protege las áreas sensibles antes de entregar el sistema al personal.",
+        "steps": ["Abre Usuarios o Configuración.", "Crea usuarios para cajeros, supervisores y administrador.", "Asigna permisos según responsabilidad.", "Prueba iniciar sesión con cada perfil.", "Verifica que anular, descontar o cambiar precios requiera autorización si aplica."]
+      },
+      {
+        "title": "Consultar reportes y respaldar",
+        "description": "Convierte la operación diaria en control administrativo.",
+        "steps": ["Abre Reportes.", "Selecciona fecha, caja, usuario o producto.", "Revisa ventas, márgenes, productos y movimientos.", "Exporta o imprime cuando sea necesario.", "Ejecuta respaldo según la rutina configurada."]
+      },
+      {
+        "title": "Preparar facturación electrónica",
+        "description": "Configura la base necesaria para trabajar con comprobantes electrónicos cuando aplique.",
+        "steps": ["Abre el módulo de facturación electrónica.", "Completa datos fiscales del emisor.", "Configura certificado, ambiente y secuencias.", "Ejecuta diagnóstico.", "Realiza una prueba antes de facturar en producción."]
+      },
+      {
         "title": "Comprar y activar licencia",
         "description": "Activa FULLPOS desde el sistema.",
         "steps": ["Abre Licencia y selecciona comprar.", "Elige los meses disponibles según APYRA.", "Selecciona PayPal o transferencia bancaria para República Dominicana.", "Con PayPal, completa el pago y verifica para activar automáticamente.", "Con transferencia, continúa por WhatsApp y remite el comprobante."]
       }
     ],
     "gallery": [
-      {"title": "Identidad FULLPOS", "asset": "assets/projects/fullpos_logo.png", "caption": "Sistema de punto de venta y administración comercial."},
-      {"title": "Pantalla de ventas", "asset": "", "caption": "Pega aquí el enlace de la pantalla de ventas y facturación."},
-      {"title": "Productos e inventario", "asset": "", "caption": "Pega aquí el enlace de una imagen del catálogo o inventario."},
-      {"title": "Factura y ticket", "asset": "", "caption": "Pega aquí el enlace de una factura, ticket o vista de cobro."},
-      {"title": "Caja y cierre", "asset": "", "caption": "Pega aquí el enlace de una imagen de apertura o cierre de caja."},
-      {"title": "Reportes y administración", "asset": "", "caption": "Pega aquí el enlace de reportes, usuarios o configuración."}
+      {"title": "Imagen 1 - Ventas y facturación", "asset": "", "caption": "Pega aquí el enlace de la pantalla de ventas y facturación."},
+      {"title": "Imagen 2 - Productos e inventario", "asset": "", "caption": "Pega aquí el enlace de una imagen del catálogo o inventario."},
+      {"title": "Imagen 3 - Caja, reportes y administración", "asset": "", "caption": "Pega aquí el enlace de caja, reportes, usuarios o configuración."}
     ]
   }
   $profile$::jsonb,

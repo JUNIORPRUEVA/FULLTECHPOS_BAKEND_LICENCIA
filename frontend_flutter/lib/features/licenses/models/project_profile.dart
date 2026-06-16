@@ -3,6 +3,10 @@ class ProjectProfile {
   final String overview;
   final String audience;
   final String heroAsset;
+  final String releaseDownloadUrl;
+  final String image1Url;
+  final String image2Url;
+  final String image3Url;
   final List<String> platforms;
   final List<String> benefits;
   final List<String> requirements;
@@ -16,6 +20,10 @@ class ProjectProfile {
     this.overview = '',
     this.audience = '',
     this.heroAsset = '',
+    this.releaseDownloadUrl = '',
+    this.image1Url = '',
+    this.image2Url = '',
+    this.image3Url = '',
     this.platforms = const [],
     this.benefits = const [],
     this.requirements = const [],
@@ -28,6 +36,10 @@ class ProjectProfile {
   bool get isEmpty =>
       tagline.isEmpty &&
       overview.isEmpty &&
+      releaseDownloadUrl.isEmpty &&
+      image1Url.isEmpty &&
+      image2Url.isEmpty &&
+      image3Url.isEmpty &&
       modules.isEmpty &&
       workflows.isEmpty;
 
@@ -39,6 +51,10 @@ class ProjectProfile {
       overview: _text(json['overview']),
       audience: _text(json['audience']),
       heroAsset: _text(json['hero_asset']),
+      releaseDownloadUrl: _text(json['release_download_url']),
+      image1Url: _text(json['image_1_url']),
+      image2Url: _text(json['image_2_url']),
+      image3Url: _text(json['image_3_url']),
       platforms: _strings(json['platforms']),
       benefits: _strings(json['benefits']),
       requirements: _strings(json['requirements']),
@@ -56,6 +72,10 @@ class ProjectProfile {
     'overview': overview,
     'audience': audience,
     'hero_asset': heroAsset,
+    'release_download_url': releaseDownloadUrl,
+    'image_1_url': image1Url,
+    'image_2_url': image2Url,
+    'image_3_url': image3Url,
     'platforms': platforms,
     'benefits': benefits,
     'requirements': requirements,
@@ -70,6 +90,10 @@ class ProjectProfile {
     String? overview,
     String? audience,
     String? heroAsset,
+    String? releaseDownloadUrl,
+    String? image1Url,
+    String? image2Url,
+    String? image3Url,
     List<String>? platforms,
     List<String>? benefits,
     List<String>? requirements,
@@ -83,6 +107,10 @@ class ProjectProfile {
       overview: overview ?? this.overview,
       audience: audience ?? this.audience,
       heroAsset: heroAsset ?? this.heroAsset,
+      releaseDownloadUrl: releaseDownloadUrl ?? this.releaseDownloadUrl,
+      image1Url: image1Url ?? this.image1Url,
+      image2Url: image2Url ?? this.image2Url,
+      image3Url: image3Url ?? this.image3Url,
       platforms: platforms ?? this.platforms,
       benefits: benefits ?? this.benefits,
       requirements: requirements ?? this.requirements,

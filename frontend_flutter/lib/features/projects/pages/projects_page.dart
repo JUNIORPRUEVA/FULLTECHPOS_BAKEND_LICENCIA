@@ -42,6 +42,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
   late TextEditingController _audienceCtrl;
   late TextEditingController _platformsCtrl;
   late TextEditingController _heroAssetCtrl;
+  late TextEditingController _releaseUrlCtrl;
+  late TextEditingController _image1UrlCtrl;
+  late TextEditingController _image2UrlCtrl;
+  late TextEditingController _image3UrlCtrl;
   late TextEditingController _benefitsCtrl;
   late TextEditingController _requirementsCtrl;
   late TextEditingController _modulesCtrl;
@@ -67,6 +71,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
     _audienceCtrl = TextEditingController();
     _platformsCtrl = TextEditingController();
     _heroAssetCtrl = TextEditingController();
+    _releaseUrlCtrl = TextEditingController();
+    _image1UrlCtrl = TextEditingController();
+    _image2UrlCtrl = TextEditingController();
+    _image3UrlCtrl = TextEditingController();
     _benefitsCtrl = TextEditingController();
     _requirementsCtrl = TextEditingController();
     _modulesCtrl = TextEditingController();
@@ -90,6 +98,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
     _audienceCtrl.dispose();
     _platformsCtrl.dispose();
     _heroAssetCtrl.dispose();
+    _releaseUrlCtrl.dispose();
+    _image1UrlCtrl.dispose();
+    _image2UrlCtrl.dispose();
+    _image3UrlCtrl.dispose();
     _benefitsCtrl.dispose();
     _requirementsCtrl.dispose();
     _modulesCtrl.dispose();
@@ -156,6 +168,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
     _audienceCtrl.text = profile.audience;
     _platformsCtrl.text = profile.platforms.join(', ');
     _heroAssetCtrl.text = profile.heroAsset;
+    _releaseUrlCtrl.text = profile.releaseDownloadUrl;
+    _image1UrlCtrl.text = profile.image1Url;
+    _image2UrlCtrl.text = profile.image2Url;
+    _image3UrlCtrl.text = profile.image3Url;
     _benefitsCtrl.text = profile.benefits.join('\n');
     _requirementsCtrl.text = profile.requirements.join('\n');
     _modulesCtrl.text = profile.modules
@@ -259,6 +275,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
       overview: _overviewCtrl.text.trim(),
       audience: _audienceCtrl.text.trim(),
       heroAsset: _heroAssetCtrl.text.trim(),
+      releaseDownloadUrl: _releaseUrlCtrl.text.trim(),
+      image1Url: _image1UrlCtrl.text.trim(),
+      image2Url: _image2UrlCtrl.text.trim(),
+      image3Url: _image3UrlCtrl.text.trim(),
       platforms: _platformsCtrl.text
           .split(',')
           .map((item) => item.trim())
@@ -483,6 +503,38 @@ class _ProjectsPageState extends State<ProjectsPage> {
                         const SizedBox(height: 12),
                         _labeledText('Ideal para', p.profile.audience),
                       ],
+                    ],
+                  ),
+                ),
+                _profileSection(
+                  title: 'Descarga e imágenes',
+                  icon: Icons.download_outlined,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _downloadField(
+                        'Enlace release / descarga',
+                        p.profile.releaseDownloadUrl,
+                      ),
+                      const SizedBox(height: 10),
+                      _imageLinkCard(
+                        title: 'Imagen 1',
+                        source: p.profile.image1Url,
+                        placeholder:
+                            'Pendiente: pega aquí la imagen principal del proyecto.',
+                      ),
+                      _imageLinkCard(
+                        title: 'Imagen 2',
+                        source: p.profile.image2Url,
+                        placeholder:
+                            'Pendiente: pega aquí una imagen del proceso principal.',
+                      ),
+                      _imageLinkCard(
+                        title: 'Imagen 3',
+                        source: p.profile.image3Url,
+                        placeholder:
+                            'Pendiente: pega aquí una imagen de reportes, caja o resultados.',
+                      ),
                     ],
                   ),
                 ),
@@ -931,6 +983,86 @@ class _ProjectsPageState extends State<ProjectsPage> {
     );
   }
 
+  Widget _downloadField(String label, String value) {
+    final displayValue = value.isEmpty ? 'Pendiente de completar' : value;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SelectableText(
+            displayValue,
+            style: TextStyle(
+              fontSize: 11.5,
+              height: 1.35,
+              color: value.isEmpty ? AppColors.textMuted : AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _imageLinkCard({
+    required String title,
+    required String source,
+    required String placeholder,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 145,
+            width: double.infinity,
+            child: _projectImage(source, fit: BoxFit.contain),
+          ),
+          const SizedBox(height: 8),
+          SelectableText(
+            source.isEmpty ? placeholder : source,
+            style: TextStyle(
+              fontSize: 11.5,
+              height: 1.35,
+              color: source.isEmpty ? AppColors.textMuted : AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _mediaCard(ProjectMedia media) {
     return Container(
       width: double.infinity,
@@ -1149,6 +1281,30 @@ class _ProjectsPageState extends State<ProjectsPage> {
                   controller: _heroAssetCtrl,
                   label: 'Imagen principal',
                   hintText: 'assets/projects/imagen.png o https://...',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _buildTextField(
+                  controller: _releaseUrlCtrl,
+                  label: 'Enlace release / descarga',
+                  hintText: 'https://github.com/.../releases/download/...',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _buildTextField(
+                  controller: _image1UrlCtrl,
+                  label: 'Imagen 1 URL',
+                  hintText: 'https://... o assets/projects/imagen1.png',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _buildTextField(
+                  controller: _image2UrlCtrl,
+                  label: 'Imagen 2 URL',
+                  hintText: 'https://... o assets/projects/imagen2.png',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _buildTextField(
+                  controller: _image3UrlCtrl,
+                  label: 'Imagen 3 URL',
+                  hintText: 'https://... o assets/projects/imagen3.png',
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _buildTextField(

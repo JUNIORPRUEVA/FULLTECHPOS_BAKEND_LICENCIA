@@ -8,15 +8,16 @@ class CustomersService {
   final SessionManager _sessionManager;
 
   CustomersService({required SessionManager sessionManager})
-      : _sessionManager = sessionManager,
-        _client = ApiClient(sessionManager: sessionManager);
+    : _sessionManager = sessionManager,
+      _client = ApiClient(sessionManager: sessionManager);
 
   Future<void> _ensureInit() => _sessionManager.init();
 
   Future<List<Customer>> listCustomers({int page = 1, int limit = 50}) async {
     await _ensureInit();
-    final data = await _client
-        .get('/api/admin/customers?page=$page&limit=$limit');
+    final data = await _client.get(
+      '/api/admin/customers?page=$page&limit=$limit',
+    );
     final list = data['customers'] as List<dynamic>? ?? [];
     return list
         .map((e) => Customer.fromJson(e as Map<String, dynamic>))
@@ -26,23 +27,20 @@ class CustomersService {
   Future<Customer> getCustomer(String id) async {
     await _ensureInit();
     final data = await _client.get('/api/admin/customers/$id');
-    final customer =
-        data['customer'] as Map<String, dynamic>? ?? data;
+    final customer = data['customer'] as Map<String, dynamic>? ?? data;
     return Customer.fromJson(customer);
   }
 
   Future<Customer> createCustomer(Map<String, dynamic> body) async {
     await _ensureInit();
     final data = await _client.post('/api/admin/customers', body);
-    return Customer.fromJson(
-        data['customer'] as Map<String, dynamic>? ?? data);
+    return Customer.fromJson(data['customer'] as Map<String, dynamic>? ?? data);
   }
 
   Future<Customer> updateCustomer(String id, Map<String, dynamic> body) async {
     await _ensureInit();
     final data = await _client.patch('/api/admin/customers/$id', body);
-    return Customer.fromJson(
-        data['customer'] as Map<String, dynamic>? ?? data);
+    return Customer.fromJson(data['customer'] as Map<String, dynamic>? ?? data);
   }
 
   Future<void> deleteCustomer(String id) async {
@@ -52,8 +50,9 @@ class CustomersService {
 
   Future<void> setBusinessId(String id, String businessId) async {
     await _ensureInit();
-    await _client.put(
-        '/api/admin/customers/$id/business_id', {'business_id': businessId});
+    await _client.put('/api/admin/customers/$id/business_id', {
+      'business_id': businessId,
+    });
   }
 
   /// Obtiene las licencias de un cliente específico
@@ -67,13 +66,32 @@ class CustomersService {
   }
 
   /// Asigna o regenera Business ID de un cliente
-  Future<Map<String, dynamic>> assignBusinessId(String customerId, {bool force = false}) async {
+  Future<Map<String, dynamic>> assignBusinessId(
+    String customerId, {
+    String? businessId,
+  }) async {
     await _ensureInit();
-    final data = await _client.post(
-      '/api/admin/customers/$customerId/assign-business-id',
-      {'force': force},
-    );
+    final data = await _client
+        .post('/api/admin/customers/$customerId/assign-business-id', {
+          if (businessId != null && businessId.trim().isNotEmpty)
+            'business_id': businessId.trim(),
+        });
     return data;
+  }
+
+  /// Reemplaza un Business ID existente mediante el flujo administrativo
+  /// protegido y auditado del backend.
+  Future<Map<String, dynamic>> repairBusinessId({
+    required String customerId,
+    required String businessId,
+    required String reason,
+  }) async {
+    await _ensureInit();
+    return _client.post('/api/admin/customers/$customerId/business_id/repair', {
+      'business_id': businessId,
+      'forceRepair': true,
+      'reason': reason,
+    });
   }
 
   /// Genera token de reset para un cliente
@@ -87,7 +105,9 @@ class CustomersService {
   }
 
   /// Obtiene los pagos de un cliente
-  Future<List<Map<String, dynamic>>> getCustomerPayments(String customerId) async {
+  Future<List<Map<String, dynamic>>> getCustomerPayments(
+    String customerId,
+  ) async {
     await _ensureInit();
     final data = await _client.get('/api/admin/customers/$customerId/payments');
     final list = data['payments'] as List<dynamic>? ?? [];

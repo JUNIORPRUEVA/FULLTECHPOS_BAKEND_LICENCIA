@@ -11,6 +11,10 @@ void main() {
       'product_profile': {
         'tagline': 'Control de préstamos',
         'overview': 'Descripción completa',
+        'release_download_url': 'https://example.com/fullcredit.apk',
+        'image_1_url': 'https://example.com/imagen-1.png',
+        'image_2_url': 'https://example.com/imagen-2.png',
+        'image_3_url': 'https://example.com/imagen-3.png',
         'platforms': ['Android'],
         'benefits': ['Cartera organizada'],
         'modules': [
@@ -31,12 +35,16 @@ void main() {
     });
 
     expect(project.profile.tagline, 'Control de préstamos');
+    expect(project.profile.releaseDownloadUrl, contains('fullcredit.apk'));
+    expect(project.profile.image1Url, contains('imagen-1.png'));
     expect(project.profile.platforms, ['Android']);
     expect(project.profile.modules.single.title, 'Préstamos');
     expect(project.profile.workflows.single.steps, hasLength(2));
 
     final serialized = project.toJson()['product_profile'];
     expect(serialized['benefits'], ['Cartera organizada']);
+    expect(serialized['release_download_url'], contains('fullcredit.apk'));
+    expect(serialized['image_3_url'], contains('imagen-3.png'));
     expect(serialized['modules'][0]['icon'], 'loans');
   });
 

@@ -63,8 +63,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
 
   Future<void> _refreshCustomer() async {
     try {
-      final updated =
-          await _customerService.getCustomer(_currentCustomer!.id);
+      final updated = await _customerService.getCustomer(_currentCustomer!.id);
       if (mounted) {
         setState(() => _currentCustomer = updated);
         widget.onUpdated?.call();
@@ -97,9 +96,13 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       );
       licenses.sort((a, b) {
         final aDate =
-            a.createdAt ?? a.expiresAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            a.createdAt ??
+            a.expiresAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
         final bDate =
-            b.createdAt ?? b.expiresAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            b.createdAt ??
+            b.expiresAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
         return bDate.compareTo(aDate);
       });
       if (mounted) {
@@ -126,7 +129,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     try {
       final projects = await _projectsService.listProjects();
       // Ordenar proyectos por nombre alfabéticamente
-      projects.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      projects.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
       if (mounted) {
         setState(() {
           _projects = projects;
@@ -172,9 +177,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear licencia: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al crear licencia: $e')));
       }
     }
   }
@@ -183,87 +188,43 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     final customer = _currentCustomer!;
     final hasBusinessId =
         customer.businessId != null && customer.businessId!.isNotEmpty;
-
-    if (hasBusinessId) {
-      final regenerate = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Business ID'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Este cliente ya tiene un Business ID asignado:'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SelectableText(
-                        customer.businessId!,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.copy_rounded, size: 16),
-                      onPressed: () {
-                        Clipboard.setData(
-                            ClipboardData(text: customer.businessId!));
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(content: Text('Business ID copiado')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('¿Deseas regenerar un nuevo Business ID?'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Regenerar'),
-            ),
-          ],
-        ),
-      );
-      if (regenerate != true) return;
-    }
+    final replacementBusinessId = await _requestManualBusinessId(
+      customer: customer,
+      hasBusinessId: hasBusinessId,
+    );
+    if (replacementBusinessId == null) return;
 
     setState(() => _loadingAction = true);
     try {
-      final result = await _customerService.assignBusinessId(
-        customer.id,
-        force: hasBusinessId,
-      );
+      final result = hasBusinessId
+          ? await _customerService.repairBusinessId(
+              customerId: customer.id,
+              businessId: replacementBusinessId,
+              reason: 'Business ID reemplazado manualmente desde APYRA Admin',
+            )
+          : await _customerService.assignBusinessId(
+              customer.id,
+              businessId: replacementBusinessId,
+            );
       if (mounted) {
         setState(() => _loadingAction = false);
-        final msg = result['message'] as String? ??
-            'Business ID asignado correctamente';
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(msg)));
+        final msg =
+            result['message'] as String? ??
+            result['warning'] as String? ??
+            (hasBusinessId
+                ? 'Business ID cambiado correctamente'
+                : 'Business ID asignado correctamente');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
         await _refreshCustomer();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -330,7 +291,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                   Text(
                     'Expira: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(expiresAt).toLocal())}',
                     style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 10),
@@ -341,7 +304,8 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                       Clipboard.setData(ClipboardData(text: token));
                       ScaffoldMessenger.of(ctx).showSnackBar(
                         const SnackBar(
-                            content: Text('Token copiado al portapapeles')),
+                          content: Text('Token copiado al portapapeles'),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.copy_rounded, size: 16),
@@ -362,24 +326,24 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   Future<void> _editCustomer() async {
     final customer = _currentCustomer!;
-    final nameCtrl =
-        TextEditingController(text: customer.nombreNegocio);
-    final contactNameCtrl =
-        TextEditingController(text: customer.contactoNombre ?? '');
-    final phoneCtrl =
-        TextEditingController(text: customer.contactoTelefono ?? '');
-    final emailCtrl =
-        TextEditingController(text: customer.contactoEmail ?? '');
-    final roleCtrl =
-        TextEditingController(text: customer.rolNegocio ?? '');
+    final nameCtrl = TextEditingController(text: customer.nombreNegocio);
+    final contactNameCtrl = TextEditingController(
+      text: customer.contactoNombre ?? '',
+    );
+    final phoneCtrl = TextEditingController(
+      text: customer.contactoTelefono ?? '',
+    );
+    final emailCtrl = TextEditingController(text: customer.contactoEmail ?? '');
+    final roleCtrl = TextEditingController(text: customer.rolNegocio ?? '');
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
@@ -394,8 +358,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               children: [
                 TextFormField(
                   controller: nameCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Nombre del negocio'),
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre del negocio',
+                  ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Requerido' : null,
                 ),
@@ -432,24 +397,22 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               try {
                 await _customerService.updateCustomer(customer.id, {
                   'nombre_negocio': nameCtrl.text.trim(),
-                  'contacto_nombre':
-                      contactNameCtrl.text.trim().isEmpty
-                          ? null
-                          : contactNameCtrl.text.trim(),
+                  'contacto_nombre': contactNameCtrl.text.trim().isEmpty
+                      ? null
+                      : contactNameCtrl.text.trim(),
                   'contacto_telefono': phoneCtrl.text.trim(),
-                  'contacto_email':
-                      emailCtrl.text.trim().isEmpty
-                          ? null
-                          : emailCtrl.text.trim(),
-                  'rol_negocio':
-                      roleCtrl.text.trim().isEmpty
-                          ? null
-                          : roleCtrl.text.trim(),
+                  'contacto_email': emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                  'rol_negocio': roleCtrl.text.trim().isEmpty
+                      ? null
+                      : roleCtrl.text.trim(),
                 });
                 Navigator.pop(ctx, true);
               } catch (e) {
-                ScaffoldMessenger.of(ctx)
-                    .showSnackBar(SnackBar(content: Text('Error: $e')));
+                ScaffoldMessenger.of(
+                  ctx,
+                ).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Guardar'),
@@ -491,8 +454,10 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           child: Column(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: const BoxDecoration(
                   border: Border(bottom: BorderSide(color: AppColors.border)),
                 ),
@@ -502,7 +467,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                       child: Text(
                         'Vista completa del cliente',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -530,65 +497,77 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                           _fullRow('Rol', customer.rolNegocio!),
                         _fullRow('Client ID', customer.id, mono: true),
                         _fullRow(
-                            'Business ID', customer.businessId ?? '—',
-                            mono: true),
+                          'Business ID',
+                          customer.businessId ?? '—',
+                          mono: true,
+                        ),
                         if (customer.createdAt != null)
                           _fullRow(
-                              'Registro',
-                              DateFormat('dd/MM/yyyy HH:mm')
-                                  .format(customer.createdAt!.toLocal())),
+                            'Registro',
+                            DateFormat(
+                              'dd/MM/yyyy HH:mm',
+                            ).format(customer.createdAt!.toLocal()),
+                          ),
                       ]),
                       const SizedBox(height: 16),
                       _fullSection('Licencias (${licenses.length})', [
                         if (licenses.isEmpty)
                           const Padding(
                             padding: EdgeInsets.all(8),
-                            child: Text('Sin licencias registradas',
-                                style:
-                                    TextStyle(color: AppColors.textMuted)),
+                            child: Text(
+                              'Sin licencias registradas',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
                           )
                         else
-                          ...licenses.map((l) => Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        '${l.displayProjectName} - ${l.shortKey}',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
+                          ...licenses.map(
+                            (l) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${l.displayProjectName} - ${l.shortKey}',
+                                      style: const TextStyle(fontSize: 12),
                                     ),
-                                    if (l.status != null)
-                                      StatusBadge.fromString(l.status!),
-                                  ],
-                                ),
-                              )),
+                                  ),
+                                  if (l.status != null)
+                                    StatusBadge.fromString(l.status!),
+                                ],
+                              ),
+                            ),
+                          ),
                       ]),
                       const SizedBox(height: 16),
                       _fullSection('Pagos (${payments.length})', [
                         if (payments.isEmpty)
                           const Padding(
                             padding: EdgeInsets.all(8),
-                            child: Text('Sin pagos registrados',
-                                style:
-                                    TextStyle(color: AppColors.textMuted)),
+                            child: Text(
+                              'Sin pagos registrados',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
                           )
                         else
-                          ...payments.map((p) => Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Text(
-                                  '${p['id']?.toString().substring(0, 8) ?? '—'} - \$${p['amount'] ?? '0'}',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              )),
+                          ...payments.map(
+                            (p) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Text(
+                                '${p['id']?.toString().substring(0, 8) ?? '—'} - \$${p['amount'] ?? '0'}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ),
                       ]),
-                      if (loadError != null) ...[
+                      if ((loadError ?? '').isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        Text(loadError,
-                            style: const TextStyle(
-                                color: AppColors.error, fontSize: 12)),
+                        Text(
+                          loadError!,
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -634,9 +613,13 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           Expanded(
             child: Text(
@@ -671,18 +654,21 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                 color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                    color: AppColors.warning.withValues(alpha: 0.3)),
+                  color: AppColors.warning.withValues(alpha: 0.3),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded,
-                      size: 16, color: AppColors.warning),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: AppColors.warning,
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Se borrará el cliente junto con sus licencias y datos relacionados.',
-                      style:
-                          TextStyle(fontSize: 11, color: AppColors.warning),
+                      style: TextStyle(fontSize: 11, color: AppColors.warning),
                     ),
                   ),
                 ],
@@ -697,8 +683,10 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar',
-                style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -724,15 +712,18 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
             errorMsg.contains('pago(s) asociado(s)')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMsg.contains('licencia')
-                  ? errorMsg
-                  : 'No se puede eliminar: el cliente tiene datos asociados'),
+              content: Text(
+                errorMsg.contains('licencia')
+                    ? errorMsg
+                    : 'No se puede eliminar: el cliente tiene datos asociados',
+              ),
               backgroundColor: AppColors.warning,
             ),
           );
         } else {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Error: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
     }
@@ -753,8 +744,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error al activar: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al activar: $e')));
       }
     }
   }
@@ -765,16 +757,18 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       await _licensesService.blockLicense(license.id);
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Licencia bloqueada')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Licencia bloqueada')));
         await _refreshCustomer();
         await _loadLicenseHistory();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -785,16 +779,18 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       await _licensesService.unblockLicense(license.id);
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Licencia desbloqueada')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Licencia desbloqueada')));
         await _refreshCustomer();
         await _loadLicenseHistory();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -806,15 +802,17 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       if (mounted) {
         setState(() => _loadingAction = false);
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Licencia extendida $days días')));
+          SnackBar(content: Text('Licencia extendida $days días')),
+        );
         await _refreshCustomer();
         await _loadLicenseHistory();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -831,12 +829,16 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
         content: Text('¿Eliminar la licencia "${license.shortKey}"?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Eliminar',
-                  style: TextStyle(color: AppColors.error))),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
         ],
       ),
     );
@@ -847,8 +849,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       await _licensesService.deleteLicense(license.id);
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Licencia eliminada')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Licencia eliminada')));
         await _refreshCustomer();
         await _loadLicenseHistory();
       }
@@ -856,11 +859,26 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     } catch (e) {
       if (mounted) {
         setState(() => _loadingAction = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
       return false;
     }
+  }
+
+  Future<String?> _requestManualBusinessId({
+    required Customer customer,
+    required bool hasBusinessId,
+  }) {
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _BusinessIdRepairDialog(
+        currentBusinessId: customer.businessId,
+        hasBusinessId: hasBusinessId,
+      ),
+    );
   }
 
   Future<void> _ensureProjectsLoaded() async {
@@ -947,7 +965,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               projectName: license.projectName,
               tipo: license.licenseType ?? 'FULL',
               diasValidez:
-                  int.tryParse(license.raw?['dias_validez']?.toString() ?? '') ??
+                  int.tryParse(
+                    license.raw?['dias_validez']?.toString() ?? '',
+                  ) ??
                   30,
               notas: license.notes,
               autoActivate: false,
@@ -1008,9 +1028,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       width: widget.width,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: const Border(
-          left: BorderSide(color: AppColors.border),
-        ),
+        border: const Border(left: BorderSide(color: AppColors.border)),
         boxShadow: [
           BoxShadow(
             color: AppColors.shadowMd,
@@ -1101,7 +1119,12 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     final statusText = customer.displayLicenseStatus;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, 10, AppSpacing.md, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        10,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1112,22 +1135,33 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           // ── Información del cliente ──
           _buildInfoCard('Información del cliente', [
             if (customer.contactoNombre != null)
-              _buildInfoRow(Icons.person_outline, 'Contacto',
-                  customer.contactoNombre!),
+              _buildInfoRow(
+                Icons.person_outline,
+                'Contacto',
+                customer.contactoNombre!,
+              ),
             if (customer.contactoTelefono != null)
-              _buildInfoRow(Icons.phone_outlined, 'Teléfono',
-                  customer.contactoTelefono!),
+              _buildInfoRow(
+                Icons.phone_outlined,
+                'Teléfono',
+                customer.contactoTelefono!,
+              ),
             if (customer.contactoEmail != null)
               _buildInfoRow(
-                  Icons.email_outlined, 'Email', customer.contactoEmail!),
+                Icons.email_outlined,
+                'Email',
+                customer.contactoEmail!,
+              ),
             if (customer.rolNegocio != null)
               _buildInfoRow(
-                  Icons.category_outlined, 'Rol', customer.rolNegocio!),
+                Icons.category_outlined,
+                'Rol',
+                customer.rolNegocio!,
+              ),
           ]),
           const SizedBox(height: 8),
 
           // ── Licencia principal ──
-          
           const SizedBox(height: 8),
 
           // ── IDs del sistema ──
@@ -1261,85 +1295,76 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           const Divider(height: 1),
           Expanded(
             child: _loadingLicenses
-                ? const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
                 : _errorLicenses != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.error_outline_rounded,
-                                color: AppColors.error,
-                                size: 26,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _errorLicenses!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.error,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              OutlinedButton.icon(
-                                onPressed: _loadLicenseHistory,
-                                icon: const Icon(
-                                  Icons.refresh_rounded,
-                                  size: 14,
-                                ),
-                                label: const Text('Reintentar'),
-                              ),
-                            ],
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: AppColors.error,
+                            size: 26,
                           ),
-                        ),
-                      )
-                    : _licenses.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.vpn_key_off_outlined,
-                                    size: 28,
-                                    color: AppColors.textMuted,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Este cliente aún no tiene licencias registradas.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  OutlinedButton.icon(
-                                    onPressed: _createLicense,
-                                    icon: const Icon(
-                                      Icons.add_rounded,
-                                      size: 14,
-                                    ),
-                                    label: const Text('Crear licencia'),
-                                  ),
-                                ],
-                              ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _errorLicenses!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.error,
                             ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-                            itemCount: _licenses.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (_, index) =>
-                                _buildEmbeddedLicenseTile(_licenses[index]),
                           ),
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            onPressed: _loadLicenseHistory,
+                            icon: const Icon(Icons.refresh_rounded, size: 14),
+                            label: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _licenses.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.vpn_key_off_outlined,
+                            size: 28,
+                            color: AppColors.textMuted,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Este cliente aún no tiene licencias registradas.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            onPressed: _createLicense,
+                            icon: const Icon(Icons.add_rounded, size: 14),
+                            label: const Text('Crear licencia'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+                    itemCount: _licenses.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, index) =>
+                        _buildEmbeddedLicenseTile(_licenses[index]),
+                  ),
           ),
         ],
       ),
@@ -1350,8 +1375,8 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     final dateLabel = license.expiresAt != null
         ? 'Vence ${DateFormat('dd/MM/yyyy').format(license.expiresAt!.toLocal())}'
         : (license.createdAt != null
-            ? 'Creada ${DateFormat('dd/MM/yyyy').format(license.createdAt!.toLocal())}'
-            : 'Sin fecha');
+              ? 'Creada ${DateFormat('dd/MM/yyyy').format(license.createdAt!.toLocal())}'
+              : 'Sin fecha');
 
     return Material(
       color: Colors.transparent,
@@ -1524,7 +1549,11 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               borderRadius: BorderRadius.circular(4),
               child: const Padding(
                 padding: EdgeInsets.all(4),
-                child: Icon(Icons.copy_rounded, size: 14, color: AppColors.textMuted),
+                child: Icon(
+                  Icons.copy_rounded,
+                  size: 14,
+                  color: AppColors.textMuted,
+                ),
               ),
             ),
         ],
@@ -1553,8 +1582,12 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       ),
       _buildActionButton(
         icon: Icons.business_outlined,
-        label: 'Asignar Business ID',
-        subtitle: 'Genera o regenera el ID',
+        label: _currentCustomer!.hasBusinessId
+            ? 'Cambiar Business ID'
+            : 'Asignar Business ID',
+        subtitle: _currentCustomer!.hasBusinessId
+            ? 'Asigna un ID nuevo'
+            : 'Genera el ID del negocio',
         onTap: _assignBusinessId,
         compact: compact,
       ),
@@ -1621,7 +1654,7 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
               for (var i = 0; i < actions.length; i++) ...[
                 actions[i],
                 if (i != actions.length - 1) const SizedBox(height: 8),
-              ]
+              ],
             ],
           ),
       ],
@@ -1678,7 +1711,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                         style: TextStyle(
                           fontSize: compact ? 12 : 13,
                           fontWeight: FontWeight.w600,
-                          color: danger ? AppColors.error : AppColors.textPrimary,
+                          color: danger
+                              ? AppColors.error
+                              : AppColors.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1699,7 +1734,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: compact ? 16 : 18,
-                  color: danger ? AppColors.error.withOpacity(0.5) : AppColors.textMuted,
+                  color: danger
+                      ? AppColors.error.withOpacity(0.5)
+                      : AppColors.textMuted,
                 ),
               ],
             ),
@@ -1723,7 +1760,10 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           children: [
             const Icon(Icons.error_outline, size: 32, color: AppColors.error),
             const SizedBox(height: 8),
-            Text(_errorLicenses!, style: const TextStyle(fontSize: 12, color: AppColors.error)),
+            Text(
+              _errorLicenses!,
+              style: const TextStyle(fontSize: 12, color: AppColors.error),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _viewLicenses,
@@ -1745,7 +1785,11 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.vpn_key_rounded, size: 16, color: AppColors.textMuted),
+              const Icon(
+                Icons.vpn_key_rounded,
+                size: 16,
+                color: AppColors.textMuted,
+              ),
               const SizedBox(width: 8),
               Text(
                 '${_licenses.length} licencia${_licenses.length != 1 ? 's' : ''}',
@@ -1777,16 +1821,26 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.vpn_key_off_outlined, size: 40, color: AppColors.textMuted),
+                      const Icon(
+                        Icons.vpn_key_off_outlined,
+                        size: 40,
+                        color: AppColors.textMuted,
+                      ),
                       const SizedBox(height: 12),
                       const Text(
                         'Sin licencias registradas',
-                        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       const Text(
                         'Crea una licencia para este cliente',
-                        style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
@@ -1839,7 +1893,11 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                     color: AppColors.primarySoft,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.vpn_key_rounded, size: 18, color: AppColors.primary),
+                  child: const Icon(
+                    Icons.vpn_key_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1869,7 +1927,11 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
                 if (license.status != null)
                   StatusBadge.fromString(license.status!),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textMuted),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
               ],
             ),
           ),
@@ -1916,4 +1978,203 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
     );
   }
 }
-       
+
+class _BusinessIdRepairDialog extends StatefulWidget {
+  const _BusinessIdRepairDialog({
+    required this.currentBusinessId,
+    required this.hasBusinessId,
+  });
+
+  final String? currentBusinessId;
+  final bool hasBusinessId;
+
+  @override
+  State<_BusinessIdRepairDialog> createState() =>
+      _BusinessIdRepairDialogState();
+}
+
+class _BusinessIdRepairDialogState extends State<_BusinessIdRepairDialog> {
+  final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _reviewing = false;
+
+  String get _newBusinessId => _controller.text.trim();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        _reviewing
+            ? 'Confirmación final'
+            : widget.hasBusinessId
+            ? 'Corregir Business ID'
+            : 'Asignar Business ID',
+      ),
+      content: SizedBox(
+        width: 520,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: _reviewing ? _buildReview() : _buildInput(),
+        ),
+      ),
+      actions: _reviewing ? _reviewActions() : _inputActions(),
+    );
+  }
+
+  Widget _buildInput() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        key: const ValueKey('business-id-input'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.hasBusinessId) ...[
+            const Text('Business ID registrado actualmente:'),
+            const SizedBox(height: 6),
+            _businessIdValue(widget.currentBusinessId!),
+            const SizedBox(height: 16),
+          ],
+          const Text(
+            'Copia el Business ID que aparece en la PC del cliente y '
+            'pégalo exactamente aquí:',
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _controller,
+            autofocus: true,
+            autocorrect: false,
+            enableSuggestions: false,
+            style: const TextStyle(fontFamily: 'monospace'),
+            decoration: const InputDecoration(
+              labelText: 'Business ID de la PC',
+              hintText: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
+              border: OutlineInputBorder(),
+            ),
+            validator: _validateBusinessId,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'APYRA no cambiará el ID guardado en la PC. Solo corregirá '
+            'el registro del servidor para que ambos coincidan.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReview() {
+    return Column(
+      key: const ValueKey('business-id-review'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.hasBusinessId
+              ? 'Se corregirá únicamente el Business ID de este cliente en '
+                    'APYRA.'
+              : 'Se asignará manualmente este Business ID al cliente.',
+        ),
+        if (widget.hasBusinessId) ...[
+          const SizedBox(height: 14),
+          const Text('ID actual:'),
+          const SizedBox(height: 5),
+          _businessIdValue(widget.currentBusinessId!),
+        ],
+        const SizedBox(height: 14),
+        const Text('ID copiado desde la PC:'),
+        const SizedBox(height: 5),
+        _businessIdValue(_newBusinessId, highlighted: true),
+        const SizedBox(height: 14),
+        const Text(
+          'Verifica carácter por carácter. Esta acción es una reparación '
+          'administrativa de última instancia.',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.warning,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _inputActions() {
+    return [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancelar'),
+      ),
+      FilledButton(
+        onPressed: () {
+          if (_formKey.currentState?.validate() != true) return;
+          FocusScope.of(context).unfocus();
+          setState(() => _reviewing = true);
+        },
+        child: const Text('Revisar cambio'),
+      ),
+    ];
+  }
+
+  List<Widget> _reviewActions() {
+    return [
+      TextButton(
+        onPressed: () => setState(() => _reviewing = false),
+        child: const Text('Volver'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, _newBusinessId),
+        child: Text(widget.hasBusinessId ? 'Aplicar corrección' : 'Asignar ID'),
+      ),
+    ];
+  }
+
+  String? _validateBusinessId(String? value) {
+    final id = value?.trim() ?? '';
+    if (id.isEmpty) return 'Debes escribir el Business ID';
+    if (!_isSupportedBusinessId(id)) {
+      return 'Formato inválido. Copia el ID completo desde la PC.';
+    }
+    if (widget.hasBusinessId && id == widget.currentBusinessId!.trim()) {
+      return 'Este ID ya está asignado al cliente';
+    }
+    return null;
+  }
+
+  bool _isSupportedBusinessId(String value) {
+    final id = value.trim();
+    final uuidV4 = RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+      caseSensitive: false,
+    );
+    final legacy = RegExp(r'^BIZ-[0-9A-F]{8,}$', caseSensitive: false);
+    return uuidV4.hasMatch(id) || legacy.hasMatch(id);
+  }
+
+  Widget _businessIdValue(String value, {bool highlighted = false}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: highlighted ? AppColors.primaryLight : AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(6),
+        border: highlighted ? Border.all(color: AppColors.primary) : null,
+      ),
+      child: SelectableText(
+        value,
+        style: TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: highlighted ? AppColors.primary : AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+}
