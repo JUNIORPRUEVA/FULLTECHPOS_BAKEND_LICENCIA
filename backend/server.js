@@ -1010,6 +1010,10 @@ function readLatestInstallerVersion() {
   return Array.isArray(versions) && versions.length > 0 ? versions[versions.length - 1] : null;
 }
 
+const FALLBACK_LATEST_INSTALLER_URL =
+  process.env.LATEST_INSTALLER_DOWNLOAD_URL ||
+  'https://github.com/JUNIORPRUEVA/fullpos-releases/releases/latest/download/FullPOS-Setup.exe';
+
 // GET /api/latest-installer - Obtener el último instalador (público)
 app.get('/api/latest-installer', (req, res) => {
   try {
@@ -1042,20 +1046,18 @@ app.get('/api/latest-installer/download', (req, res) => {
     const latest = readLatestInstallerVersion();
 
     if (!latest || !latest.ruta) {
-      return res.status(404).json({
-        success: false,
-        message: 'No hay instalador disponible'
-      });
+      return res.redirect(302, FALLBACK_LATEST_INSTALLER_URL);
     }
 
     const route = String(latest.ruta).replace(/^\/+/, '');
+    const filePath = path.join(__dirname, '..', route);
+    if (!fs.existsSync(filePath)) {
+      return res.redirect(302, FALLBACK_LATEST_INSTALLER_URL);
+    }
+
     return res.redirect(302, `/${route}`);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error al descargar el instalador',
-      error: error.message
-    });
+    return res.redirect(302, FALLBACK_LATEST_INSTALLER_URL);
   }
 });
 
