@@ -92,8 +92,16 @@ const List<AppSidebarItem> settingsSidebarItems = [
 class AppSidebar extends StatefulWidget {
   final String currentRoute;
   final VoidCallback? onItemTap;
+  final bool forceExpanded;
+  final bool mobile;
 
-  const AppSidebar({super.key, required this.currentRoute, this.onItemTap});
+  const AppSidebar({
+    super.key,
+    required this.currentRoute,
+    this.onItemTap,
+    this.forceExpanded = false,
+    this.mobile = false,
+  });
 
   @override
   State<AppSidebar> createState() => AppSidebarState();
@@ -119,10 +127,7 @@ class AppSidebarState extends State<AppSidebar>
     _widthAnim = Tween<double>(
       begin: AppSpacing.sidebarCollapsedWidth,
       end: AppSpacing.sidebarExpandedWidth,
-    ).animate(CurvedAnimation(
-      parent: _animCtrl,
-      curve: Curves.easeInOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeInOutCubic));
     _opacityAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animCtrl,
@@ -158,102 +163,125 @@ class AppSidebarState extends State<AppSidebar>
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthService>();
+    final opacityAnim = widget.forceExpanded
+        ? const AlwaysStoppedAnimation<double>(1)
+        : _opacityAnim;
     return AnimatedBuilder(
       animation: _widthAnim,
       builder: (context, child) {
-        return Container(
-          width: _widthAnim.value,
-          decoration: const BoxDecoration(
-            color: AppColors.sidebarBg,
-            border: Border(
-              right: BorderSide(color: AppColors.sidebarBorder),
-            ),
-          ),
-          child: Column(
-            children: [
-              // ── Header con toggle ──
-              _buildHeader(),
-              // ── Navegación ──
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  children: [
-                    ...sidebarItems.map((item) {
-                      if (item is AppSidebarGroupItem) {
-                        return _SidebarGroupTile(
-                          group: item,
-                          currentRoute: widget.currentRoute,
-                          expanded: _expanded,
-                          opacityAnim: _opacityAnim,
-                          onItemTap: widget.onItemTap,
-                        );
-                      }
-                      final sidebarItem = item as AppSidebarItem;
-                      final isActive =
-                          widget.currentRoute.startsWith(sidebarItem.route);
-                      return _SidebarTile(
-                        item: sidebarItem,
-                        isActive: isActive,
-                        expanded: _expanded,
-                        opacityAnim: _opacityAnim,
-                        onTap: () {
-                          widget.onItemTap?.call();
-                          context.go(sidebarItem.route);
-                        },
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                    _SettingsSection(
-                      currentRoute: widget.currentRoute,
-                      expanded: _expanded,
-                      opacityAnim: _opacityAnim,
-                      onItemTap: widget.onItemTap,
-                    ),
-                  ],
+        final currentWidth = widget.forceExpanded
+            ? AppSpacing.sidebarExpandedWidth
+            : _widthAnim.value;
+        final effectiveExpanded =
+            widget.forceExpanded ||
+            (_expanded && currentWidth >= AppSpacing.sidebarExpandedWidth - 24);
+        return MouseRegion(
+          onEnter: (_) {
+            if (!widget.forceExpanded) expand();
+          },
+          onExit: (_) {
+            if (!widget.forceExpanded) collapse();
+          },
+          child: Container(
+            width: widget.forceExpanded ? double.infinity : currentWidth,
+            decoration: const BoxDecoration(
+              color: AppColors.sidebarBg,
+              border: Border(right: BorderSide(color: AppColors.sidebarBorder)),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 18,
+                  offset: Offset(8, 0),
                 ),
-              ),
-              // ── Footer ──
-              _buildFooter(auth),
-            ],
+              ],
+            ),
+            child: Column(
+              children: [
+                // ── Header con toggle ──
+                _buildHeader(effectiveExpanded),
+                // ── Navegación ──
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      ...sidebarItems.map((item) {
+                        if (item is AppSidebarGroupItem) {
+                          return _SidebarGroupTile(
+                            group: item,
+                            currentRoute: widget.currentRoute,
+                            expanded: effectiveExpanded,
+                            mobile: widget.mobile,
+                            opacityAnim: opacityAnim,
+                            onItemTap: widget.onItemTap,
+                          );
+                        }
+                        final sidebarItem = item as AppSidebarItem;
+                        final isActive = widget.currentRoute.startsWith(
+                          sidebarItem.route,
+                        );
+                        return _SidebarTile(
+                          item: sidebarItem,
+                          isActive: isActive,
+                          expanded: effectiveExpanded,
+                          mobile: widget.mobile,
+                          opacityAnim: opacityAnim,
+                          onTap: () {
+                            widget.onItemTap?.call();
+                            context.go(sidebarItem.route);
+                          },
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                      _SettingsSection(
+                        currentRoute: widget.currentRoute,
+                        expanded: effectiveExpanded,
+                        mobile: widget.mobile,
+                        opacityAnim: opacityAnim,
+                        onItemTap: widget.onItemTap,
+                      ),
+                    ],
+                  ),
+                ),
+                // ── Footer ──
+                _buildFooter(effectiveExpanded),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool effectiveExpanded) {
     return Container(
-      height: AppSpacing.appBarHeight,
+      height: widget.mobile ? 78 : AppSpacing.appBarHeight,
       padding: EdgeInsets.symmetric(
-        horizontal: _expanded ? 16 : 0,
+        horizontal: effectiveExpanded ? (widget.mobile ? 20 : 16) : 0,
       ),
       decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.sidebarBorder),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.sidebarBorder)),
       ),
       child: Row(
-        mainAxisAlignment:
-            _expanded ? MainAxisAlignment.spaceBetween : MainAxisAlignment.center,
+        mainAxisAlignment: effectiveExpanded
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.center,
         children: [
-          if (_expanded) ...[
-            const Row(
+          if (effectiveExpanded) ...[
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.bolt_rounded,
                   color: AppColors.sidebarActive,
-                  size: 20,
+                  size: 24,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
                   'Appyra',
                   style: TextStyle(
                     color: AppColors.sidebarActiveText,
-                    fontSize: 15,
+                    fontSize: widget.mobile ? 18 : 15,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
                   ),
                 ),
               ],
@@ -266,90 +294,60 @@ class AppSidebarState extends State<AppSidebar>
             ),
           ],
           // Toggle button
-          if (_expanded)
-            _ToggleButton(
-              expanded: _expanded,
-              onTap: toggle,
-            ),
+          if (_expanded && !widget.forceExpanded)
+            _ToggleButton(expanded: _expanded, onTap: toggle),
         ],
       ),
     );
   }
 
-  Widget _buildFooter(AuthService auth) {
+  Widget _buildFooter(bool effectiveExpanded) {
+    final auth = context.read<AuthService>();
     return Container(
-      padding: EdgeInsets.all(_expanded ? 12 : 8),
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.sidebarBorder),
-        ),
+      padding: EdgeInsets.all(
+        effectiveExpanded ? (widget.mobile ? 16 : 12) : 8,
       ),
-      child: _expanded
-          ? Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppColors.sidebarActive.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      (auth.username.isNotEmpty
-                              ? auth.username[0]
-                              : 'U')
-                          .toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.sidebarActiveText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    auth.username,
-                    style: const TextStyle(
-                      color: AppColors.sidebarText,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                _LogoutButton(),
-              ],
-            )
-          : Column(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppColors.sidebarActive.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      (auth.username.isNotEmpty
-                              ? auth.username[0]
-                              : 'U')
-                          .toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.sidebarActiveText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                _LogoutButton(compact: true),
-              ],
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.sidebarBorder)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AppColors.sidebarActive.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Center(
+              child: Text(
+                (auth.username.isNotEmpty ? auth.username[0] : 'U')
+                    .toUpperCase(),
+                style: const TextStyle(
+                  color: AppColors.sidebarActiveText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          if (effectiveExpanded) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                auth.username,
+                style: const TextStyle(
+                  color: AppColors.sidebarText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -405,9 +403,7 @@ class _LogoutButton extends StatelessWidget {
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Cerrar sesión'),
-              content: const Text(
-                '¿Estás seguro que deseas cerrar sesión?',
-              ),
+              content: const Text('¿Estás seguro que deseas cerrar sesión?'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
@@ -454,10 +450,7 @@ class _FlyoutOverlay extends StatelessWidget {
       color: AppColors.sidebarBg,
       surfaceTintColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 180,
-          maxWidth: 220,
-        ),
+        constraints: const BoxConstraints(minWidth: 180, maxWidth: 220),
         child: child,
       ),
     );
@@ -471,6 +464,7 @@ class _SidebarGroupTile extends StatefulWidget {
   final AppSidebarGroupItem group;
   final String currentRoute;
   final bool expanded;
+  final bool mobile;
   final Animation<double> opacityAnim;
   final VoidCallback? onItemTap;
 
@@ -478,6 +472,7 @@ class _SidebarGroupTile extends StatefulWidget {
     required this.group,
     required this.currentRoute,
     required this.expanded,
+    this.mobile = false,
     required this.opacityAnim,
     this.onItemTap,
   });
@@ -493,8 +488,8 @@ class _SidebarGroupTileState extends State<_SidebarGroupTile> {
   OverlayEntry? _overlayEntry;
 
   bool get _hasActiveChild => widget.group.children.any(
-        (item) => widget.currentRoute.startsWith(item.route),
-      );
+    (item) => widget.currentRoute.startsWith(item.route),
+  );
 
   @override
   void initState() {
@@ -507,6 +502,12 @@ class _SidebarGroupTileState extends State<_SidebarGroupTile> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentRoute != widget.currentRoute && _hasActiveChild) {
       _groupExpanded = true;
+    }
+    if (!oldWidget.expanded && widget.expanded && _hovered) {
+      _groupExpanded = true;
+    }
+    if (oldWidget.expanded && !widget.expanded && !_hasActiveChild) {
+      _groupExpanded = false;
     }
   }
 
@@ -574,8 +575,9 @@ class _SidebarGroupTileState extends State<_SidebarGroupTile> {
                   ),
                   // Opciones del grupo
                   ...widget.group.children.map((item) {
-                    final isChildActive =
-                        widget.currentRoute.startsWith(item.route);
+                    final isChildActive = widget.currentRoute.startsWith(
+                      item.route,
+                    );
                     return _FlyoutItem(
                       item: item,
                       isActive: isChildActive,
@@ -611,13 +613,16 @@ class _SidebarGroupTileState extends State<_SidebarGroupTile> {
   @override
   Widget build(BuildContext context) {
     final isActive = _hasActiveChild;
+    final showChildren = widget.expanded && (_groupExpanded || _hasActiveChild);
     final bg = isActive
         ? AppColors.sidebarActive
         : _hovered
-            ? AppColors.sidebarHover
-            : Colors.transparent;
+        ? AppColors.sidebarHover
+        : Colors.transparent;
     final fg = isActive
         ? AppColors.sidebarActiveText
+        : widget.mobile
+        ? const Color(0xFFE2E8F0)
         : AppColors.sidebarText;
     final iconColor = isActive
         ? AppColors.sidebarIconActive
@@ -626,71 +631,114 @@ class _SidebarGroupTileState extends State<_SidebarGroupTile> {
     return CompositedTransformTarget(
       link: _layerLink,
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          onTap: () {
-            if (widget.expanded) {
-              // Modo expandido: toggle del submenú interno
-              setState(() => _groupExpanded = !_groupExpanded);
-            } else {
-              // Modo colapsado: mostrar flyout
-              _showFlyout(context);
-            }
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            margin: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 2,
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: widget.expanded ? 12 : 0,
-              vertical: 10,
-            ),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: widget.expanded
-                  ? MainAxisAlignment.start
-                  : MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isActive ? widget.group.activeIcon : widget.group.icon,
-                  size: 18,
-                  color: iconColor,
+        onEnter: (_) {
+          setState(() {
+            _hovered = true;
+            if (widget.expanded) _groupExpanded = true;
+          });
+        },
+        onExit: (_) {
+          setState(() {
+            _hovered = false;
+            if (!_hasActiveChild) _groupExpanded = false;
+          });
+        },
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (widget.mobile && widget.group.children.length == 1) {
+                  final child = widget.group.children.first;
+                  widget.onItemTap?.call();
+                  context.go(child.route);
+                  return;
+                }
+                if (widget.expanded) {
+                  setState(() => _groupExpanded = !_groupExpanded);
+                } else {
+                  _showFlyout(context);
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.expanded ? (widget.mobile ? 16 : 12) : 0,
+                  vertical: widget.mobile ? 14 : 10,
                 ),
-                if (widget.expanded) ...[
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: FadeTransition(
-                      opacity: widget.opacityAnim,
-                      child: Text(
-                        widget.group.label,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: widget.expanded
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isActive ? widget.group.activeIcon : widget.group.icon,
+                      size: widget.mobile ? 22 : 18,
+                      color: iconColor,
+                    ),
+                    if (widget.expanded) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: widget.opacityAnim,
+                          child: Text(
+                            widget.group.label,
+                            style: TextStyle(
+                              fontSize: widget.mobile ? 15 : 13,
+                              fontWeight: isActive
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: fg,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      if (!widget.mobile || widget.group.children.length > 1)
+                        Icon(
+                          showChildren
+                              ? Icons.keyboard_arrow_down_rounded
+                              : Icons.keyboard_arrow_right_rounded,
+                          size: 18,
                           color: fg,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    _groupExpanded
-                        ? Icons.keyboard_arrow_down_rounded
-                        : Icons.keyboard_arrow_right_rounded,
-                    size: 18,
-                    color: fg,
-                  ),
-                ],
-              ],
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ),
+            if (widget.expanded)
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 140),
+                crossFadeState: showChildren
+                    ? CrossFadeState.showFirst
+                    : CrossFadeState.showSecond,
+                firstChild: Column(
+                  children: widget.group.children.map((item) {
+                    final isChildActive = widget.currentRoute.startsWith(
+                      item.route,
+                    );
+                    return _SidebarTile(
+                      item: item,
+                      isActive: isChildActive,
+                      expanded: widget.expanded,
+                      mobile: widget.mobile,
+                      opacityAnim: widget.opacityAnim,
+                      indent: 8,
+                      onTap: () {
+                        widget.onItemTap?.call();
+                        context.go(item.route);
+                      },
+                    );
+                  }).toList(),
+                ),
+                secondChild: const SizedBox(width: double.infinity),
+              ),
+          ],
         ),
       ),
     );
@@ -723,8 +771,8 @@ class _FlyoutItemState extends State<_FlyoutItem> {
     final bg = widget.isActive
         ? AppColors.sidebarActive
         : _hovered
-            ? AppColors.sidebarHover
-            : Colors.transparent;
+        ? AppColors.sidebarHover
+        : Colors.transparent;
     final fg = widget.isActive
         ? AppColors.sidebarActiveText
         : AppColors.sidebarText;
@@ -738,10 +786,7 @@ class _FlyoutItemState extends State<_FlyoutItem> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(6),
@@ -759,8 +804,9 @@ class _FlyoutItemState extends State<_FlyoutItem> {
                 widget.item.label,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight:
-                      widget.isActive ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: widget.isActive
+                      ? FontWeight.w600
+                      : FontWeight.w500,
                   color: fg,
                 ),
               ),
@@ -778,12 +824,14 @@ class _FlyoutItemState extends State<_FlyoutItem> {
 class _SettingsSection extends StatefulWidget {
   final String currentRoute;
   final bool expanded;
+  final bool mobile;
   final Animation<double> opacityAnim;
   final VoidCallback? onItemTap;
 
   const _SettingsSection({
     required this.currentRoute,
     required this.expanded,
+    this.mobile = false,
     required this.opacityAnim,
     this.onItemTap,
   });
@@ -799,8 +847,8 @@ class _SettingsSectionState extends State<_SettingsSection> {
   final LayerLink _layerLink = LayerLink();
 
   bool get _hasActiveChild => settingsSidebarItems.any(
-        (item) => widget.currentRoute.startsWith(item.route),
-      );
+    (item) => widget.currentRoute.startsWith(item.route),
+  );
 
   @override
   void initState() {
@@ -878,8 +926,9 @@ class _SettingsSectionState extends State<_SettingsSection> {
                   ),
                   // Opciones
                   ...settingsSidebarItems.map((item) {
-                    final isChildActive =
-                        widget.currentRoute.startsWith(item.route);
+                    final isChildActive = widget.currentRoute.startsWith(
+                      item.route,
+                    );
                     return _FlyoutItem(
                       item: item,
                       isActive: isChildActive,
@@ -915,10 +964,12 @@ class _SettingsSectionState extends State<_SettingsSection> {
     final bg = isActive
         ? AppColors.sidebarActive
         : _hovered
-            ? AppColors.sidebarHover
-            : Colors.transparent;
+        ? AppColors.sidebarHover
+        : Colors.transparent;
     final fg = isActive
         ? AppColors.sidebarActiveText
+        : widget.mobile
+        ? const Color(0xFFE2E8F0)
         : AppColors.sidebarText;
 
     return CompositedTransformTarget(
@@ -943,13 +994,10 @@ class _SettingsSectionState extends State<_SettingsSection> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 120),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 padding: EdgeInsets.symmetric(
-                  horizontal: widget.expanded ? 12 : 0,
-                  vertical: 10,
+                  horizontal: widget.expanded ? (widget.mobile ? 16 : 12) : 0,
+                  vertical: widget.mobile ? 14 : 10,
                 ),
                 decoration: BoxDecoration(
                   color: bg,
@@ -962,7 +1010,7 @@ class _SettingsSectionState extends State<_SettingsSection> {
                   children: [
                     Icon(
                       Icons.settings_outlined,
-                      size: 18,
+                      size: widget.mobile ? 22 : 18,
                       color: fg,
                     ),
                     if (widget.expanded) ...[
@@ -973,7 +1021,7 @@ class _SettingsSectionState extends State<_SettingsSection> {
                           child: Text(
                             'Configuración',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: widget.mobile ? 15 : 13,
                               fontWeight: isActive
                                   ? FontWeight.w600
                                   : FontWeight.w500,
@@ -1004,12 +1052,14 @@ class _SettingsSectionState extends State<_SettingsSection> {
                   : CrossFadeState.showSecond,
               firstChild: Column(
                 children: settingsSidebarItems.map((item) {
-                  final isChildActive =
-                      widget.currentRoute.startsWith(item.route);
+                  final isChildActive = widget.currentRoute.startsWith(
+                    item.route,
+                  );
                   return _SidebarTile(
                     item: item,
                     isActive: isChildActive,
                     expanded: widget.expanded,
+                    mobile: widget.mobile,
                     opacityAnim: widget.opacityAnim,
                     indent: 8,
                     onTap: () {
@@ -1034,6 +1084,7 @@ class _SidebarTile extends StatefulWidget {
   final AppSidebarItem item;
   final bool isActive;
   final bool expanded;
+  final bool mobile;
   final Animation<double> opacityAnim;
   final double indent;
   final VoidCallback onTap;
@@ -1042,6 +1093,7 @@ class _SidebarTile extends StatefulWidget {
     required this.item,
     required this.isActive,
     required this.expanded,
+    this.mobile = false,
     required this.opacityAnim,
     this.indent = 0,
     required this.onTap,
@@ -1059,10 +1111,12 @@ class _SidebarTileState extends State<_SidebarTile> {
     final bg = widget.isActive
         ? AppColors.sidebarActive
         : _hovered
-            ? AppColors.sidebarHover
-            : Colors.transparent;
+        ? AppColors.sidebarHover
+        : Colors.transparent;
     final fg = widget.isActive
         ? AppColors.sidebarActiveText
+        : widget.mobile
+        ? const Color(0xFFE2E8F0)
         : AppColors.sidebarText;
     final iconColor = widget.isActive
         ? AppColors.sidebarIconActive
@@ -1075,16 +1129,16 @@ class _SidebarTileState extends State<_SidebarTile> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          margin: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 2,
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.expanded ? 12 : 0,
-            vertical: 10,
-          ).copyWith(
-            left: widget.expanded ? 12 + widget.indent : 0,
-          ),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding:
+              EdgeInsets.symmetric(
+                horizontal: widget.expanded ? (widget.mobile ? 16 : 12) : 0,
+                vertical: widget.mobile ? 14 : 10,
+              ).copyWith(
+                left: widget.expanded
+                    ? (widget.mobile ? 16 : 12) + widget.indent
+                    : 0,
+              ),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(8),
@@ -1096,7 +1150,7 @@ class _SidebarTileState extends State<_SidebarTile> {
             children: [
               Icon(
                 widget.isActive ? widget.item.activeIcon : widget.item.icon,
-                size: 18,
+                size: widget.mobile ? 22 : 18,
                 color: iconColor,
               ),
               if (widget.expanded) ...[
@@ -1107,7 +1161,7 @@ class _SidebarTileState extends State<_SidebarTile> {
                     child: Text(
                       widget.item.label,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: widget.mobile ? 15 : 13,
                         fontWeight: widget.isActive
                             ? FontWeight.w600
                             : FontWeight.w500,

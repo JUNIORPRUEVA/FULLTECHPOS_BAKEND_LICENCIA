@@ -151,18 +151,47 @@ class _ProjectsPageState extends State<ProjectsPage> {
       _selected = project;
       _editing = false;
     });
+    if (MediaQuery.sizeOf(context).width < 1000) {
+      _openProjectDetailMobile();
+    }
   }
 
-  void _startEditing() {
-    if (_selected == null) return;
-    _nameCtrl.text = _selected!.name;
-    _codeCtrl.text = _selected!.code;
-    _descCtrl.text = _selected!.description ?? '';
-    _priceCtrl.text = _selected!.monthlyPrice.toStringAsFixed(2);
-    _currencyCtrl.text = _selected!.currency;
-    _demoDaysCtrl.text = _selected!.demoDays.toString();
-    _minMonthsCtrl.text = _selected!.minPurchaseMonths.toString();
-    final profile = _selected!.profile;
+  Future<void> _openProjectDetailMobile() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => Dialog.fullscreen(
+        child: SafeArea(
+          child: Container(
+            color: AppColors.surface,
+            child: _editing
+                ? _buildEditPanel(
+                    onCancelOverride: () {
+                      Navigator.of(dialogContext).pop();
+                      setState(() => _editing = false);
+                    },
+                  )
+                : _buildDetailPanel(
+                    onCloseOverride: () {
+                      Navigator.of(dialogContext).pop();
+                      setState(() => _selected = null);
+                    },
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _fillEditForm(Project project) {
+    _nameCtrl.text = project.name;
+    _codeCtrl.text = project.code;
+    _descCtrl.text = project.description ?? '';
+    _priceCtrl.text = project.monthlyPrice.toStringAsFixed(2);
+    _currencyCtrl.text = project.currency;
+    _demoDaysCtrl.text = project.demoDays.toString();
+    _minMonthsCtrl.text = project.minPurchaseMonths.toString();
+    final profile = project.profile;
     _taglineCtrl.text = profile.tagline;
     _overviewCtrl.text = profile.overview;
     _audienceCtrl.text = profile.audience;
@@ -187,12 +216,28 @@ class _ProjectsPageState extends State<ProjectsPage> {
     _galleryCtrl.text = profile.gallery
         .map((item) => '${item.title} | ${item.asset} | ${item.caption}')
         .join('\n');
-    _isPaid = _selected!.isPaidProject;
-    _allowDemo = _selected!.allowDemo;
-    _isActive = _selected!.isActive;
+    _isPaid = project.isPaidProject;
+    _allowDemo = project.allowDemo;
+    _isActive = project.isActive;
+  }
+
+  void _startEditing() {
+    if (_selected == null) return;
+    _fillEditForm(_selected!);
     setState(() {
       _editing = true;
     });
+  }
+
+  void _editProjectFromList(Project project) {
+    _fillEditForm(project);
+    setState(() {
+      _selected = project;
+      _editing = true;
+    });
+    if (MediaQuery.sizeOf(context).width < 1000) {
+      _openProjectDetailMobile();
+    }
   }
 
   void _cancelEditing() {
@@ -328,12 +373,13 @@ class _ProjectsPageState extends State<ProjectsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width >= 1000;
     return Row(
       children: [
         // Lista de proyectos
         Expanded(child: _buildProjectList()),
         // Panel de detalle/edición
-        if (_selected != null)
+        if (isDesktop && _selected != null)
           Container(
             width: AppSpacing.detailPanelWidth,
             decoration: const BoxDecoration(
@@ -423,6 +469,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 project: project,
                 selected: isSelected,
                 onTap: () => _selectProject(project),
+                onEdit: () => _editProjectFromList(project),
               );
             },
           ),
@@ -431,7 +478,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
     );
   }
 
-  Widget _buildDetailPanel() {
+  Widget _buildDetailPanel({VoidCallback? onCloseOverride}) {
     final p = _selected!;
     return Column(
       children: [
@@ -455,9 +502,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 ),
               ),
               IconButton(
-                onPressed: () => setState(() => _selected = null),
-                tooltip: 'Cerrar',
-                icon: const Icon(Icons.close_rounded, size: 18),
+                onPressed:
+                    onCloseOverride ?? () => setState(() => _selected = null),
+                tooltip: 'Regresar',
+                icon: const Icon(Icons.arrow_back_rounded, size: 20),
               ),
             ],
           ),
@@ -1182,7 +1230,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
     return icons[key] ?? Icons.widgets_outlined;
   }
 
-  Widget _buildEditPanel() {
+  Widget _buildEditPanel({VoidCallback? onCancelOverride}) {
     return Form(
       key: _formKey,
       child: Column(
@@ -1207,9 +1255,9 @@ class _ProjectsPageState extends State<ProjectsPage> {
                   ),
                 ),
                 IconButton(
-                  onPressed: _cancelEditing,
+                  onPressed: onCancelOverride ?? _cancelEditing,
                   tooltip: 'Cancelar',
-                  icon: const Icon(Icons.close_rounded, size: 18),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
                 ),
               ],
             ),
@@ -1553,11 +1601,13 @@ class _ProjectListTile extends StatelessWidget {
   final Project project;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
 
   const _ProjectListTile({
     required this.project,
     required this.selected,
     required this.onTap,
+    required this.onEdit,
   });
 
   @override
@@ -1591,6 +1641,18 @@ class _ProjectListTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                IconButton(
+                  onPressed: onEdit,
+                  tooltip: 'Editar proyecto',
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 36,
+                    height: 36,
+                  ),
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 6),
                 StatusBadge(
                   label: project.isActive ? 'Activo' : 'Inactivo',
                   type: project.isActive

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
@@ -61,58 +62,19 @@ class _DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(isMobile ? 10 : AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Panel',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Resumen general del sistema',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                onPressed: onRefresh,
-                color: AppColors.textSecondary,
-                tooltip: 'Actualizar',
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
           // Stats grid
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth > 800
                   ? 4
-                  : constraints.maxWidth > 500
-                  ? 2
-                  : 1;
-              return _StatsGrid(
-                columns: columns,
-                stats: stats,
-              );
+                  : 2;
+              return _StatsGrid(columns: columns, stats: stats);
             },
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -121,9 +83,17 @@ class _DashboardContent extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _MetricBreakdown(
             rows: [
-              _MetricRow('Total licencias', stats.totalLicenses, AppColors.textPrimary),
+              _MetricRow(
+                'Total licencias',
+                stats.totalLicenses,
+                AppColors.textPrimary,
+              ),
               _MetricRow('Activas', stats.activeLicenses, AppColors.success),
-              _MetricRow('Pendientes', stats.pendingLicenses, AppColors.warning),
+              _MetricRow(
+                'Pendientes',
+                stats.pendingLicenses,
+                AppColors.warning,
+              ),
               _MetricRow('Vencidas', stats.expiredLicenses, AppColors.error),
               _MetricRow('Bloqueadas', stats.blockedLicenses, AppColors.error),
             ],
@@ -134,10 +104,22 @@ class _DashboardContent extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _MetricBreakdown(
             rows: [
-              _MetricRow('Total pagos', stats.totalPayments, AppColors.textPrimary),
-              _MetricRow('Completados', stats.completedPayments, AppColors.success),
+              _MetricRow(
+                'Total pagos',
+                stats.totalPayments,
+                AppColors.textPrimary,
+              ),
+              _MetricRow(
+                'Completados',
+                stats.completedPayments,
+                AppColors.success,
+              ),
               if (stats.pendingPayments > 0)
-                _MetricRow('Pendientes', stats.pendingPayments, AppColors.warning),
+                _MetricRow(
+                  'Pendientes',
+                  stats.pendingPayments,
+                  AppColors.warning,
+                ),
             ],
           ),
         ],
@@ -167,10 +149,7 @@ class _StatsGrid extends StatelessWidget {
   final int columns;
   final DashboardStats stats;
 
-  const _StatsGrid({
-    required this.columns,
-    required this.stats,
-  });
+  const _StatsGrid({required this.columns, required this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -180,66 +159,81 @@ class _StatsGrid extends StatelessWidget {
         value: stats.totalCustomers.toString(),
         icon: Icons.people_outline_rounded,
         color: AppColors.primary,
+        route: '/admin/clientes',
       ),
       _StatCardData(
         title: 'Licencias',
         value: stats.totalLicenses.toString(),
         icon: Icons.vpn_key_outlined,
         color: AppColors.success,
+        route: '/admin/licencias',
       ),
       _StatCardData(
         title: 'Licencias activas',
         value: stats.activeLicenses.toString(),
         icon: Icons.check_circle_outline_rounded,
         color: AppColors.success,
+        route: '/admin/licencias',
       ),
       _StatCardData(
         title: 'Licencias vencidas',
         value: stats.expiredLicenses.toString(),
         icon: Icons.error_outline_rounded,
         color: AppColors.error,
+        route: '/admin/licencias',
       ),
       _StatCardData(
         title: 'Licencias pendientes',
         value: stats.pendingLicenses.toString(),
         icon: Icons.schedule_outlined,
         color: AppColors.warning,
+        route: '/admin/licencias',
       ),
       _StatCardData(
         title: 'Proyectos',
         value: stats.totalProjects.toString(),
         icon: Icons.folder_copy_outlined,
         color: AppColors.primary,
+        route: '/admin/proyectos',
       ),
       _StatCardData(
         title: 'Pagos registrados',
         value: stats.totalPayments.toString(),
         icon: Icons.payments_outlined,
         color: AppColors.success,
+        route: '/admin/pagos',
       ),
     ];
 
     // Only show pending payments card if there are pending payments
     if (stats.pendingPayments > 0) {
-      cards.add(_StatCardData(
-        title: 'Pagos pendientes',
-        value: stats.pendingPayments.toString(),
-        icon: Icons.pending_actions_outlined,
-        color: AppColors.warning,
-      ));
+      cards.add(
+        _StatCardData(
+          title: 'Pagos pendientes',
+          value: stats.pendingPayments.toString(),
+          icon: Icons.pending_actions_outlined,
+          color: AppColors.warning,
+          route: '/admin/pagos',
+        ),
+      );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 2.4,
-      ),
-      itemCount: cards.length,
-      itemBuilder: (_, i) => _StatCard(data: cards[i]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: isMobile ? 10 : AppSpacing.md,
+            mainAxisSpacing: isMobile ? 10 : AppSpacing.md,
+            childAspectRatio: isMobile ? 3.2 : 2.8,
+          ),
+          itemCount: cards.length,
+          itemBuilder: (_, i) => _StatCard(data: cards[i]),
+        );
+      },
     );
   }
 }
@@ -249,11 +243,13 @@ class _StatCardData {
   final String value;
   final IconData icon;
   final Color color;
+  final String route;
   const _StatCardData({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    required this.route,
   });
 }
 
@@ -263,52 +259,76 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: data.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(data.icon, size: 18, color: data.color),
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final radius = BorderRadius.circular(isMobile ? 12 : AppSpacing.cardRadius);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: radius,
+      elevation: 0,
+      child: InkWell(
+        onTap: () => context.go(data.route),
+        borderRadius: radius,
+        child: Ink(
+          padding: EdgeInsets.all(isMobile ? 10 : 14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: radius,
+            boxShadow: isMobile
+                ? null
+                : [
+                    BoxShadow(
+                      color: AppColors.shadowSm,
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  data.value,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    height: 1,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: isMobile ? 24 : 34,
+                height: isMobile ? 24 : 34,
+                decoration: BoxDecoration(
+                  color: data.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  data.title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                child: Icon(
+                  data.icon,
+                  size: isMobile ? 14 : 18,
+                  color: data.color,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      data.value,
+                      style: TextStyle(
+                        fontSize: isMobile ? 15 : 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      data.title,
+                      style: TextStyle(
+                        fontSize: isMobile ? 10.5 : 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

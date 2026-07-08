@@ -17,7 +17,7 @@
 
 // Cargar .env desde la raíz del proyecto
 const path = require('path');
-const rootDir = path.join(__dirname, '..');
+const rootDir = path.join(__dirname, '..', '..');
 require('dotenv').config({ path: path.join(rootDir, '.env') });
 
 const paypalService = require('../services/paypalService');

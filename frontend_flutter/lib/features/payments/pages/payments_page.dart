@@ -112,25 +112,42 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Órdenes de pago'),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton.icon(
-              onPressed: _showCreateLinkPanel,
-              icon: const Icon(Icons.add_circle_outline, size: 18),
-              label: const Text('Nueva orden de pago'),
+      appBar: isMobile
+          ? null
+          : AppBar(
+              title: const Text('Órdenes de pago'),
+              backgroundColor: AppColors.surface,
+              elevation: 0,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: TextButton.icon(
+                    onPressed: _showCreateLinkPanel,
+                    icon: const Icon(Icons.add_circle_outline, size: 18),
+                    label: const Text('Nueva orden de pago'),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       body: Column(
         children: [
+          if (isMobile)
+            Container(
+              width: double.infinity,
+              color: AppColors.surface,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              child: SizedBox(
+                height: 42,
+                child: ElevatedButton.icon(
+                  onPressed: _showCreateLinkPanel,
+                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                  label: const Text('Nueva orden de pago'),
+                ),
+              ),
+            ),
           _buildFilterBar(),
           Expanded(child: _buildBody()),
           _buildPagination(),
@@ -140,6 +157,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
   }
 
   Widget _buildFilterBar() {
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
     final filters = [
       {'label': 'Todos', 'value': null as String?},
       {'label': 'Pendientes', 'value': 'PENDING'},
@@ -151,38 +169,50 @@ class _PaymentsPageState extends State<PaymentsPage> {
     return Container(
       color: AppColors.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          ...filters.map((f) {
-            final isActive = _statusFilter == f['value'];
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(f['label']!,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: isActive ? Colors.white : Colors.grey[300])),
-                selected: isActive,
-                onSelected: (_) => _setFilter(f['value']),
-                selectedColor: AppColors.primary,
-                backgroundColor: Colors.transparent,
-                side: BorderSide(
-                    color: isActive
-                        ? AppColors.primary
-                        : Colors.grey[700]!),
-                checkmarkColor: Colors.white,
-                labelStyle: const TextStyle(fontSize: 12),
-              ),
-            );
-          }),
-          const Spacer(),
-          Text(
-            '$_total órdenes',
-            style: TextStyle(color: Colors.grey[400], fontSize: 12),
-          ),
-        ],
-      ),
+      child: isMobile
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: _buildFilterChips(filters)),
+            )
+          : Row(
+              children: [
+                ..._buildFilterChips(filters),
+                const Spacer(),
+                Text(
+                  '$_total órdenes',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
     );
+  }
+
+  List<Widget> _buildFilterChips(List<Map<String, String?>> filters) {
+    return filters.map((f) {
+      final isActive = _statusFilter == f['value'];
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: FilterChip(
+          label: Text(f['label']!),
+          selected: isActive,
+          onSelected: (_) => _setFilter(f['value']),
+          selectedColor: AppColors.primary,
+          backgroundColor: AppColors.surface,
+          side: BorderSide(
+            color: isActive ? AppColors.primary : AppColors.border,
+          ),
+          checkmarkColor: Colors.white,
+          labelStyle: TextStyle(
+            fontSize: 12,
+            color: isActive ? Colors.white : AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildBody() {
@@ -197,11 +227,15 @@ class _PaymentsPageState extends State<PaymentsPage> {
           children: [
             Icon(Icons.error_outline, color: Colors.red[300], size: 48),
             const SizedBox(height: 16),
-            Text('Error al cargar órdenes',
-                style: TextStyle(color: Colors.grey[300], fontSize: 16)),
+            Text(
+              'Error al cargar órdenes',
+              style: TextStyle(color: Colors.grey[300], fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            Text(_error!,
-                style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+            Text(
+              _error!,
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadOrders,
@@ -217,11 +251,16 @@ class _PaymentsPageState extends State<PaymentsPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.receipt_long_outlined,
-                color: Colors.grey[600], size: 64),
+            Icon(
+              Icons.receipt_long_outlined,
+              color: Colors.grey[600],
+              size: 64,
+            ),
             const SizedBox(height: 16),
-            Text('No hay órdenes de pago',
-                style: TextStyle(color: Colors.grey[400], fontSize: 16)),
+            Text(
+              'No hay órdenes de pago',
+              style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            ),
             const SizedBox(height: 8),
             Text(
               _statusFilter != null
@@ -279,7 +318,8 @@ class _PaymentsPageState extends State<PaymentsPage> {
                     Row(
                       children: [
                         Text(
-                          order.customerName ?? 'Cliente #${order.customerId.substring(0, 8)}',
+                          order.customerName ??
+                              'Cliente #${order.customerId.substring(0, 8)}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -294,38 +334,54 @@ class _PaymentsPageState extends State<PaymentsPage> {
                     Row(
                       children: [
                         if (order.projectName != null) ...[
-                          Icon(Icons.folder_outlined,
-                              size: 12, color: Colors.grey[500]),
+                          Icon(
+                            Icons.folder_outlined,
+                            size: 12,
+                            color: Colors.grey[500],
+                          ),
                           const SizedBox(width: 4),
-                          Text(order.projectName!,
-                              style: TextStyle(
-                                  color: Colors.grey[400], fontSize: 12)),
+                          Text(
+                            order.projectName!,
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(width: 16),
                         ],
-                        Icon(Icons.calendar_today,
-                            size: 12, color: Colors.grey[500]),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 12,
+                          color: Colors.grey[500],
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${order.months} meses',
                           style: TextStyle(
-                              color: Colors.grey[400], fontSize: 12),
+                            color: Colors.grey[400],
+                            fontSize: 12,
+                          ),
                         ),
                         const SizedBox(width: 16),
-                        Icon(Icons.attach_money,
-                            size: 12, color: Colors.grey[500]),
+                        Icon(
+                          Icons.attach_money,
+                          size: 12,
+                          color: Colors.grey[500],
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${order.totalAmount.toStringAsFixed(2)} ${order.currency}',
                           style: TextStyle(
-                              color: Colors.grey[400], fontSize: 12),
+                            color: Colors.grey[400],
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Creada: ${_formatDate(order.createdAt)}',
-                      style:
-                          TextStyle(color: Colors.grey[600], fontSize: 11),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 11),
                     ),
                   ],
                 ),

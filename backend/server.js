@@ -1004,21 +1004,24 @@ app.get('/api/versions', sessions.verifySessionMiddleware, (req, res) => {
   }
 });
 
+function readLatestInstallerVersion() {
+  const versionsPath = path.join(__dirname, 'versions.json');
+  const versions = JSON.parse(fs.readFileSync(versionsPath, 'utf8'));
+  return Array.isArray(versions) && versions.length > 0 ? versions[versions.length - 1] : null;
+}
+
 // GET /api/latest-installer - Obtener el último instalador (público)
 app.get('/api/latest-installer', (req, res) => {
   try {
-    const versionsPath = path.join(__dirname, 'versions.json');
-    const versions = JSON.parse(fs.readFileSync(versionsPath, 'utf8'));
+    const latest = readLatestInstallerVersion();
 
-    if (versions.length === 0) {
+    if (!latest) {
       return res.status(404).json({
         success: false,
         message: 'No hay versiones disponibles'
       });
     }
 
-    // Retornar la última versión (la más reciente)
-    const latest = versions[versions.length - 1];
     res.json({
       success: true,
       version: latest
@@ -1027,6 +1030,30 @@ app.get('/api/latest-installer', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener el instalador',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/latest-installer/download - Redirige siempre al archivo más reciente.
+// Esta ruta es ideal para bots: el cliente recibe un enlace directo de descarga.
+app.get('/api/latest-installer/download', (req, res) => {
+  try {
+    const latest = readLatestInstallerVersion();
+
+    if (!latest || !latest.ruta) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay instalador disponible'
+      });
+    }
+
+    const route = String(latest.ruta).replace(/^\/+/, '');
+    return res.redirect(302, `/${route}`);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al descargar el instalador',
       error: error.message
     });
   }

@@ -46,6 +46,7 @@ async function listProjects() {
   const res = await pool.query(
     `SELECT *
      FROM projects
+     WHERE code <> 'DEFAULT'
      ORDER BY created_at DESC`
   );
   return res.rows;

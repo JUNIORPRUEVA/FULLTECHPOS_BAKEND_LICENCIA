@@ -1,11 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../features/licenses/models/license.dart';
-import '../../features/licenses/services/licenses_service.dart';
 import '../api/api_client.dart';
 import '../auth/auth_service.dart';
 import '../auth/session_manager.dart';
@@ -14,14 +11,8 @@ import '../theme/app_spacing.dart';
 
 enum CashRegisterState { open, closed }
 
-enum LicenseMenuStatus { active, expired, pending }
-
 enum FullposMenuAction {
-  profile,
-  license,
-  security,
   settings,
-  support,
   logout,
 }
 
@@ -45,9 +36,8 @@ class _AppBarAccountMenuState extends State<AppBarAccountMenu> {
     final sessionManager = context.read<SessionManager>();
     final auth = context.read<AuthService>();
     final apiClient = ApiClient(sessionManager: sessionManager);
-    final licensesService = LicensesService(sessionManager: sessionManager);
 
-    var companyName = 'FullPOS';
+    var companyName = 'Appyra';
     try {
       final response = await apiClient.get('/api/admin/store-settings');
       final settings = response['settings'];
@@ -62,88 +52,17 @@ class _AppBarAccountMenuState extends State<AppBarAccountMenu> {
     }
 
     final userName = auth.username.trim().isEmpty
-        ? 'Usuario FullPOS'
+        ? 'Usuario Appyra'
         : auth.username.trim();
-
-    var licenseBadge = const LicenseBadgeData(
-      title: 'Licencia activa',
-      subtitle: 'Sin vencimiento visible',
-      status: LicenseMenuStatus.active,
-    );
-
-    try {
-      final licenses = await licensesService.listLicenses(limit: 25);
-      licenseBadge = _buildLicenseBadge(licenses);
-    } catch (_) {
-      // Keep menu usable even when license data is temporarily unavailable.
-    }
 
     return AppBarAccountMenuData(
       companyName: companyName,
       userName: userName,
       roleLabel: 'Administrador',
-      userStatusLabel: 'Cajero activo',
+      userStatusLabel: 'Administrador',
       cashRegisterLabel: 'Caja principal',
       cashRegisterState: CashRegisterState.open,
-      licenseBadge: licenseBadge,
     );
-  }
-
-  LicenseBadgeData _buildLicenseBadge(List<License> licenses) {
-    if (licenses.isEmpty) {
-      return const LicenseBadgeData(
-        title: 'Licencia pendiente',
-        subtitle: 'Sin datos de vencimiento',
-        status: LicenseMenuStatus.pending,
-      );
-    }
-
-    final activeLicenses = licenses.where((license) => license.isActive).toList()
-      ..sort((a, b) {
-        final aTime = a.expiresAt?.millisecondsSinceEpoch ?? (1 << 62);
-        final bTime = b.expiresAt?.millisecondsSinceEpoch ?? (1 << 62);
-        return aTime.compareTo(bTime);
-      });
-    if (activeLicenses.isNotEmpty) {
-      final active = activeLicenses.first;
-      return LicenseBadgeData(
-        title: 'Licencia activa',
-        subtitle: _buildLicenseSubtitle(active.expiresAt),
-        status: LicenseMenuStatus.active,
-      );
-    }
-
-    final expiredLicenses = licenses.where((license) => license.isExpired).toList()
-      ..sort((a, b) {
-        final aTime = a.expiresAt?.millisecondsSinceEpoch ?? 0;
-        final bTime = b.expiresAt?.millisecondsSinceEpoch ?? 0;
-        return bTime.compareTo(aTime);
-      });
-    if (expiredLicenses.isNotEmpty) {
-      return const LicenseBadgeData(
-        title: 'Licencia vencida',
-        subtitle: 'Requiere renovacion',
-        status: LicenseMenuStatus.expired,
-      );
-    }
-
-    return const LicenseBadgeData(
-      title: 'Licencia pendiente',
-      subtitle: 'Pendiente de activacion',
-      status: LicenseMenuStatus.pending,
-    );
-  }
-
-  String _buildLicenseSubtitle(DateTime? expiresAt) {
-    if (expiresAt == null) return 'Sin vencimiento visible';
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final expDay = DateTime(expiresAt.year, expiresAt.month, expiresAt.day);
-    final days = expDay.difference(today).inDays;
-    if (days < 0) return 'Licencia vencida';
-    if (days == 0) return 'Vence hoy';
-    if (days == 1) return 'Vence en 1 dia';
-    return 'Vence en $days dias';
   }
 
   String _normalizeText(Object? value) => (value?.toString() ?? '').trim();
@@ -153,17 +72,8 @@ class _AppBarAccountMenuState extends State<AppBarAccountMenu> {
     FullposMenuAction action,
   ) async {
     switch (action) {
-      case FullposMenuAction.profile:
-        _showComingSoon(context, 'Mi perfil estara disponible pronto.');
-      case FullposMenuAction.license:
-        context.go('/admin/licencias');
-      case FullposMenuAction.security:
-        _showComingSoon(context, 'Seguridad estara disponible pronto.');
       case FullposMenuAction.settings:
-        // TODO: Redirigir a la pagina real de configuracion cuando este habilitada.
         _showComingSoon(context, 'Configuracion estara disponible pronto.');
-      case FullposMenuAction.support:
-        _showComingSoon(context, 'Soporte estara disponible pronto.');
       case FullposMenuAction.logout:
         await _confirmLogout(context);
     }
@@ -222,17 +132,12 @@ class _AppBarAccountMenuState extends State<AppBarAccountMenu> {
       builder: (context, snapshot) {
         final data = snapshot.data ??
             const AppBarAccountMenuData(
-              companyName: 'FullPOS',
-              userName: 'Usuario FullPOS',
+              companyName: 'Appyra',
+              userName: 'Usuario Appyra',
               roleLabel: 'Administrador',
-              userStatusLabel: 'Cajero activo',
+              userStatusLabel: 'Administrador',
               cashRegisterLabel: 'Caja principal',
               cashRegisterState: CashRegisterState.open,
-              licenseBadge: LicenseBadgeData(
-                title: 'Licencia activa',
-                subtitle: 'Sin vencimiento visible',
-                status: LicenseMenuStatus.active,
-              ),
             );
 
         return Row(
@@ -374,31 +279,11 @@ class FullposUserMenu extends StatelessWidget {
           ),
           const PopupMenuDivider(height: 10),
           _menuItem(
-            value: FullposMenuAction.profile,
-            icon: Icons.person_outline_rounded,
-            label: 'Mi perfil',
-          ),
-          _menuItem(
-            value: FullposMenuAction.license,
-            icon: Icons.workspace_premium_outlined,
-            label: 'Licencia',
-          ),
-          _menuItem(
-            value: FullposMenuAction.security,
-            icon: Icons.lock_outline_rounded,
-            label: 'Seguridad',
-          ),
-          _menuItem(
             value: FullposMenuAction.settings,
             icon: Icons.settings_outlined,
             label: 'Configuracion',
           ),
           const PopupMenuDivider(height: 14),
-          _menuItem(
-            value: FullposMenuAction.support,
-            icon: Icons.headset_mic_outlined,
-            label: 'Soporte',
-          ),
           _menuItem(
             value: FullposMenuAction.logout,
             icon: Icons.logout_rounded,
@@ -458,7 +343,7 @@ class FullposUserMenu extends StatelessWidget {
         .where((part) => part.trim().isNotEmpty)
         .take(2)
         .toList();
-    if (parts.isEmpty) return 'FP';
+    if (parts.isEmpty) return 'AP';
     return parts.map((part) => part[0].toUpperCase()).join();
   }
 }
@@ -580,21 +465,6 @@ class _AccountMenuHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeColors = switch (data.licenseBadge.status) {
-      LicenseMenuStatus.active => (
-          bg: AppColors.successLight,
-          fg: AppColors.success,
-        ),
-      LicenseMenuStatus.expired => (
-          bg: AppColors.errorLight,
-          fg: AppColors.error,
-        ),
-      LicenseMenuStatus.pending => (
-          bg: AppColors.warningLight,
-          fg: AppColors.warning,
-        ),
-    };
-
     return SizedBox(
       width: width,
       child: Padding(
@@ -646,56 +516,6 @@ class _AccountMenuHeader extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: badgeColors.bg,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: badgeColors.fg.withValues(alpha: 0.16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      data.licenseBadge.status == LicenseMenuStatus.active
-                          ? Icons.verified_rounded
-                          : data.licenseBadge.status == LicenseMenuStatus.expired
-                              ? Icons.error_outline_rounded
-                              : Icons.timelapse_rounded,
-                      size: 14,
-                      color: badgeColors.fg,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            data.licenseBadge.title,
-                            style: TextStyle(
-                              color: badgeColors.fg,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            data.licenseBadge.subtitle,
-                            style: TextStyle(
-                              color: badgeColors.fg.withValues(alpha: 0.86),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -711,7 +531,6 @@ class AppBarAccountMenuData {
   final String userStatusLabel;
   final String cashRegisterLabel;
   final CashRegisterState cashRegisterState;
-  final LicenseBadgeData licenseBadge;
 
   const AppBarAccountMenuData({
     required this.companyName,
@@ -720,18 +539,5 @@ class AppBarAccountMenuData {
     required this.userStatusLabel,
     required this.cashRegisterLabel,
     required this.cashRegisterState,
-    required this.licenseBadge,
-  });
-}
-
-class LicenseBadgeData {
-  final String title;
-  final String subtitle;
-  final LicenseMenuStatus status;
-
-  const LicenseBadgeData({
-    required this.title,
-    required this.subtitle,
-    required this.status,
   });
 }

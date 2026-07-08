@@ -117,7 +117,7 @@ SET
     "audience": "Tiendas, minimarkets, restaurantes, comercios, distribuidores y empresas que necesitan vender y controlar inventario desde Windows.",
     "platforms": ["Windows"],
     "hero_asset": "assets/projects/fullpos_logo.png",
-    "release_download_url": "",
+    "release_download_url": "https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host/api/latest-installer/download",
     "image_1_url": "",
     "image_2_url": "",
     "image_3_url": "",

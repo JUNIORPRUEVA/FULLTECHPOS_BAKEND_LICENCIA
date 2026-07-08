@@ -20,6 +20,7 @@ class ProjectsService {
     final list = data['projects'] as List<dynamic>? ?? [];
     return list
         .map((e) => Project.fromJson(e as Map<String, dynamic>))
+        .where((project) => project.code.toUpperCase() != 'DEFAULT')
         .toList();
   }
 

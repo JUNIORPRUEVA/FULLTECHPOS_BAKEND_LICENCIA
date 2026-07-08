@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
@@ -67,9 +66,10 @@ class LicenseDetailPanel extends StatelessWidget {
                   StatusBadge.fromString(license.status!),
                 const SizedBox(width: AppSpacing.sm),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 18),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
                   onPressed: onClose,
                   color: AppColors.textSecondary,
+                  tooltip: 'Regresar',
                 ),
               ],
             ),
@@ -87,8 +87,9 @@ class LicenseDetailPanel extends StatelessWidget {
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceVariant,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.cardRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.cardRadius,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,13 +116,17 @@ class LicenseDetailPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   // Cliente section
-                  if (license.customerName != null || license.customerId != null)
-                    _Section(title: 'Cliente', rows: [
-                      if (license.customerName != null)
-                        _Row('Nombre', license.customerName!),
-                      if (license.customerId != null)
-                        _Row('ID', license.customerId!, mono: true),
-                    ]),
+                  if (license.customerName != null ||
+                      license.customerId != null)
+                    _Section(
+                      title: 'Cliente',
+                      rows: [
+                        if (license.customerName != null)
+                          _Row('Nombre', license.customerName!),
+                        if (license.customerId != null)
+                          _Row('ID', license.customerId!, mono: true),
+                      ],
+                    ),
                   if (onViewCustomer != null && license.customerId != null)
                     Padding(
                       padding: const EdgeInsets.only(top: AppSpacing.xs),
@@ -129,7 +134,10 @@ class LicenseDetailPanel extends StatelessWidget {
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: onViewCustomer,
-                          icon: const Icon(Icons.person_outline_rounded, size: 16),
+                          icon: const Icon(
+                            Icons.person_outline_rounded,
+                            size: 16,
+                          ),
                           label: const Text('Ir al cliente'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
@@ -147,30 +155,40 @@ class LicenseDetailPanel extends StatelessWidget {
                     ),
                   const SizedBox(height: AppSpacing.md),
                   // Details
-                  _Section(title: 'Información', rows: [
-                    _Row('Sistema', license.displayProjectName),
-                    if (license.licenseType != null)
-                      _Row('Tipo', license.licenseType!),
-                    if (license.businessId != null)
-                      _Row('Business ID', license.businessId!, mono: true),
-                    if (license.maxDevices != null)
-                      _Row('Máx. dispositivos', license.maxDevices!.toString()),
-                    if (license.expiresAt != null)
-                      _Row(
-                        'Vencimiento',
-                        dateFmt.format(license.expiresAt!.toLocal()),
-                        highlight: license.isExpired,
-                      ),
-                    if (license.activatedAt != null)
-                      _Row('Activada',
-                          dateFmt.format(license.activatedAt!.toLocal())),
-                    if (license.createdAt != null)
-                      _Row('Creada',
-                          dateFmt.format(license.createdAt!.toLocal())),
-                    if (license.isDemo == true) _Row('Demo', 'Sí'),
-                    if (license.notes != null && license.notes!.isNotEmpty)
-                      _Row('Notas', license.notes!),
-                  ]),
+                  _Section(
+                    title: 'Información',
+                    rows: [
+                      _Row('Sistema', license.displayProjectName),
+                      if (license.licenseType != null)
+                        _Row('Tipo', license.licenseType!),
+                      if (license.businessId != null)
+                        _Row('Business ID', license.businessId!, mono: true),
+                      if (license.maxDevices != null)
+                        _Row(
+                          'Máx. dispositivos',
+                          license.maxDevices!.toString(),
+                        ),
+                      if (license.expiresAt != null)
+                        _Row(
+                          'Vencimiento',
+                          dateFmt.format(license.expiresAt!.toLocal()),
+                          highlight: license.isExpired,
+                        ),
+                      if (license.activatedAt != null)
+                        _Row(
+                          'Activada',
+                          dateFmt.format(license.activatedAt!.toLocal()),
+                        ),
+                      if (license.createdAt != null)
+                        _Row(
+                          'Creada',
+                          dateFmt.format(license.createdAt!.toLocal()),
+                        ),
+                      if (license.isDemo == true) _Row('Demo', 'Sí'),
+                      if (license.notes != null && license.notes!.isNotEmpty)
+                        _Row('Notas', license.notes!),
+                    ],
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   // Actions
                   const Text(
@@ -292,7 +310,12 @@ class _Row extends StatelessWidget {
   final bool mono;
   final bool highlight;
 
-  const _Row(this.label, this.value, {this.mono = false, this.highlight = false});
+  const _Row(
+    this.label,
+    this.value, {
+    this.mono = false,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -378,8 +401,10 @@ class _ActionBtnState extends State<_ActionBtn> {
               SizedBox(
                 width: 16,
                 height: 16,
-                child:
-                    CircularProgressIndicator(strokeWidth: 2, color: widget.color),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: widget.color,
+                ),
               )
             else
               Icon(widget.icon, size: 16, color: widget.color),
