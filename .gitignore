@@ -8,6 +8,16 @@ node_modules/
 # Logs
 *.log
 
+# Build artifacts / release binaries
+APK_FINAL/
+WINDOWS_INSTALLER_FINAL/
+frontend_flutter/build/
+*.apk
+*.aab
+*.exe
+*.msi
+*.zip
+
 # Tests / docs artifacts
 **/*test*.js
 backend/modules/sync/*_test.js
