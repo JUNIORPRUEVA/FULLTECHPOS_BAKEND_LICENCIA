@@ -64,6 +64,12 @@ const List<dynamic> sidebarItems = [
     route: '/admin/licencias',
   ),
   AppSidebarItem(
+    label: 'DaleVentas Cloud',
+    icon: Icons.cloud_done_outlined,
+    activeIcon: Icons.cloud_done_rounded,
+    route: '/admin/daleventas-licencias',
+  ),
+  AppSidebarItem(
     label: 'Proyectos',
     icon: Icons.folder_copy_outlined,
     activeIcon: Icons.folder_copy_rounded,

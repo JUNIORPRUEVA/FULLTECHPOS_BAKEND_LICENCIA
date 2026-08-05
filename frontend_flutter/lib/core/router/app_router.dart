@@ -6,6 +6,7 @@ import '../../features/auth/pages/login_page.dart';
 import '../../features/cloud_admin/configs/resource_configs.dart';
 import '../../features/cloud_admin/pages/cloud_resource_page.dart';
 import '../../features/customers/pages/customers_page.dart';
+import '../../features/daleventas_licenses/pages/daleventas_licenses_page.dart';
 import '../../features/dashboard/pages/dashboard_page.dart';
 import '../../features/licenses/pages/licenses_page.dart';
 import '../../features/payments/pages/payments_page.dart';
@@ -70,6 +71,10 @@ class AppRouter {
               },
             ),
             GoRoute(
+              path: '/admin/daleventas-licencias',
+              builder: (context, state) => const DaleVentasLicensesPage(),
+            ),
+            GoRoute(
               path: '/admin/proyectos',
               builder: (context, state) => const ProjectsPage(),
             ),
@@ -96,6 +101,8 @@ class AppRouter {
         return 'Clientes';
       case '/admin/licencias':
         return 'Licencias';
+      case '/admin/daleventas-licencias':
+        return 'DaleVentas Cloud';
       case '/admin/proyectos':
         return 'Proyectos';
       case '/admin/usuarios':
