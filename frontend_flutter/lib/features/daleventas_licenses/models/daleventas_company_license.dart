@@ -68,7 +68,7 @@ class DaleVentasCompanyLicense {
       notes: json['notes']?.toString(),
       daysRemaining: _int(json['daysRemaining']),
       maxUsers: _int(limits['maxUsers'], fallback: 2),
-      maxProducts: _int(limits['maxProducts'], fallback: 500),
+      maxProducts: _int(limits['maxProducts'], fallback: 100),
       usersUsed: _int(usage['users']),
       productsUsed: _int(usage['products']),
       auditLogs: logs
@@ -118,6 +118,8 @@ class DaleVentasCompanyLicense {
   bool get isExpired => status == 'EXPIRED';
   bool get isTrial => status == 'TRIAL';
   bool get isActive => status == 'ACTIVE';
+  String get planLabel => (plan ?? '').trim().isEmpty ? 'Plan basico' : plan!;
+  String get policyLabel => '7 dias gratis · 2 usuarios · 100 productos';
 }
 
 class DaleVentasLicenseAuditLog {

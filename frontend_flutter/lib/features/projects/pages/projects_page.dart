@@ -111,18 +111,24 @@ class _ProjectsPageState extends State<ProjectsPage> {
     super.dispose();
   }
 
+  void _safeSetState(VoidCallback update) {
+    if (!mounted) return;
+    setState(update);
+  }
+
   Future<void> _loadProjects() async {
-    setState(() {
+    _safeSetState(() {
       _loading = true;
       _error = null;
     });
     try {
       final projects = await _service.listProjects();
+      if (!mounted) return;
       // Ordenar proyectos por nombre alfabéticamente
       projects.sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
-      setState(() {
+      _safeSetState(() {
         _projects = projects;
         _loading = false;
         // Re-seleccionar el mismo proyecto si estaba seleccionado
@@ -134,12 +140,12 @@ class _ProjectsPageState extends State<ProjectsPage> {
         }
       });
     } on UnauthorizedException {
-      setState(() => _loading = false);
+      _safeSetState(() => _loading = false);
       // No hacer nada mas: el callback global de AuthService ya limpio la sesion
       // y el router redirigira al login automaticamente.
       return;
     } catch (e) {
-      setState(() {
+      _safeSetState(() {
         _error = e.toString();
         _loading = false;
       });
@@ -147,7 +153,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
   }
 
   void _selectProject(Project project) {
-    setState(() {
+    _safeSetState(() {
       _selected = project;
       _editing = false;
     });
@@ -168,13 +174,13 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 ? _buildEditPanel(
                     onCancelOverride: () {
                       Navigator.of(dialogContext).pop();
-                      setState(() => _editing = false);
+                      _safeSetState(() => _editing = false);
                     },
                   )
                 : _buildDetailPanel(
                     onCloseOverride: () {
                       Navigator.of(dialogContext).pop();
-                      setState(() => _selected = null);
+                      _safeSetState(() => _selected = null);
                     },
                   ),
           ),
@@ -224,14 +230,14 @@ class _ProjectsPageState extends State<ProjectsPage> {
   void _startEditing() {
     if (_selected == null) return;
     _fillEditForm(_selected!);
-    setState(() {
+    _safeSetState(() {
       _editing = true;
     });
   }
 
   void _editProjectFromList(Project project) {
     _fillEditForm(project);
-    setState(() {
+    _safeSetState(() {
       _selected = project;
       _editing = true;
     });
@@ -241,7 +247,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
   }
 
   void _cancelEditing() {
-    setState(() {
+    _safeSetState(() {
       _editing = false;
     });
   }
@@ -250,7 +256,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
     if (!_formKey.currentState!.validate()) return;
     if (_selected == null) return;
 
-    setState(() => _saving = true);
+    _safeSetState(() => _saving = true);
 
     try {
       final updated = await _service.updateProject(
@@ -269,8 +275,9 @@ class _ProjectsPageState extends State<ProjectsPage> {
         isActive: _isActive,
         profile: _buildProfileFromForm(),
       );
+      if (!mounted) return;
 
-      setState(() {
+      _safeSetState(() {
         _selected = updated;
         _editing = false;
         _saving = false;
@@ -278,31 +285,29 @@ class _ProjectsPageState extends State<ProjectsPage> {
 
       // Refrescar lista y mantener selección
       await _loadProjects();
+      if (!mounted) return;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Proyecto actualizado correctamente'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Proyecto actualizado correctamente'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } on UnauthorizedException {
       // No hacer nada: el callback global de AuthService ya limpio la sesion
       // y el router redirigira al login automaticamente.
       return;
     } catch (e) {
-      setState(() => _saving = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      _safeSetState(() => _saving = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -503,7 +508,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
               ),
               IconButton(
                 onPressed:
-                    onCloseOverride ?? () => setState(() => _selected = null),
+                    onCloseOverride ??
+                    () => _safeSetState(() => _selected = null),
                 tooltip: 'Regresar',
                 icon: const Icon(Icons.arrow_back_rounded, size: 20),
               ),
@@ -1456,17 +1462,17 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 const SizedBox(height: AppSpacing.sm),
                 // Switches
                 _buildSwitch('Requiere pago', _isPaid, (v) {
-                  setState(() => _isPaid = v);
+                  _safeSetState(() => _isPaid = v);
                   // Re-validar precio si cambia
                   _formKey.currentState?.validate();
                 }),
                 const SizedBox(height: AppSpacing.sm),
                 _buildSwitch('Permite demo', _allowDemo, (v) {
-                  setState(() => _allowDemo = v);
+                  _safeSetState(() => _allowDemo = v);
                 }),
                 const SizedBox(height: AppSpacing.sm),
                 _buildSwitch('Activo', _isActive, (v) {
-                  setState(() => _isActive = v);
+                  _safeSetState(() => _isActive = v);
                 }),
                 const SizedBox(height: AppSpacing.lg),
                 // Botones

@@ -83,7 +83,9 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
           icon: Icons.search_rounded,
           label: 'Buscar',
           onTap: () {
-            setState(() => _showSearch = !_showSearch);
+            setState(() {
+              _showSearch = !_showSearch;
+            });
             if (_showSearch) {
               WidgetsBinding.instance.addPostFrameCallback(
                 (_) => _searchFocus.requestFocus(),
@@ -116,13 +118,17 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
           (item) => item.companyId == selected.companyId,
         );
         if (matches.isNotEmpty && mounted) {
-          setState(() => _selected = matches.first);
+          setState(() {
+            _selected = matches.first;
+          });
         }
       }
       return result;
     });
     if (mounted) {
-      setState(() => _future = next);
+      setState(() {
+        _future = next;
+      });
     }
   }
 
@@ -130,7 +136,9 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
     final detail = await _service.getCompany(company.companyId);
     if (!mounted) return;
     if (_isDesktop) {
-      setState(() => _selected = detail);
+      setState(() {
+        _selected = detail;
+      });
     } else {
       await showModalBottomSheet<void>(
         context: context,
@@ -140,7 +148,9 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
         builder: (_) => _MobileDetailSheet(
           company: detail,
           onChanged: (updated) {
-            setState(() => _selected = updated);
+            setState(() {
+              _selected = updated;
+            });
             _refresh(silent: true);
           },
           service: _service,
@@ -163,7 +173,9 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
             status: _status,
             showSearch: _showSearch || _isDesktop,
             onStatusChanged: (value) {
-              setState(() => _status = value);
+              setState(() {
+                _status = value;
+              });
               _refresh();
             },
             onSearch: _refresh,
@@ -205,11 +217,11 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
                 if (_isDesktop) {
                   final selected = _selected ?? companies.first;
                   return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SizedBox(
-                        width: 430,
-                        child: _CompanyList(
+                        width: 440,
+                        child: _CompanyRail(
                           companies: companies,
                           selectedId: selected.companyId,
                           onTap: _openDetail,
@@ -222,7 +234,9 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
                           company: selected,
                           service: _service,
                           onChanged: (updated) {
-                            setState(() => _selected = updated);
+                            setState(() {
+                              _selected = updated;
+                            });
                             _refresh(silent: true);
                           },
                         ),
@@ -369,6 +383,97 @@ class _CompanyList extends StatelessWidget {
   }
 }
 
+class _CompanyRail extends StatelessWidget {
+  final List<DaleVentasCompanyLicense> companies;
+  final String? selectedId;
+  final ValueChanged<DaleVentasCompanyLicense> onTap;
+
+  const _CompanyRail({
+    required this.companies,
+    required this.onTap,
+    this.selectedId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final limited = companies.where((company) {
+      return company.usersUsed >= company.maxUsers ||
+          company.productsUsed >= company.maxProducts;
+    }).length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(
+                      AppSpacing.buttonRadius,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.business_rounded,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Empresas cloud',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        '${companies.length} empresas · Plan basico 2/100 · $limited con limite alcanzado',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.divider),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: _CompanyList(
+                companies: companies,
+                selectedId: selectedId,
+                onTap: onTap,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CompanyCard extends StatelessWidget {
   final DaleVentasCompanyLicense company;
   final bool selected;
@@ -382,18 +487,25 @@ class _CompanyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final overLimit =
+        company.usersUsed >= company.maxUsers ||
+        company.productsUsed >= company.maxProducts;
     return Material(
-      color: selected ? AppColors.primaryLight : AppColors.surface,
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      color: selected ? AppColors.primaryLight : AppColors.surfaceElevated,
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected ? AppColors.primary : AppColors.border,
+              color: selected
+                  ? AppColors.primary
+                  : overLimit
+                  ? AppColors.warning.withValues(alpha: 0.35)
+                  : AppColors.border,
             ),
           ),
           child: Column(
@@ -401,30 +513,45 @@ class _CompanyCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      company.companyName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                      ),
+                  Container(
+                    width: 8,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: overLimit ? AppColors.warning : AppColors.primary,
+                      borderRadius: BorderRadius.circular(99),
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          company.companyName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${company.planLabel} · ${company.slug ?? company.companyId}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   _StatusPill(status: company.status),
                 ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                company.slug ?? company.companyId,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
               ),
               const SizedBox(height: AppSpacing.md),
               _UsageLine(
@@ -556,6 +683,7 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
   Widget build(BuildContext context) {
     final company = widget.company;
     return Container(
+      height: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
@@ -566,191 +694,266 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        company.companyName,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        company.licenseKey ?? 'Sin llave permanente',
-                        style: const TextStyle(color: AppColors.textSecondary),
-                      ),
-                    ],
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.cloud_done_rounded,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-                _StatusPill(status: company.status),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                _MetricTile(
-                  icon: Icons.timer_outlined,
-                  label: 'Dias',
-                  value: '${company.daysRemaining}',
-                ),
-                _MetricTile(
-                  icon: Icons.group_outlined,
-                  label: 'Usuarios',
-                  value: '${company.usersUsed}/${company.maxUsers}',
-                ),
-                _MetricTile(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Productos',
-                  value: '${company.productsUsed}/${company.maxProducts}',
-                ),
-                _MetricTile(
-                  icon: Icons.lock_open_rounded,
-                  label: 'Acceso',
-                  value: company.isUsable ? 'Si' : 'No',
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _UsageLine(
-              icon: Icons.group_outlined,
-              label: 'Consumo de usuarios',
-              used: company.usersUsed,
-              max: company.maxUsers,
-              value: company.usersRatio,
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          company.companyName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        SelectableText(
+                          '${company.planLabel} · ${company.policyLabel}',
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  _StatusPill(status: company.status),
+                ],
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _UsageLine(
-              icon: Icons.inventory_2_outlined,
-              label: 'Consumo de productos',
-              used: company.productsUsed,
-              max: company.maxProducts,
-              value: company.productsRatio,
-            ),
-            const SizedBox(height: AppSpacing.lg),
             LayoutBuilder(
               builder: (context, constraints) {
-                final twoCols = constraints.maxWidth >= 620;
-                final fields = [
-                  _NumberField(
-                    controller: _maxUsersCtrl,
-                    label: 'Usuarios permitidos',
-                  ),
-                  _NumberField(
-                    controller: _maxProductsCtrl,
-                    label: 'Productos permitidos',
-                  ),
-                  TextField(
-                    controller: _expiresCtrl,
-                    decoration: _input('Vence el', hint: '2026-12-31'),
-                  ),
-                ];
-                if (!twoCols) {
-                  return Column(
-                    children: fields
-                        .map(
-                          (field) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.md,
-                            ),
-                            child: field,
-                          ),
-                        )
-                        .toList(),
-                  );
-                }
-                return Row(
-                  children: fields
-                      .map(
-                        (field) => Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              right: AppSpacing.md,
-                            ),
-                            child: field,
-                          ),
-                        ),
-                      )
-                      .toList(),
+                final width = constraints.maxWidth;
+                final tileWidth = width >= 760
+                    ? (width - AppSpacing.sm * 3) / 4
+                    : width >= 520
+                    ? (width - AppSpacing.sm) / 2
+                    : width;
+                return Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    SizedBox(
+                      width: tileWidth,
+                      child: _MetricTile(
+                        icon: Icons.timer_outlined,
+                        label: 'Prueba restante',
+                        value: '${company.daysRemaining} dias',
+                      ),
+                    ),
+                    SizedBox(
+                      width: tileWidth,
+                      child: _MetricTile(
+                        icon: Icons.group_outlined,
+                        label: 'Usuarios',
+                        value: '${company.usersUsed}/${company.maxUsers}',
+                      ),
+                    ),
+                    SizedBox(
+                      width: tileWidth,
+                      child: _MetricTile(
+                        icon: Icons.inventory_2_outlined,
+                        label: 'Productos',
+                        value: '${company.productsUsed}/${company.maxProducts}',
+                      ),
+                    ),
+                    SizedBox(
+                      width: tileWidth,
+                      child: _MetricTile(
+                        icon: Icons.lock_open_rounded,
+                        label: 'Acceso',
+                        value: company.isUsable ? 'Permitido' : 'Bloqueado',
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
-            TextField(
-              controller: _notesCtrl,
-              minLines: 3,
-              maxLines: 5,
-              decoration: _input('Notas internas'),
-            ),
             const SizedBox(height: AppSpacing.lg),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                FilledButton.icon(
-                  icon: _busy
-                      ? const SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.save_rounded),
-                  label: const Text('Guardar'),
-                  onPressed: () => _run(
-                    () => widget.service.updateCompany(
-                      company.companyId,
-                      _body(),
+            _PlanNotice(company: company),
+            const SizedBox(height: AppSpacing.md),
+            _SectionPanel(
+              title: 'Consumo actual',
+              icon: Icons.insert_chart_outlined_rounded,
+              child: Column(
+                children: [
+                  _UsageLine(
+                    icon: Icons.group_outlined,
+                    label: 'Usuarios activos',
+                    used: company.usersUsed,
+                    max: company.maxUsers,
+                    value: company.usersRatio,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _UsageLine(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'Productos registrados',
+                    used: company.productsUsed,
+                    max: company.maxProducts,
+                    value: company.productsRatio,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionPanel(
+              title: 'Control de licencia',
+              icon: Icons.tune_rounded,
+              child: Column(
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final twoCols = constraints.maxWidth >= 620;
+                      final fields = [
+                        _NumberField(
+                          controller: _maxUsersCtrl,
+                          label: 'Usuarios permitidos',
+                        ),
+                        _NumberField(
+                          controller: _maxProductsCtrl,
+                          label: 'Productos permitidos',
+                        ),
+                        TextField(
+                          controller: _expiresCtrl,
+                          decoration: _input('Vence el', hint: '2026-12-31'),
+                        ),
+                      ];
+                      if (!twoCols) {
+                        return Column(
+                          children: fields
+                              .map(
+                                (field) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.md,
+                                  ),
+                                  child: field,
+                                ),
+                              )
+                              .toList(),
+                        );
+                      }
+                      return Row(
+                        children: [
+                          for (var index = 0; index < fields.length; index++)
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  right: index == fields.length - 1
+                                      ? 0
+                                      : AppSpacing.md,
+                                ),
+                                child: fields[index],
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    controller: _notesCtrl,
+                    minLines: 3,
+                    maxLines: 5,
+                    decoration: _input('Notas internas'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionPanel(
+              title: 'Acciones',
+              icon: Icons.admin_panel_settings_rounded,
+              child: Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  FilledButton.icon(
+                    icon: _busy
+                        ? const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_rounded),
+                    label: const Text('Guardar'),
+                    onPressed: () => _run(
+                      () => widget.service.updateCompany(
+                        company.companyId,
+                        _body(),
+                      ),
                     ),
                   ),
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.verified_rounded),
-                  label: const Text('Activar'),
-                  onPressed: () => _run(
-                    () => widget.service.activateCompany(
-                      company.companyId,
-                      _body(),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.verified_rounded),
+                    label: const Text('Activar'),
+                    onPressed: () => _run(
+                      () => widget.service.activateCompany(
+                        company.companyId,
+                        _body(),
+                      ),
                     ),
                   ),
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.block_rounded),
-                  label: const Text('Bloquear'),
-                  onPressed: () async {
-                    if (await _confirm(
-                      'Bloquear licencia',
-                      'La empresa saldra de la app al instante.',
-                    )) {
-                      await _run(
-                        () => widget.service.blockCompany(
-                          company.companyId,
-                          _body(),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                TextButton.icon(
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('Eliminar licencia'),
-                  onPressed: () async {
-                    if (await _confirm(
-                      'Eliminar licencia',
-                      'La empresa quedara bloqueada y sus sesiones seran cerradas.',
-                    )) {
-                      await _run(
-                        () => widget.service.deleteCompanyLicense(
-                          company.companyId,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.block_rounded),
+                    label: const Text('Bloquear'),
+                    onPressed: () async {
+                      if (await _confirm(
+                        'Bloquear licencia',
+                        'La empresa saldra de la app al instante.',
+                      )) {
+                        await _run(
+                          () => widget.service.blockCompany(
+                            company.companyId,
+                            _body(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('Eliminar licencia'),
+                    onPressed: () async {
+                      if (await _confirm(
+                        'Eliminar licencia',
+                        'La empresa quedara bloqueada y sus sesiones seran cerradas.',
+                      )) {
+                        await _run(
+                          () => widget.service.deleteCompanyLicense(
+                            company.companyId,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
             if ((company.blockReason ?? '').isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
@@ -760,16 +963,115 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
               ),
             ],
             if (company.auditLogs.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xl),
-              const Text(
-                'Historial',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              const SizedBox(height: AppSpacing.md),
+              _SectionPanel(
+                title: 'Historial',
+                icon: Icons.history_rounded,
+                child: Column(
+                  children: company.auditLogs
+                      .take(8)
+                      .map((log) => _AuditRow(log: log))
+                      .toList(),
+                ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              ...company.auditLogs.take(8).map((log) => _AuditRow(log: log)),
             ],
+            const SizedBox(height: AppSpacing.xl),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SectionPanel extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _SectionPanel({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanNotice extends StatelessWidget {
+  final DaleVentasCompanyLicense company;
+
+  const _PlanNotice({required this.company});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = company.isUsable ? AppColors.success : AppColors.warning;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.workspace_premium_outlined, color: color, size: 22),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  company.planLabel,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  company.policyLabel,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
