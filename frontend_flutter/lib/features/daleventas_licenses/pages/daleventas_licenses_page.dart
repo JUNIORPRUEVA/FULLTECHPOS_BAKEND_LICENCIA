@@ -800,6 +800,12 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
             _PlanNotice(company: company),
             const SizedBox(height: AppSpacing.md),
             _SectionPanel(
+              title: 'Cuenta y contacto',
+              icon: Icons.badge_outlined,
+              child: _AccountSummary(company: company),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionPanel(
               title: 'Consumo actual',
               icon: Icons.insert_chart_outlined_rounded,
               child: Column(
@@ -1022,6 +1028,128 @@ class _SectionPanel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountSummary extends StatelessWidget {
+  final DaleVentasCompanyLicense company;
+
+  const _AccountSummary({required this.company});
+
+  @override
+  Widget build(BuildContext context) {
+    final account = company.account;
+    final items = [
+      _InfoItem(
+        icon: Icons.storefront_outlined,
+        label: 'Negocio',
+        value: account.businessName ?? company.companyName,
+      ),
+      _InfoItem(
+        icon: Icons.person_outline_rounded,
+        label: 'Responsable',
+        value: account.responsibleName ?? 'Sin responsable registrado',
+      ),
+      _InfoItem(
+        icon: Icons.phone_outlined,
+        label: 'WhatsApp',
+        value:
+            account.responsibleWhatsapp ??
+            account.businessPhone ??
+            'Sin WhatsApp registrado',
+      ),
+      _InfoItem(
+        icon: Icons.mail_outline_rounded,
+        label: 'Correo',
+        value: account.responsibleEmail ?? 'Sin correo registrado',
+      ),
+      _InfoItem(
+        icon: Icons.receipt_long_outlined,
+        label: 'RNC / Cedula',
+        value: account.taxId ?? 'No registrado',
+      ),
+      _InfoItem(
+        icon: Icons.location_on_outlined,
+        label: 'Direccion',
+        value: account.businessAddress ?? 'Sin direccion registrada',
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 900
+            ? 3
+            : constraints.maxWidth >= 560
+            ? 2
+            : 1;
+        final width =
+            (constraints.maxWidth - AppSpacing.sm * (columns - 1)) / columns;
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: items
+              .map((item) => SizedBox(width: width, child: item))
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _InfoItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 72),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 18),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  value,
+                  maxLines: 2,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

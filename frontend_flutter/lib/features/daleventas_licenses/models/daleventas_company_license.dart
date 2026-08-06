@@ -19,6 +19,7 @@ class DaleVentasCompanyLicense {
   final int maxProducts;
   final int usersUsed;
   final int productsUsed;
+  final DaleVentasAccountInfo account;
   final List<DaleVentasLicenseAuditLog> auditLogs;
 
   const DaleVentasCompanyLicense({
@@ -31,6 +32,7 @@ class DaleVentasCompanyLicense {
     required this.maxProducts,
     required this.usersUsed,
     required this.productsUsed,
+    this.account = const DaleVentasAccountInfo(),
     this.slug,
     this.plan,
     this.rawStatus,
@@ -48,6 +50,7 @@ class DaleVentasCompanyLicense {
   factory DaleVentasCompanyLicense.fromJson(Map<String, dynamic> json) {
     final limits = json['limits'] as Map<String, dynamic>? ?? const {};
     final usage = json['usage'] as Map<String, dynamic>? ?? const {};
+    final account = json['account'] as Map<String, dynamic>? ?? const {};
     final logs = json['auditLogs'] as List<dynamic>? ?? const [];
 
     return DaleVentasCompanyLicense(
@@ -71,6 +74,7 @@ class DaleVentasCompanyLicense {
       maxProducts: _int(limits['maxProducts'], fallback: 100),
       usersUsed: _int(usage['users']),
       productsUsed: _int(usage['products']),
+      account: DaleVentasAccountInfo.fromJson(account),
       auditLogs: logs
           .whereType<Map<String, dynamic>>()
           .map(DaleVentasLicenseAuditLog.fromJson)
@@ -95,6 +99,7 @@ class DaleVentasCompanyLicense {
       maxProducts: maxProducts ?? this.maxProducts,
       usersUsed: usersUsed,
       productsUsed: productsUsed,
+      account: account,
       slug: slug,
       plan: plan,
       rawStatus: rawStatus,
@@ -120,6 +125,44 @@ class DaleVentasCompanyLicense {
   bool get isActive => status == 'ACTIVE';
   String get planLabel => (plan ?? '').trim().isEmpty ? 'Plan basico' : plan!;
   String get policyLabel => '7 dias gratis · 2 usuarios · 100 productos';
+}
+
+class DaleVentasAccountInfo {
+  final String? businessName;
+  final String? taxId;
+  final String? businessPhone;
+  final String? businessAddress;
+  final String? businessType;
+  final String? responsibleName;
+  final String? responsibleEmail;
+  final String? responsibleWhatsapp;
+  final String? responsibleUserId;
+
+  const DaleVentasAccountInfo({
+    this.businessName,
+    this.taxId,
+    this.businessPhone,
+    this.businessAddress,
+    this.businessType,
+    this.responsibleName,
+    this.responsibleEmail,
+    this.responsibleWhatsapp,
+    this.responsibleUserId,
+  });
+
+  factory DaleVentasAccountInfo.fromJson(Map<String, dynamic> json) {
+    return DaleVentasAccountInfo(
+      businessName: _string(json['businessName']),
+      taxId: _string(json['taxId']),
+      businessPhone: _string(json['businessPhone']),
+      businessAddress: _string(json['businessAddress']),
+      businessType: _string(json['businessType']),
+      responsibleName: _string(json['responsibleName']),
+      responsibleEmail: _string(json['responsibleEmail']),
+      responsibleWhatsapp: _string(json['responsibleWhatsapp']),
+      responsibleUserId: _string(json['responsibleUserId']),
+    );
+  }
 }
 
 class DaleVentasLicenseAuditLog {
@@ -157,4 +200,9 @@ int _int(dynamic value, {int fallback = 0}) {
   if (value == null) return fallback;
   if (value is int) return value;
   return int.tryParse(value.toString()) ?? fallback;
+}
+
+String? _string(dynamic value) {
+  final text = value?.toString().trim() ?? '';
+  return text.isEmpty ? null : text;
 }
