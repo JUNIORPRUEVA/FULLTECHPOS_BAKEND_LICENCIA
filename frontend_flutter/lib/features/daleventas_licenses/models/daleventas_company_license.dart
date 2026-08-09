@@ -148,7 +148,7 @@ class DaleVentasCompanyLicense {
   String get planLabel {
     final label = licenseTypeLabel?.trim();
     if (label != null && label.isNotEmpty && !isTrial) return label;
-    if (isTrial) return 'Prueba gratis';
+    if (isTrial) return 'Plan demo';
     if (planCode == 'ENTERPRISE') return 'Plan enterprise';
     if (maxUsers > 2 || maxProducts > 100) return 'Plan basico ampliado';
     return 'Plan basico';
