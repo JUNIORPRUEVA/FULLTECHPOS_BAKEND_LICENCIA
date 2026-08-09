@@ -12,6 +12,10 @@ class DaleVentasCompanyLicense {
   final DateTime? licenseActivatedAt;
   final DateTime? licenseExpiresAt;
   final DateTime? licenseBlockedAt;
+  final DateTime? periodStartedAt;
+  final DateTime? periodEndsAt;
+  final String? licenseType;
+  final String? licenseTypeLabel;
   final String? licenseKey;
   final String? notes;
   final int daysRemaining;
@@ -42,6 +46,10 @@ class DaleVentasCompanyLicense {
     this.licenseActivatedAt,
     this.licenseExpiresAt,
     this.licenseBlockedAt,
+    this.periodStartedAt,
+    this.periodEndsAt,
+    this.licenseType,
+    this.licenseTypeLabel,
     this.licenseKey,
     this.notes,
     this.auditLogs = const [],
@@ -67,6 +75,10 @@ class DaleVentasCompanyLicense {
       licenseActivatedAt: _date(json['licenseActivatedAt']),
       licenseExpiresAt: _date(json['licenseExpiresAt']),
       licenseBlockedAt: _date(json['licenseBlockedAt']),
+      periodStartedAt: _date(json['periodStartedAt']),
+      periodEndsAt: _date(json['periodEndsAt']),
+      licenseType: json['licenseType']?.toString(),
+      licenseTypeLabel: json['licenseTypeLabel']?.toString(),
       licenseKey: json['licenseKey']?.toString(),
       notes: json['notes']?.toString(),
       daysRemaining: _int(json['daysRemaining']),
@@ -109,6 +121,10 @@ class DaleVentasCompanyLicense {
       licenseActivatedAt: licenseActivatedAt,
       licenseExpiresAt: licenseExpiresAt ?? this.licenseExpiresAt,
       licenseBlockedAt: licenseBlockedAt,
+      periodStartedAt: periodStartedAt,
+      periodEndsAt: periodEndsAt,
+      licenseType: licenseType,
+      licenseTypeLabel: licenseTypeLabel,
       licenseKey: licenseKey ?? this.licenseKey,
       notes: notes ?? this.notes,
       auditLogs: auditLogs,
@@ -123,8 +139,32 @@ class DaleVentasCompanyLicense {
   bool get isExpired => status == 'EXPIRED';
   bool get isTrial => status == 'TRIAL';
   bool get isActive => status == 'ACTIVE';
-  String get planLabel => (plan ?? '').trim().isEmpty ? 'Plan basico' : plan!;
-  String get policyLabel => '7 dias gratis · 2 usuarios · 100 productos';
+  String get planCode {
+    final cleaned = (plan ?? '').trim().toUpperCase();
+    if (cleaned == 'ENTERPRISE') return 'ENTERPRISE';
+    return 'STANDARD';
+  }
+
+  String get planLabel {
+    final label = licenseTypeLabel?.trim();
+    if (label != null && label.isNotEmpty && !isTrial) return label;
+    if (isTrial) return 'Prueba gratis';
+    if (planCode == 'ENTERPRISE') return 'Plan enterprise';
+    if (maxUsers > 2 || maxProducts > 100) return 'Plan basico ampliado';
+    return 'Plan basico';
+  }
+
+  String get policyLabel =>
+      '${isTrial ? '7 dias gratis · ' : ''}$maxUsers usuarios · $maxProducts productos';
+
+  DateTime? get startsAt =>
+      periodStartedAt ?? licenseActivatedAt ?? trialStartedAt;
+
+  DateTime? get endsAt {
+    if (periodEndsAt != null) return periodEndsAt;
+    if (isTrial) return trialEndsAt;
+    return licenseExpiresAt;
+  }
 }
 
 class DaleVentasAccountInfo {

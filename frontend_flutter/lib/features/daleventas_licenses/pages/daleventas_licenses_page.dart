@@ -443,7 +443,7 @@ class _CompanyRail extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${companies.length} empresas · Plan basico 2/100 · $limited con limite alcanzado',
+                        '${companies.length} empresas · Control por empresa · $limited con limite alcanzado',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -598,6 +598,7 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
   late final TextEditingController _maxProductsCtrl;
   late final TextEditingController _expiresCtrl;
   late final TextEditingController _notesCtrl;
+  late String _planCode;
   bool _busy = false;
 
   @override
@@ -613,6 +614,18 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
       text: _dateInput(widget.company.licenseExpiresAt),
     );
     _notesCtrl = TextEditingController(text: widget.company.notes ?? '');
+    _planCode = widget.company.planCode;
+  }
+
+  @override
+  void didUpdateWidget(covariant _LicenseControlPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.company.companyId == widget.company.companyId) return;
+    _maxUsersCtrl.text = widget.company.maxUsers.toString();
+    _maxProductsCtrl.text = widget.company.maxProducts.toString();
+    _expiresCtrl.text = _dateInput(widget.company.licenseExpiresAt);
+    _notesCtrl.text = widget.company.notes ?? '';
+    _planCode = widget.company.planCode;
   }
 
   @override
@@ -646,6 +659,7 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
 
   Map<String, dynamic> _body() {
     return {
+      'plan': _planCode,
       'maxUsers':
           int.tryParse(_maxUsersCtrl.text.trim()) ?? widget.company.maxUsers,
       'maxProducts':
@@ -800,6 +814,12 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
             _PlanNotice(company: company),
             const SizedBox(height: AppSpacing.md),
             _SectionPanel(
+              title: 'Vigencia y alcance',
+              icon: Icons.event_available_outlined,
+              child: _LicenseTermsSummary(company: company),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionPanel(
               title: 'Cuenta y contacto',
               icon: Icons.badge_outlined,
               child: _AccountSummary(company: company),
@@ -834,6 +854,34 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
               icon: Icons.tune_rounded,
               child: Column(
                 children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: _planCode,
+                    decoration: _input('Tipo de licencia'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'STANDARD',
+                        child: Text('Plan basico'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'ENTERPRISE',
+                        child: Text('Plan enterprise'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _planCode = value;
+                        if (value == 'STANDARD') {
+                          final users = int.tryParse(_maxUsersCtrl.text) ?? 0;
+                          final products =
+                              int.tryParse(_maxProductsCtrl.text) ?? 0;
+                          if (users <= 0) _maxUsersCtrl.text = '2';
+                          if (products <= 0) _maxProductsCtrl.text = '100';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final twoCols = constraints.maxWidth >= 620;
@@ -1082,6 +1130,58 @@ class _AccountSummary extends StatelessWidget {
       builder: (context, constraints) {
         final columns = constraints.maxWidth >= 900
             ? 3
+            : constraints.maxWidth >= 560
+            ? 2
+            : 1;
+        final width =
+            (constraints.maxWidth - AppSpacing.sm * (columns - 1)) / columns;
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: items
+              .map((item) => SizedBox(width: width, child: item))
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _LicenseTermsSummary extends StatelessWidget {
+  final DaleVentasCompanyLicense company;
+
+  const _LicenseTermsSummary({required this.company});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _InfoItem(
+        icon: Icons.workspace_premium_outlined,
+        label: 'Tipo de licencia',
+        value: company.planLabel,
+      ),
+      _InfoItem(
+        icon: Icons.calendar_today_outlined,
+        label: 'Inicio',
+        value: _fmtDateOnly(company.startsAt),
+      ),
+      _InfoItem(
+        icon: Icons.event_busy_outlined,
+        label: 'Finaliza',
+        value: _fmtDateOnly(company.endsAt),
+      ),
+      _InfoItem(
+        icon: Icons.rule_folder_outlined,
+        label: 'Alcance contratado',
+        value:
+            '${company.maxUsers} usuarios · ${company.maxProducts} productos',
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 900
+            ? 4
             : constraints.maxWidth >= 560
             ? 2
             : 1;
@@ -1525,6 +1625,11 @@ InputDecoration _input(String label, {String? hint}) {
 String _dateInput(DateTime? date) {
   if (date == null) return '';
   return DateFormat('yyyy-MM-dd').format(date.toLocal());
+}
+
+String _fmtDateOnly(DateTime? date) {
+  if (date == null) return 'Sin fecha definida';
+  return DateFormat('dd/MM/yyyy').format(date.toLocal());
 }
 
 String _fmtDateTime(DateTime? date) {
