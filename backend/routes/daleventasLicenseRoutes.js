@@ -28,4 +28,8 @@ router.delete('/companies/:companyId', isAdmin, (req, res, next) => {
   Promise.resolve(controller.deleteCompanyLicense(req, res)).catch(next);
 });
 
+router.delete('/companies/:companyId/permanent', isAdmin, (req, res, next) => {
+  Promise.resolve(controller.permanentlyDeleteCompanyLicense(req, res)).catch(next);
+});
+
 module.exports = router;

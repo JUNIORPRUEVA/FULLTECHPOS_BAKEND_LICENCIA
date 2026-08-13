@@ -95,6 +95,13 @@ class DaleVentasLicenseService {
     );
     return DaleVentasCompanyLicense.fromJson(data);
   }
+
+  Future<void> permanentlyDeleteCompanyLicense(String companyId) async {
+    await _ensureInit();
+    await _client.delete(
+      '/api/admin/daleventas-licenses/companies/$companyId/permanent',
+    );
+  }
 }
 
 class DaleVentasLicensePageResult {

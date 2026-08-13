@@ -142,3 +142,13 @@ exports.deleteCompanyLicense = (req, res) => {
     req.body || {}
   );
 };
+
+exports.permanentlyDeleteCompanyLicense = (req, res) => {
+  return requestDaleVentas(
+    req,
+    res,
+    'DELETE',
+    `/license/admin/${encodeURIComponent(req.params.companyId)}/permanent`,
+    req.body || {}
+  );
+};

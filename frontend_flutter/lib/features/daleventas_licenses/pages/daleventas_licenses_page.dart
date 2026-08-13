@@ -121,6 +121,10 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
           setState(() {
             _selected = matches.first;
           });
+        } else if (mounted) {
+          setState(() {
+            _selected = result.items.isEmpty ? null : result.items.first;
+          });
         }
       }
       return result;
@@ -143,13 +147,19 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Colors.transparent,
         useSafeArea: true,
         builder: (_) => _MobileDetailSheet(
           company: detail,
           onChanged: (updated) {
             setState(() {
               _selected = updated;
+            });
+            _refresh(silent: true);
+          },
+          onDeleted: (companyId) {
+            setState(() {
+              if (_selected?.companyId == companyId) _selected = null;
             });
             _refresh(silent: true);
           },
@@ -162,8 +172,9 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
   @override
   Widget build(BuildContext context) {
     _syncShellActions();
+    final mobile = MediaQuery.sizeOf(context).width < 600;
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(mobile ? AppSpacing.md : AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -239,6 +250,14 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
                             });
                             _refresh(silent: true);
                           },
+                          onDeleted: (companyId) {
+                            setState(() {
+                              if (_selected?.companyId == companyId) {
+                                _selected = null;
+                              }
+                            });
+                            _refresh(silent: true);
+                          },
                         ),
                       ),
                     ],
@@ -276,52 +295,66 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 720;
+    final chips = [
+      _StatusChip(
+        label: 'Todas',
+        value: 'TODAS',
+        selected: status == 'TODAS',
+        onTap: onStatusChanged,
+      ),
+      _StatusChip(
+        label: 'Prueba',
+        value: 'TRIAL',
+        selected: status == 'TRIAL',
+        onTap: onStatusChanged,
+      ),
+      _StatusChip(
+        label: 'Activas',
+        value: 'ACTIVE',
+        selected: status == 'ACTIVE',
+        onTap: onStatusChanged,
+      ),
+      _StatusChip(
+        label: 'Bloqueadas',
+        value: 'BLOCKED',
+        selected: status == 'BLOCKED',
+        onTap: onStatusChanged,
+      ),
+      _StatusChip(
+        label: 'Vencidas',
+        value: 'EXPIRED',
+        selected: status == 'EXPIRED',
+        onTap: onStatusChanged,
+      ),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _StatusChip(
-              label: 'Todas',
-              value: 'TODAS',
-              selected: status == 'TODAS',
-              onTap: onStatusChanged,
+        if (compact)
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: chips.length,
+              separatorBuilder: (context, index) =>
+                  const SizedBox(width: AppSpacing.sm),
+              itemBuilder: (context, index) => chips[index],
             ),
-            _StatusChip(
-              label: 'Prueba',
-              value: 'TRIAL',
-              selected: status == 'TRIAL',
-              onTap: onStatusChanged,
-            ),
-            _StatusChip(
-              label: 'Activas',
-              value: 'ACTIVE',
-              selected: status == 'ACTIVE',
-              onTap: onStatusChanged,
-            ),
-            _StatusChip(
-              label: 'Bloqueadas',
-              value: 'BLOCKED',
-              selected: status == 'BLOCKED',
-              onTap: onStatusChanged,
-            ),
-            _StatusChip(
-              label: 'Vencidas',
-              value: 'EXPIRED',
-              selected: status == 'EXPIRED',
-              onTap: onStatusChanged,
-            ),
-            if (!compact)
+          )
+        else
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ...chips,
               _IconButton(
                 icon: Icons.refresh_rounded,
                 tooltip: 'Recargar',
                 onTap: onRefresh,
               ),
-          ],
-        ),
+            ],
+          ),
         if (showSearch) ...[
           const SizedBox(height: AppSpacing.md),
           TextField(
@@ -368,6 +401,7 @@ class _CompanyList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       itemCount: companies.length,
       separatorBuilder: (context, index) =>
           const SizedBox(height: AppSpacing.sm),
@@ -487,6 +521,7 @@ class _CompanyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mobile = MediaQuery.sizeOf(context).width < 600;
     final overLimit =
         company.usersUsed >= company.maxUsers ||
         company.productsUsed >= company.maxProducts;
@@ -497,7 +532,7 @@ class _CompanyCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(mobile ? AppSpacing.md : 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
@@ -514,8 +549,8 @@ class _CompanyCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 8,
-                    height: 38,
+                    width: mobile ? 6 : 8,
+                    height: mobile ? 44 : 38,
                     decoration: BoxDecoration(
                       color: overLimit ? AppColors.warning : AppColors.primary,
                       borderRadius: BorderRadius.circular(99),
@@ -528,7 +563,7 @@ class _CompanyCard extends StatelessWidget {
                       children: [
                         Text(
                           company.companyName,
-                          maxLines: 1,
+                          maxLines: mobile ? 2 : 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
@@ -581,12 +616,14 @@ class _LicenseControlPanel extends StatefulWidget {
   final DaleVentasCompanyLicense company;
   final DaleVentasLicenseService service;
   final ValueChanged<DaleVentasCompanyLicense> onChanged;
+  final ValueChanged<String> onDeleted;
 
   const _LicenseControlPanel({
     super.key,
     required this.company,
     required this.service,
     required this.onChanged,
+    required this.onDeleted,
   });
 
   @override
@@ -657,6 +694,31 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
     }
   }
 
+  Future<void> _runPermanentDelete() async {
+    setState(() => _busy = true);
+    try {
+      await widget.service.permanentlyDeleteCompanyLicense(
+        widget.company.companyId,
+      );
+      if (!mounted) return;
+      widget.onDeleted(widget.company.companyId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Licencia eliminada completamente.')),
+      );
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is ApiException ? error.message : error.toString();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Map<String, dynamic> _body() {
     return {
       'plan': _planCode,
@@ -693,73 +755,162 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
         false;
   }
 
+  Future<bool> _confirmPermanentDelete() async {
+    final ctrl = TextEditingController();
+    try {
+      return await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              return StatefulBuilder(
+                builder: (context, setDialogState) {
+                  final matches =
+                      ctrl.text.trim() == widget.company.companyName.trim();
+                  return AlertDialog(
+                    title: const Text('Eliminar completamente'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Esto borrara la empresa, licencia, sesiones y datos asociados de ${widget.company.companyName}.',
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextField(
+                          controller: ctrl,
+                          autofocus: true,
+                          onChanged: (_) => setDialogState(() {}),
+                          decoration: _input(
+                            'Escribe el nombre exacto',
+                            hint: widget.company.companyName,
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                        ),
+                        onPressed: matches
+                            ? () => Navigator.pop(context, true)
+                            : null,
+                        icon: const Icon(Icons.delete_forever_rounded),
+                        label: const Text('Eliminar todo'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ) ??
+          false;
+    } finally {
+      ctrl.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final company = widget.company;
+    final mobile = MediaQuery.sizeOf(context).width < 600;
     return Container(
       height: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(
+          mobile ? 18 : AppSpacing.cardRadius,
+        ),
+        border: mobile ? null : Border.all(color: AppColors.border),
       ),
       child: AbsorbPointer(
         absorbing: _busy,
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: EdgeInsets.fromLTRB(
+            mobile ? AppSpacing.md : AppSpacing.lg,
+            mobile ? AppSpacing.sm : AppSpacing.lg,
+            mobile ? AppSpacing.md : AppSpacing.lg,
+            AppSpacing.xl,
+          ),
           children: [
             Container(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: EdgeInsets.all(mobile ? AppSpacing.md : AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppColors.border),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.cloud_done_rounded,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
+              child: mobile
+                  ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          company.companyName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
-                          ),
+                        Row(
+                          children: [
+                            _CompanyIcon(size: 42),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                company.companyName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            _StatusPill(status: company.status),
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.xs),
+                        const SizedBox(height: AppSpacing.sm),
                         SelectableText(
                           '${company.planLabel} · ${company.policyLabel}',
-                          maxLines: 1,
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
                       ],
+                    )
+                  : Row(
+                      children: [
+                        _CompanyIcon(size: 46),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                company.companyName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              SelectableText(
+                                '${company.planLabel} · ${company.policyLabel}',
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        _StatusPill(status: company.status),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  _StatusPill(status: company.status),
-                ],
-              ),
             ),
             const SizedBox(height: AppSpacing.md),
             LayoutBuilder(
@@ -944,69 +1095,104 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
             _SectionPanel(
               title: 'Acciones',
               icon: Icons.admin_panel_settings_rounded,
-              child: Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  FilledButton.icon(
-                    icon: _busy
-                        ? const SizedBox.square(
-                            dimension: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.save_rounded),
-                    label: const Text('Guardar'),
-                    onPressed: () => _run(
-                      () => widget.service.updateCompany(
-                        company.companyId,
-                        _body(),
-                      ),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.verified_rounded),
-                    label: const Text('Activar'),
-                    onPressed: () => _run(
-                      () => widget.service.activateCompany(
-                        company.companyId,
-                        _body(),
-                      ),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.block_rounded),
-                    label: const Text('Bloquear'),
-                    onPressed: () async {
-                      if (await _confirm(
-                        'Bloquear licencia',
-                        'La empresa saldra de la app al instante.',
-                      )) {
-                        await _run(
-                          () => widget.service.blockCompany(
-                            company.companyId,
-                            _body(),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final fullWidth = constraints.maxWidth < 520;
+                  Widget action(Widget child) => fullWidth
+                      ? SizedBox(width: double.infinity, child: child)
+                      : child;
+                  return Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      action(
+                        FilledButton.icon(
+                          icon: _busy
+                              ? const SizedBox.square(
+                                  dimension: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.save_rounded),
+                          label: const Text('Guardar'),
+                          onPressed: () => _run(
+                            () => widget.service.updateCompany(
+                              company.companyId,
+                              _body(),
+                            ),
                           ),
-                        );
-                      }
-                    },
-                  ),
-                  TextButton.icon(
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    label: const Text('Eliminar licencia'),
-                    onPressed: () async {
-                      if (await _confirm(
-                        'Eliminar licencia',
-                        'La empresa quedara bloqueada y sus sesiones seran cerradas.',
-                      )) {
-                        await _run(
-                          () => widget.service.deleteCompanyLicense(
-                            company.companyId,
+                        ),
+                      ),
+                      action(
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.verified_rounded),
+                          label: const Text('Activar'),
+                          onPressed: () => _run(
+                            () => widget.service.activateCompany(
+                              company.companyId,
+                              _body(),
+                            ),
                           ),
-                        );
-                      }
-                    },
-                  ),
-                ],
+                        ),
+                      ),
+                      action(
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.block_rounded),
+                          label: const Text('Bloquear'),
+                          onPressed: () async {
+                            if (await _confirm(
+                              'Bloquear licencia',
+                              'La empresa saldra de la app al instante.',
+                            )) {
+                              await _run(
+                                () => widget.service.blockCompany(
+                                  company.companyId,
+                                  _body(),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      action(
+                        TextButton.icon(
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: const Text('Eliminar licencia'),
+                          onPressed: () async {
+                            if (await _confirm(
+                              'Eliminar licencia',
+                              'La empresa quedara bloqueada y sus sesiones seran cerradas.',
+                            )) {
+                              await _run(
+                                () => widget.service.deleteCompanyLicense(
+                                  company.companyId,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      action(
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: BorderSide(
+                              color: AppColors.error.withValues(alpha: 0.55),
+                            ),
+                          ),
+                          icon: const Icon(Icons.delete_forever_rounded),
+                          label: const Text('Eliminar completamente'),
+                          onPressed: () async {
+                            if (await _confirmPermanentDelete()) {
+                              await _runPermanentDelete();
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             if ((company.blockReason ?? '').isNotEmpty) ...[
@@ -1078,6 +1264,25 @@ class _SectionPanel extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+class _CompanyIcon extends StatelessWidget {
+  final double size;
+
+  const _CompanyIcon({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Icon(Icons.cloud_done_rounded, color: AppColors.primary),
     );
   }
 }
@@ -1309,28 +1514,45 @@ class _MobileDetailSheet extends StatelessWidget {
   final DaleVentasCompanyLicense company;
   final DaleVentasLicenseService service;
   final ValueChanged<DaleVentasCompanyLicense> onChanged;
+  final ValueChanged<String> onDeleted;
 
   const _MobileDetailSheet({
     required this.company,
     required this.service,
     required this.onChanged,
+    required this.onDeleted,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.92,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          AppSpacing.md,
-          AppSpacing.md,
-          0,
-        ),
-        child: _LicenseControlPanel(
-          company: company,
-          service: service,
-          onChanged: onChanged,
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+      child: ColoredBox(
+        color: AppColors.surface,
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.94,
+          child: Column(
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Expanded(
+                child: _LicenseControlPanel(
+                  company: company,
+                  service: service,
+                  onChanged: onChanged,
+                  onDeleted: onDeleted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
