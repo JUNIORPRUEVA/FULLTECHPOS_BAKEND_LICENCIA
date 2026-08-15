@@ -1,21 +1,70 @@
 const DEFAULT_TIMEOUT_MS = 15000;
 
+function readEnv(name) {
+  const value = process.env[name];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function readEnvFile(name) {
+  const filePath = readEnv(`${name}_FILE`);
+  if (!filePath) return '';
+  try {
+    return require('fs').readFileSync(filePath, 'utf8').trim();
+  } catch (error) {
+    console.warn(
+      `[daleventas-license-bridge] Could not read ${name}_FILE: ${error.message || error}`
+    );
+    return '';
+  }
+}
+
+function firstConfigured(names) {
+  for (const name of names) {
+    const value = readEnv(name) || readEnvFile(name);
+    if (value) return { name, value };
+  }
+  return { name: null, value: '' };
+}
+
 function getConfig() {
-  const baseUrl = String(
-    process.env.DALEVENTAS_LICENSE_API_BASE_URL ||
-      process.env.DALEVENTA_LICENSE_API_BASE_URL ||
-      process.env.DALEVENTAS_API_BASE_URL ||
-      ''
-  ).trim().replace(/\/+$/, '');
+  const base = firstConfigured([
+    'DALEVENTAS_LICENSE_API_BASE_URL',
+    'DALEVENTA_LICENSE_API_BASE_URL',
+    'DALEVENTAS_API_BASE_URL',
+    'FULLPOS_CLOUD_API_BASE_URL',
+  ]);
 
-  const secret = String(
-    process.env.DALEVENTAS_LICENSE_ADMIN_SECRET ||
-      process.env.DALEVENTA_LICENSE_ADMIN_SECRET ||
-      process.env.LICENSE_ADMIN_SECRET ||
-      ''
-  ).trim();
+  const adminSecret = firstConfigured([
+    'DALEVENTAS_LICENSE_ADMIN_SECRET',
+    'DALEVENTA_LICENSE_ADMIN_SECRET',
+    'DALEVENTAS_ADMIN_SECRET',
+    'LICENSE_ADMIN_SECRET',
+  ]);
 
-  return { baseUrl, secret };
+  return {
+    baseUrl: base.value.replace(/\/+$/, ''),
+    secret: adminSecret.value,
+    sources: {
+      baseUrl: base.name,
+      secret: adminSecret.name,
+    },
+    missing: [
+      ...(base.value ? [] : ['DALEVENTAS_LICENSE_API_BASE_URL']),
+      ...(adminSecret.value ? [] : ['DALEVENTAS_LICENSE_ADMIN_SECRET']),
+    ],
+  };
+}
+
+function getConfigStatus() {
+  const config = getConfig();
+  return {
+    configured: config.missing.length === 0,
+    hasBaseUrl: Boolean(config.baseUrl),
+    hasAdminSecret: Boolean(config.secret),
+    baseUrlSource: config.sources.baseUrl,
+    adminSecretSource: config.sources.secret,
+    missing: config.missing,
+  };
 }
 
 function adminActor(req) {
@@ -35,12 +84,14 @@ function buildQuery(query) {
 }
 
 async function requestDaleVentas(req, res, method, path, body) {
-  const { baseUrl, secret } = getConfig();
+  const { baseUrl, secret, missing } = getConfig();
   if (!baseUrl || !secret) {
     return res.status(503).json({
       success: false,
+      errorCode: 'DALEVENTAS_LICENSE_BRIDGE_NOT_CONFIGURED',
       message:
-        'El puente de licencias DaleVentas no esta configurado. Defina DALEVENTAS_LICENSE_API_BASE_URL y DALEVENTAS_LICENSE_ADMIN_SECRET.',
+        `El puente de licencias DaleVentas no esta configurado. Falta definir: ${missing.join(', ')}.`,
+      missing,
     });
   }
 
@@ -152,3 +203,5 @@ exports.permanentlyDeleteCompanyLicense = (req, res) => {
     req.body || {}
   );
 };
+
+exports.getConfigStatus = getConfigStatus;

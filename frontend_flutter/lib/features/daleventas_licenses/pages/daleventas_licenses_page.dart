@@ -30,7 +30,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
   Timer? _pollTimer;
 
   DaleVentasCompanyLicense? _selected;
-  String _status = 'TODAS';
+  String _status = 'ACTIVE';
   bool _showSearch = false;
   AppShellActionsController? _shellActionsController;
   bool? _shellActionsMobile;
@@ -756,61 +756,32 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
   }
 
   Future<bool> _confirmPermanentDelete() async {
-    final ctrl = TextEditingController();
-    try {
-      return await showDialog<bool>(
-            context: context,
-            builder: (context) {
-              return StatefulBuilder(
-                builder: (context, setDialogState) {
-                  final matches =
-                      ctrl.text.trim() == widget.company.companyName.trim();
-                  return AlertDialog(
-                    title: const Text('Eliminar completamente'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Esto borrara la empresa, licencia, sesiones y datos asociados de ${widget.company.companyName}.',
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextField(
-                          controller: ctrl,
-                          autofocus: true,
-                          onChanged: (_) => setDialogState(() {}),
-                          decoration: _input(
-                            'Escribe el nombre exacto',
-                            hint: widget.company.companyName,
-                          ),
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                        ),
-                        onPressed: matches
-                            ? () => Navigator.pop(context, true)
-                            : null,
-                        icon: const Icon(Icons.delete_forever_rounded),
-                        label: const Text('Eliminar todo'),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ) ??
-          false;
-    } finally {
-      ctrl.dispose();
-    }
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Eliminar completamente'),
+              content: Text(
+                'Esto borrara la empresa, licencia, sesiones y datos asociados de ${widget.company.companyName}. ¿Estas seguro?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                  ),
+                  onPressed: () => Navigator.pop(context, true),
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  label: const Text('Eliminar todo'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   @override

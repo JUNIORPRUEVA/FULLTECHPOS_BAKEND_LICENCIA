@@ -46,6 +46,7 @@ const adminProjectsRoutes = require('./routes/adminProjectsRoutes');
 const adminPaymentsRoutes = require('./routes/adminPaymentsRoutes');
 const adminLicensePaymentsRoutes = require('./routes/adminLicensePaymentsRoutes');
 const daleventasLicenseRoutes = require('./routes/daleventasLicenseRoutes');
+const daleventasLicenseController = require('./controllers/daleventasLicenseController');
 const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const activationsRoutes = require('./routes/activationsRoutes');
@@ -849,6 +850,7 @@ app.get('/api/public/version', (req, res) => {
     has_public_license_routes: true,
     has_demo_start: true,
     has_migration_043: true,
+    daleventas_license_bridge: daleventasLicenseController.getConfigStatus(),
     license_only_mode: LICENSE_ONLY,
     node_env: String(process.env.NODE_ENV || 'development'),
     ts: new Date().toISOString()
