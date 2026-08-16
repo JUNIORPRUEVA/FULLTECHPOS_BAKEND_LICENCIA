@@ -1,4 +1,16 @@
 const DEFAULT_TIMEOUT_MS = 15000;
+const BASE_URL_ENV_NAMES = [
+  'DALEVENTAS_LICENSE_API_BASE_URL',
+  'DALEVENTA_LICENSE_API_BASE_URL',
+  'DALEVENTAS_API_BASE_URL',
+  'FULLPOS_CLOUD_API_BASE_URL',
+];
+const ADMIN_SECRET_ENV_NAMES = [
+  'DALEVENTAS_LICENSE_ADMIN_SECRET',
+  'DALEVENTA_LICENSE_ADMIN_SECRET',
+  'DALEVENTAS_ADMIN_SECRET',
+  'LICENSE_ADMIN_SECRET',
+];
 
 function readEnv(name) {
   const value = process.env[name];
@@ -27,19 +39,8 @@ function firstConfigured(names) {
 }
 
 function getConfig() {
-  const base = firstConfigured([
-    'DALEVENTAS_LICENSE_API_BASE_URL',
-    'DALEVENTA_LICENSE_API_BASE_URL',
-    'DALEVENTAS_API_BASE_URL',
-    'FULLPOS_CLOUD_API_BASE_URL',
-  ]);
-
-  const adminSecret = firstConfigured([
-    'DALEVENTAS_LICENSE_ADMIN_SECRET',
-    'DALEVENTA_LICENSE_ADMIN_SECRET',
-    'DALEVENTAS_ADMIN_SECRET',
-    'LICENSE_ADMIN_SECRET',
-  ]);
+  const base = firstConfigured(BASE_URL_ENV_NAMES);
+  const adminSecret = firstConfigured(ADMIN_SECRET_ENV_NAMES);
 
   return {
     baseUrl: base.value.replace(/\/+$/, ''),
@@ -63,6 +64,8 @@ function getConfigStatus() {
     hasAdminSecret: Boolean(config.secret),
     baseUrlSource: config.sources.baseUrl,
     adminSecretSource: config.sources.secret,
+    acceptedBaseUrlEnvNames: BASE_URL_ENV_NAMES,
+    acceptedAdminSecretEnvNames: ADMIN_SECRET_ENV_NAMES,
     missing: config.missing,
   };
 }
@@ -92,6 +95,8 @@ async function requestDaleVentas(req, res, method, path, body) {
       message:
         `El puente de licencias DaleVentas no esta configurado. Falta definir: ${missing.join(', ')}.`,
       missing,
+      acceptedBaseUrlEnvNames: BASE_URL_ENV_NAMES,
+      acceptedAdminSecretEnvNames: ADMIN_SECRET_ENV_NAMES,
     });
   }
 
