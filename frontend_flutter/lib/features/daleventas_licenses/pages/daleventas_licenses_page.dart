@@ -31,6 +31,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
 
   DaleVentasCompanyLicense? _selected;
   String _status = 'ACTIVE';
+  String _planFilter = 'ENTERPRISE';
   bool _showSearch = false;
   AppShellActionsController? _shellActionsController;
   bool? _shellActionsMobile;
@@ -103,10 +104,28 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
   }
 
   Future<DaleVentasLicensePageResult> _load() {
-    return _service.listCompanies(
-      query: _searchCtrl.text,
-      status: _status,
-      limit: 80,
+    return _service
+        .listCompanies(
+          query: _searchCtrl.text,
+          status: _status,
+          plan: _planFilter,
+          limit: 80,
+        )
+        .then(_applyPlanFilter);
+  }
+
+  DaleVentasLicensePageResult _applyPlanFilter(
+    DaleVentasLicensePageResult result,
+  ) {
+    if (_planFilter == 'TODOS') return result;
+    final filtered = result.items
+        .where((company) => company.planCode == _planFilter)
+        .toList();
+    return DaleVentasLicensePageResult(
+      page: result.page,
+      limit: result.limit,
+      total: filtered.length,
+      items: filtered,
     );
   }
 
@@ -182,10 +201,18 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
             searchCtrl: _searchCtrl,
             searchFocus: _searchFocus,
             status: _status,
+            planFilter: _planFilter,
             showSearch: _showSearch || _isDesktop,
             onStatusChanged: (value) {
               setState(() {
                 _status = value;
+              });
+              _refresh();
+            },
+            onPlanChanged: (value) {
+              setState(() {
+                _planFilter = value;
+                _selected = null;
               });
               _refresh();
             },
@@ -226,7 +253,13 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
                   );
                 }
                 if (_isDesktop) {
-                  final selected = _selected ?? companies.first;
+                  final currentSelected = _selected;
+                  final selected = currentSelected == null
+                      ? companies.first
+                      : companies.firstWhere(
+                          (item) => item.companyId == currentSelected.companyId,
+                          orElse: () => companies.first,
+                        );
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -277,8 +310,10 @@ class _Header extends StatelessWidget {
   final TextEditingController searchCtrl;
   final FocusNode searchFocus;
   final String status;
+  final String planFilter;
   final bool showSearch;
   final ValueChanged<String> onStatusChanged;
+  final ValueChanged<String> onPlanChanged;
   final VoidCallback onSearch;
   final VoidCallback onRefresh;
 
@@ -286,8 +321,10 @@ class _Header extends StatelessWidget {
     required this.searchCtrl,
     required this.searchFocus,
     required this.status,
+    required this.planFilter,
     required this.showSearch,
     required this.onStatusChanged,
+    required this.onPlanChanged,
     required this.onSearch,
     required this.onRefresh,
   });
@@ -327,19 +364,37 @@ class _Header extends StatelessWidget {
         onTap: onStatusChanged,
       ),
     ];
+    final planChips = [
+      _StatusChip(
+        label: 'Todos los planes',
+        value: 'TODOS',
+        selected: planFilter == 'TODOS',
+        onTap: onPlanChanged,
+      ),
+      _StatusChip(
+        label: 'Plan basico',
+        value: 'STANDARD',
+        selected: planFilter == 'STANDARD',
+        onTap: onPlanChanged,
+      ),
+      _StatusChip(
+        label: 'Plan enterprise',
+        value: 'ENTERPRISE',
+        selected: planFilter == 'ENTERPRISE',
+        onTap: onPlanChanged,
+      ),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (compact)
-          SizedBox(
-            height: 44,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: chips.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, index) => chips[index],
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HorizontalChipList(chips: chips),
+              const SizedBox(height: AppSpacing.sm),
+              _HorizontalChipList(chips: planChips),
+            ],
           )
         else
           Wrap(
@@ -348,6 +403,8 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               ...chips,
+              const SizedBox(width: AppSpacing.sm),
+              ...planChips,
               _IconButton(
                 icon: Icons.refresh_rounded,
                 tooltip: 'Recargar',
@@ -383,6 +440,26 @@ class _Header extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _HorizontalChipList extends StatelessWidget {
+  final List<Widget> chips;
+
+  const _HorizontalChipList({required this.chips});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: chips.length,
+        separatorBuilder: (context, index) =>
+            const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) => chips[index],
+      ),
     );
   }
 }
@@ -633,10 +710,20 @@ class _LicenseControlPanel extends StatefulWidget {
 class _LicenseControlPanelState extends State<_LicenseControlPanel> {
   late final TextEditingController _maxUsersCtrl;
   late final TextEditingController _maxProductsCtrl;
+  late final TextEditingController _durationDaysCtrl;
   late final TextEditingController _expiresCtrl;
+  late final TextEditingController _companyNameCtrl;
+  late final TextEditingController _taxIdCtrl;
+  late final TextEditingController _businessPhoneCtrl;
+  late final TextEditingController _businessAddressCtrl;
+  late final TextEditingController _businessTypeCtrl;
+  late final TextEditingController _responsibleNameCtrl;
+  late final TextEditingController _responsibleEmailCtrl;
+  late final TextEditingController _responsibleWhatsappCtrl;
   late final TextEditingController _notesCtrl;
   late String _planCode;
   bool _busy = false;
+  bool _syncingExpirationFields = false;
 
   @override
   void initState() {
@@ -647,11 +734,43 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
     _maxProductsCtrl = TextEditingController(
       text: widget.company.maxProducts.toString(),
     );
+    _durationDaysCtrl = TextEditingController(
+      text: _daysUntilInput(widget.company.licenseExpiresAt),
+    );
     _expiresCtrl = TextEditingController(
       text: _dateInput(widget.company.licenseExpiresAt),
     );
+    _companyNameCtrl = TextEditingController(
+      text: widget.company.account.businessName ?? widget.company.companyName,
+    );
+    _taxIdCtrl = TextEditingController(
+      text: widget.company.account.taxId ?? '',
+    );
+    _businessPhoneCtrl = TextEditingController(
+      text: widget.company.account.businessPhone ?? '',
+    );
+    _businessAddressCtrl = TextEditingController(
+      text: widget.company.account.businessAddress ?? '',
+    );
+    _businessTypeCtrl = TextEditingController(
+      text: widget.company.account.businessType ?? '',
+    );
+    _responsibleNameCtrl = TextEditingController(
+      text: widget.company.account.responsibleName ?? '',
+    );
+    _responsibleEmailCtrl = TextEditingController(
+      text: widget.company.account.responsibleEmail ?? '',
+    );
+    _responsibleWhatsappCtrl = TextEditingController(
+      text:
+          widget.company.account.responsibleWhatsapp ??
+          widget.company.account.businessPhone ??
+          '',
+    );
     _notesCtrl = TextEditingController(text: widget.company.notes ?? '');
     _planCode = widget.company.planCode;
+    _durationDaysCtrl.addListener(_syncExpiresFromDays);
+    _expiresCtrl.addListener(_syncDaysFromExpires);
   }
 
   @override
@@ -660,7 +779,8 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
     if (oldWidget.company.companyId == widget.company.companyId) return;
     _maxUsersCtrl.text = widget.company.maxUsers.toString();
     _maxProductsCtrl.text = widget.company.maxProducts.toString();
-    _expiresCtrl.text = _dateInput(widget.company.licenseExpiresAt);
+    _setExpirationFields(widget.company.licenseExpiresAt);
+    _syncAccountFields();
     _notesCtrl.text = widget.company.notes ?? '';
     _planCode = widget.company.planCode;
   }
@@ -669,9 +789,84 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
   void dispose() {
     _maxUsersCtrl.dispose();
     _maxProductsCtrl.dispose();
+    _durationDaysCtrl.dispose();
     _expiresCtrl.dispose();
+    _companyNameCtrl.dispose();
+    _taxIdCtrl.dispose();
+    _businessPhoneCtrl.dispose();
+    _businessAddressCtrl.dispose();
+    _businessTypeCtrl.dispose();
+    _responsibleNameCtrl.dispose();
+    _responsibleEmailCtrl.dispose();
+    _responsibleWhatsappCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  void _syncAccountFields() {
+    final account = widget.company.account;
+    _companyNameCtrl.text = account.businessName ?? widget.company.companyName;
+    _taxIdCtrl.text = account.taxId ?? '';
+    _businessPhoneCtrl.text = account.businessPhone ?? '';
+    _businessAddressCtrl.text = account.businessAddress ?? '';
+    _businessTypeCtrl.text = account.businessType ?? '';
+    _responsibleNameCtrl.text = account.responsibleName ?? '';
+    _responsibleEmailCtrl.text = account.responsibleEmail ?? '';
+    _responsibleWhatsappCtrl.text =
+        account.responsibleWhatsapp ?? account.businessPhone ?? '';
+  }
+
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  DateTime? _parseExpiresInput() {
+    final text = _expiresCtrl.text.trim();
+    if (text.isEmpty) return null;
+    final parsed = DateTime.tryParse(text);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  void _setExpirationFields(DateTime? date) {
+    _syncingExpirationFields = true;
+    _expiresCtrl.text = _dateInput(date);
+    _durationDaysCtrl.text = _daysUntilInput(date);
+    _syncingExpirationFields = false;
+  }
+
+  void _syncExpiresFromDays() {
+    if (_syncingExpirationFields) return;
+    final text = _durationDaysCtrl.text.trim();
+    _syncingExpirationFields = true;
+    if (text.isEmpty) {
+      _expiresCtrl.text = '';
+    } else {
+      final days = int.tryParse(text);
+      if (days != null) {
+        _expiresCtrl.text = _dateInput(_today.add(Duration(days: days)));
+      }
+    }
+    _syncingExpirationFields = false;
+  }
+
+  void _syncDaysFromExpires() {
+    if (_syncingExpirationFields) return;
+    final date = _parseExpiresInput();
+    _syncingExpirationFields = true;
+    _durationDaysCtrl.text = date == null
+        ? ''
+        : date.difference(_today).inDays.toString();
+    _syncingExpirationFields = false;
+  }
+
+  void _adjustDuration(int delta) {
+    final current =
+        int.tryParse(_durationDaysCtrl.text.trim()) ??
+        (_parseExpiresInput()?.difference(_today).inDays ?? 0);
+    final next = current + delta;
+    _durationDaysCtrl.text = next.toString();
   }
 
   Future<void> _run(Future<DaleVentasCompanyLicense> Function() action) async {
@@ -730,6 +925,15 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
       'expiresAt': _expiresCtrl.text.trim().isEmpty
           ? null
           : _expiresCtrl.text.trim(),
+      'companyName': _companyNameCtrl.text.trim(),
+      'businessName': _companyNameCtrl.text.trim(),
+      'taxId': _taxIdCtrl.text.trim(),
+      'businessPhone': _businessPhoneCtrl.text.trim(),
+      'businessAddress': _businessAddressCtrl.text.trim(),
+      'businessType': _businessTypeCtrl.text.trim(),
+      'responsibleName': _responsibleNameCtrl.text.trim(),
+      'responsibleEmail': _responsibleEmailCtrl.text.trim(),
+      'responsibleWhatsapp': _responsibleWhatsappCtrl.text.trim(),
       'notes': _notesCtrl.text.trim(),
     };
   }
@@ -948,6 +1152,21 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
             ),
             const SizedBox(height: AppSpacing.md),
             _SectionPanel(
+              title: 'Datos de empresa y dueño',
+              icon: Icons.edit_note_rounded,
+              child: _EditableAccountFields(
+                companyNameCtrl: _companyNameCtrl,
+                taxIdCtrl: _taxIdCtrl,
+                businessPhoneCtrl: _businessPhoneCtrl,
+                businessAddressCtrl: _businessAddressCtrl,
+                businessTypeCtrl: _businessTypeCtrl,
+                responsibleNameCtrl: _responsibleNameCtrl,
+                responsibleEmailCtrl: _responsibleEmailCtrl,
+                responsibleWhatsappCtrl: _responsibleWhatsappCtrl,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionPanel(
               title: 'Consumo actual',
               icon: Icons.insert_chart_outlined_rounded,
               child: Column(
@@ -1016,10 +1235,11 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
                           controller: _maxProductsCtrl,
                           label: 'Productos permitidos',
                         ),
-                        TextField(
-                          controller: _expiresCtrl,
-                          decoration: _input('Vence el', hint: '2026-12-31'),
+                        _NumberField(
+                          controller: _durationDaysCtrl,
+                          label: 'Tiempo en dias',
                         ),
+                        _ExpirationDateField(controller: _expiresCtrl),
                       ];
                       if (!twoCols) {
                         return Column(
@@ -1052,6 +1272,8 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
                       );
                     },
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _DurationAdjustments(onAdjust: _adjustDuration),
                   const SizedBox(height: AppSpacing.md),
                   TextField(
                     controller: _notesCtrl,
@@ -1319,6 +1541,195 @@ class _AccountSummary extends StatelessWidget {
               .toList(),
         );
       },
+    );
+  }
+}
+
+class _EditableAccountFields extends StatefulWidget {
+  final TextEditingController companyNameCtrl;
+  final TextEditingController taxIdCtrl;
+  final TextEditingController businessPhoneCtrl;
+  final TextEditingController businessAddressCtrl;
+  final TextEditingController businessTypeCtrl;
+  final TextEditingController responsibleNameCtrl;
+  final TextEditingController responsibleEmailCtrl;
+  final TextEditingController responsibleWhatsappCtrl;
+
+  const _EditableAccountFields({
+    required this.companyNameCtrl,
+    required this.taxIdCtrl,
+    required this.businessPhoneCtrl,
+    required this.businessAddressCtrl,
+    required this.businessTypeCtrl,
+    required this.responsibleNameCtrl,
+    required this.responsibleEmailCtrl,
+    required this.responsibleWhatsappCtrl,
+  });
+
+  @override
+  State<_EditableAccountFields> createState() => _EditableAccountFieldsState();
+}
+
+class _EditableAccountFieldsState extends State<_EditableAccountFields> {
+  final Set<String> _editableFields = <String>{};
+
+  Future<void> _enableField(String fieldId, String label) async {
+    if (_editableFields.contains(fieldId)) return;
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Editar dato'),
+            content: Text(
+              '¿Estas seguro que quieres editar "$label"? Cambiar este dato puede afectar la informacion de la licencia.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.edit_rounded),
+                label: const Text('Editar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+    setState(() {
+      _editableFields.add(fieldId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fields = [
+      _ConfirmEditableField(
+        fieldId: 'companyName',
+        label: 'Nombre de empresa',
+        controller: widget.companyNameCtrl,
+        editable: _editableFields.contains('companyName'),
+        onEnable: _enableField,
+        textCapitalization: TextCapitalization.words,
+      ),
+      _ConfirmEditableField(
+        fieldId: 'responsibleName',
+        label: 'Nombre del dueño',
+        controller: widget.responsibleNameCtrl,
+        editable: _editableFields.contains('responsibleName'),
+        onEnable: _enableField,
+        textCapitalization: TextCapitalization.words,
+      ),
+      _ConfirmEditableField(
+        fieldId: 'responsibleWhatsapp',
+        label: 'WhatsApp del dueño',
+        controller: widget.responsibleWhatsappCtrl,
+        editable: _editableFields.contains('responsibleWhatsapp'),
+        onEnable: _enableField,
+        keyboardType: TextInputType.phone,
+      ),
+      _ConfirmEditableField(
+        fieldId: 'responsibleEmail',
+        label: 'Correo del dueño',
+        controller: widget.responsibleEmailCtrl,
+        editable: _editableFields.contains('responsibleEmail'),
+        onEnable: _enableField,
+        keyboardType: TextInputType.emailAddress,
+      ),
+      _ConfirmEditableField(
+        fieldId: 'taxId',
+        label: 'RNC / Cedula',
+        controller: widget.taxIdCtrl,
+        editable: _editableFields.contains('taxId'),
+        onEnable: _enableField,
+        keyboardType: TextInputType.text,
+      ),
+      _ConfirmEditableField(
+        fieldId: 'businessPhone',
+        label: 'Telefono del negocio',
+        controller: widget.businessPhoneCtrl,
+        editable: _editableFields.contains('businessPhone'),
+        onEnable: _enableField,
+        keyboardType: TextInputType.phone,
+      ),
+      _ConfirmEditableField(
+        fieldId: 'businessAddress',
+        label: 'Direccion',
+        controller: widget.businessAddressCtrl,
+        editable: _editableFields.contains('businessAddress'),
+        onEnable: _enableField,
+        textCapitalization: TextCapitalization.sentences,
+      ),
+      _ConfirmEditableField(
+        fieldId: 'businessType',
+        label: 'Tipo de negocio',
+        controller: widget.businessTypeCtrl,
+        editable: _editableFields.contains('businessType'),
+        onEnable: _enableField,
+        textCapitalization: TextCapitalization.sentences,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 900
+            ? 3
+            : constraints.maxWidth >= 560
+            ? 2
+            : 1;
+        final width =
+            (constraints.maxWidth - AppSpacing.sm * (columns - 1)) / columns;
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.md,
+          children: fields
+              .map((field) => SizedBox(width: width, child: field))
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _ConfirmEditableField extends StatelessWidget {
+  final String fieldId;
+  final String label;
+  final TextEditingController controller;
+  final bool editable;
+  final Future<void> Function(String fieldId, String label) onEnable;
+  final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
+
+  const _ConfirmEditableField({
+    required this.fieldId,
+    required this.label,
+    required this.controller,
+    required this.editable,
+    required this.onEnable,
+    this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      readOnly: !editable,
+      keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
+      onTap: editable ? null : () => onEnable(fieldId, label),
+      decoration: _input(label).copyWith(
+        suffixIcon: IconButton(
+          tooltip: editable ? 'Campo editable' : 'Habilitar edicion',
+          icon: Icon(
+            editable ? Icons.lock_open_rounded : Icons.edit_rounded,
+            color: editable ? AppColors.success : AppColors.textSecondary,
+          ),
+          onPressed: editable ? null : () => onEnable(fieldId, label),
+        ),
+      ),
     );
   }
 }
@@ -1798,6 +2209,69 @@ class _NumberField extends StatelessWidget {
   }
 }
 
+class _ExpirationDateField extends StatelessWidget {
+  final TextEditingController controller;
+
+  const _ExpirationDateField({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.datetime,
+      decoration: _input('Vence el', hint: '2026-12-31'),
+    );
+  }
+}
+
+class _DurationAdjustments extends StatelessWidget {
+  final ValueChanged<int> onAdjust;
+
+  const _DurationAdjustments({required this.onAdjust});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Wrap(
+        spacing: AppSpacing.xs,
+        runSpacing: AppSpacing.xs,
+        children: [
+          _DurationChip(label: '-30 dias', delta: -30, onAdjust: onAdjust),
+          _DurationChip(label: '-7 dias', delta: -7, onAdjust: onAdjust),
+          _DurationChip(label: '+7 dias', delta: 7, onAdjust: onAdjust),
+          _DurationChip(label: '+30 dias', delta: 30, onAdjust: onAdjust),
+        ],
+      ),
+    );
+  }
+}
+
+class _DurationChip extends StatelessWidget {
+  final String label;
+  final int delta;
+  final ValueChanged<int> onAdjust;
+
+  const _DurationChip({
+    required this.label,
+    required this.delta,
+    required this.onAdjust,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 34),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      onPressed: () => onAdjust(delta),
+      child: Text(label),
+    );
+  }
+}
+
 InputDecoration _input(String label, {String? hint}) {
   return InputDecoration(
     labelText: label,
@@ -1818,6 +2292,15 @@ InputDecoration _input(String label, {String? hint}) {
 String _dateInput(DateTime? date) {
   if (date == null) return '';
   return DateFormat('yyyy-MM-dd').format(date.toLocal());
+}
+
+String _daysUntilInput(DateTime? date) {
+  if (date == null) return '';
+  final local = date.toLocal();
+  final expires = DateTime(local.year, local.month, local.day);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  return expires.difference(today).inDays.toString();
 }
 
 String _fmtDateOnly(DateTime? date) {

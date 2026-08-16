@@ -17,6 +17,7 @@ class DaleVentasLicenseService {
     int limit = 50,
     String query = '',
     String status = '',
+    String plan = '',
   }) async {
     await _ensureInit();
     final qs = Uri(
@@ -25,6 +26,7 @@ class DaleVentasLicenseService {
         'limit': limit.toString(),
         if (query.trim().isNotEmpty) 'query': query.trim(),
         if (status.trim().isNotEmpty && status != 'TODAS') 'status': status,
+        if (plan.trim().isNotEmpty && plan != 'TODOS') 'plan': plan,
       },
     ).query;
     final data = await _client.get(
