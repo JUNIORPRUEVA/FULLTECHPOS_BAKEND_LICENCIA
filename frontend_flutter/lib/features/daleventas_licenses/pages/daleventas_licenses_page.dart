@@ -2041,7 +2041,7 @@ class _DaleVentasUsageSummary extends StatelessWidget {
       _InfoItem(
         icon: Icons.online_prediction_rounded,
         label: 'Estado',
-        value: account?.statusLabel ?? 'Sin uso registrado',
+        value: _daleUsageStatusLabel(account),
       ),
       _InfoItem(
         icon: Icons.schedule_rounded,
@@ -2050,7 +2050,7 @@ class _DaleVentasUsageSummary extends StatelessWidget {
       ),
       _InfoItem(
         icon: Icons.timer_outlined,
-        label: 'Tiempo activo',
+        label: 'Tiempo estimado',
         value: _fmtUsageDuration(account?.activeSeconds ?? 0),
       ),
       _InfoItem(
@@ -2131,10 +2131,10 @@ class _UsageAlert extends StatelessWidget {
     final color = _usageStatusColor(status);
     final title = account == null
         ? 'Sin actividad enviada'
-        : account.statusLabel;
+        : _daleUsageStatusLabel(account);
     final detail = account == null
         ? 'DaleVentas POS aun no ha reportado heartbeat para esta empresa.'
-        : 'Eventos ${account.eventsCount} · App ${account.appCode}';
+        : 'Reporte agregado ${account.eventsCount} · App ${account.appCode}';
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -2191,7 +2191,7 @@ class _CompanyUsagePreview extends StatelessWidget {
     final account = usage;
     final status = account?.usageStatus ?? 'NEVER_USED';
     final color = _usageStatusColor(status);
-    final label = account?.statusLabel ?? 'Sin uso';
+    final label = _daleUsageStatusLabel(account);
     final when = account == null
         ? 'Sin reporte'
         : _fmtUsageDate(account.lastSeenAt);
@@ -2683,6 +2683,24 @@ String _fmtMetricList(String? value) {
       .toList();
   if (parts.isEmpty) return 'Sin modulo hoy';
   return parts.take(3).join(', ');
+}
+
+String _daleUsageStatusLabel(UsageAccount? account) {
+  if (account == null) return 'Sin uso';
+  if (account.appVersion?.contains('telemetry') == true ||
+      account.metrics.isNotEmpty) {
+    switch (account.usageStatus) {
+      case 'USING_NOW':
+      case 'ACTIVE_TODAY':
+        return 'Reporte reciente';
+      case 'ACTIVE_WEEK':
+      case 'ACTIVE_RECENT':
+        return 'Reporte recibido';
+      default:
+        return account.statusLabel;
+    }
+  }
+  return account.statusLabel;
 }
 
 Color _usageStatusColor(String status) {
