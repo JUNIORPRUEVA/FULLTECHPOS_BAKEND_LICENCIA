@@ -15,6 +15,8 @@ import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../models/daleventas_company_license.dart';
 import '../services/daleventas_license_service.dart';
+import '../../usage_analytics/models/usage_analytics.dart';
+import '../../usage_analytics/services/usage_analytics_service.dart';
 
 class DaleVentasLicensesPage extends StatefulWidget {
   const DaleVentasLicensesPage({super.key});
@@ -25,6 +27,7 @@ class DaleVentasLicensesPage extends StatefulWidget {
 
 class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
   late final DaleVentasLicenseService _service;
+  late final UsageAnalyticsService _usageService;
   late Future<DaleVentasLicensePageResult> _future;
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
@@ -36,6 +39,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
   bool _showSearch = false;
   AppShellActionsController? _shellActionsController;
   bool? _shellActionsMobile;
+  Map<String, UsageAccount> _usageByCompany = {};
 
   bool get _isDesktop => MediaQuery.sizeOf(context).width >= 1020;
 
@@ -43,6 +47,9 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
   void initState() {
     super.initState();
     _service = DaleVentasLicenseService(
+      sessionManager: context.read<SessionManager>(),
+    );
+    _usageService = UsageAnalyticsService(
       sessionManager: context.read<SessionManager>(),
     );
     _future = _load();
@@ -104,8 +111,8 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
     });
   }
 
-  Future<DaleVentasLicensePageResult> _load() {
-    return _service
+  Future<DaleVentasLicensePageResult> _load() async {
+    final result = await _service
         .listCompanies(
           query: _searchCtrl.text,
           status: _status,
@@ -113,6 +120,55 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
           limit: 80,
         )
         .then(_applyPlanFilter);
+
+    try {
+      final usage = await _usageService.getDashboard(
+        appCode: 'DALEVENTAS_POS',
+        limit: 200,
+      );
+      _usageByCompany = _indexUsage(usage.accounts.accounts);
+    } catch (_) {
+      _usageByCompany = {};
+    }
+
+    return result;
+  }
+
+  Map<String, UsageAccount> _indexUsage(List<UsageAccount> accounts) {
+    final map = <String, UsageAccount>{};
+    for (final account in accounts) {
+      final keys = [
+        account.businessId,
+        account.customerId,
+        account.licenseId,
+        account.licenseKey,
+        account.customerName,
+        account.metricString('business_name'),
+        account.metricString('business_slug'),
+      ];
+      for (final key in keys) {
+        final normalized = _usageKey(key);
+        if (normalized != null) map[normalized] = account;
+      }
+    }
+    return map;
+  }
+
+  UsageAccount? _usageFor(DaleVentasCompanyLicense company) {
+    final keys = [
+      company.companyId,
+      company.slug,
+      company.licenseKey,
+      company.companyName,
+      company.account.businessName,
+    ];
+    for (final key in keys) {
+      final normalized = _usageKey(key);
+      if (normalized != null && _usageByCompany.containsKey(normalized)) {
+        return _usageByCompany[normalized];
+      }
+    }
+    return null;
   }
 
   DaleVentasLicensePageResult _applyPlanFilter(
@@ -171,6 +227,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
         useSafeArea: true,
         builder: (_) => _MobileDetailSheet(
           company: detail,
+          usage: _usageFor(detail),
           onChanged: (updated) {
             setState(() {
               _selected = updated;
@@ -269,6 +326,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
                         child: _CompanyRail(
                           companies: companies,
                           selectedId: selected.companyId,
+                          usageFor: _usageFor,
                           onTap: _openDetail,
                         ),
                       ),
@@ -277,6 +335,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
                         child: _LicenseControlPanel(
                           key: ValueKey(selected.companyId),
                           company: selected,
+                          usage: _usageFor(selected),
                           service: _service,
                           onChanged: (updated) {
                             setState(() {
@@ -297,7 +356,11 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
                     ],
                   );
                 }
-                return _CompanyList(companies: companies, onTap: _openDetail);
+                return _CompanyList(
+                  companies: companies,
+                  usageFor: _usageFor,
+                  onTap: _openDetail,
+                );
               },
             ),
           ),
@@ -482,12 +545,14 @@ MarketingContact _daleVentasMarketingContact(DaleVentasCompanyLicense company) {
 class _CompanyList extends StatelessWidget {
   final List<DaleVentasCompanyLicense> companies;
   final String? selectedId;
+  final UsageAccount? Function(DaleVentasCompanyLicense company)? usageFor;
   final ValueChanged<DaleVentasCompanyLicense> onTap;
 
   const _CompanyList({
     required this.companies,
     required this.onTap,
     this.selectedId,
+    this.usageFor,
   });
 
   @override
@@ -501,6 +566,7 @@ class _CompanyList extends StatelessWidget {
         final company = companies[index];
         return _CompanyCard(
           company: company,
+          usage: usageFor?.call(company),
           selected: company.companyId == selectedId,
           onTap: () => onTap(company),
         );
@@ -512,10 +578,12 @@ class _CompanyList extends StatelessWidget {
 class _CompanyRail extends StatelessWidget {
   final List<DaleVentasCompanyLicense> companies;
   final String? selectedId;
+  final UsageAccount? Function(DaleVentasCompanyLicense company) usageFor;
   final ValueChanged<DaleVentasCompanyLicense> onTap;
 
   const _CompanyRail({
     required this.companies,
+    required this.usageFor,
     required this.onTap,
     this.selectedId,
   });
@@ -590,6 +658,7 @@ class _CompanyRail extends StatelessWidget {
               child: _CompanyList(
                 companies: companies,
                 selectedId: selectedId,
+                usageFor: usageFor,
                 onTap: onTap,
               ),
             ),
@@ -602,11 +671,13 @@ class _CompanyRail extends StatelessWidget {
 
 class _CompanyCard extends StatelessWidget {
   final DaleVentasCompanyLicense company;
+  final UsageAccount? usage;
   final bool selected;
   final VoidCallback onTap;
 
   const _CompanyCard({
     required this.company,
+    required this.usage,
     required this.selected,
     required this.onTap,
   });
@@ -701,6 +772,8 @@ class _CompanyCard extends StatelessWidget {
                 max: company.maxProducts,
                 value: company.productsRatio,
               ),
+              const SizedBox(height: AppSpacing.sm),
+              _CompanyUsagePreview(usage: usage),
             ],
           ),
         ),
@@ -711,6 +784,7 @@ class _CompanyCard extends StatelessWidget {
 
 class _LicenseControlPanel extends StatefulWidget {
   final DaleVentasCompanyLicense company;
+  final UsageAccount? usage;
   final DaleVentasLicenseService service;
   final ValueChanged<DaleVentasCompanyLicense> onChanged;
   final ValueChanged<String> onDeleted;
@@ -718,6 +792,7 @@ class _LicenseControlPanel extends StatefulWidget {
   const _LicenseControlPanel({
     super.key,
     required this.company,
+    required this.usage,
     required this.service,
     required this.onChanged,
     required this.onDeleted,
@@ -1158,6 +1233,12 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
             ),
             const SizedBox(height: AppSpacing.lg),
             _PlanNotice(company: company),
+            const SizedBox(height: AppSpacing.md),
+            _SectionPanel(
+              title: 'Uso y actividad',
+              icon: Icons.query_stats_rounded,
+              child: _DaleVentasUsageSummary(usage: widget.usage),
+            ),
             const SizedBox(height: AppSpacing.md),
             _SectionPanel(
               title: 'Vigencia y alcance',
@@ -1916,14 +1997,247 @@ class _PlanNotice extends StatelessWidget {
   }
 }
 
+class _DaleVentasUsageSummary extends StatelessWidget {
+  final UsageAccount? usage;
+
+  const _DaleVentasUsageSummary({required this.usage});
+
+  @override
+  Widget build(BuildContext context) {
+    final account = usage;
+    final businessItems = [
+      _InfoItem(
+        icon: Icons.point_of_sale_rounded,
+        label: 'Ventas hoy',
+        value: '${account?.metricInt('sales_today') ?? 0}',
+      ),
+      _InfoItem(
+        icon: Icons.receipt_long_rounded,
+        label: 'Cotizaciones hoy',
+        value: '${account?.metricInt('quotes_today') ?? 0}',
+      ),
+      _InfoItem(
+        icon: Icons.calendar_month_rounded,
+        label: 'Ventas del mes',
+        value: '${account?.metricInt('sales_this_month') ?? 0}',
+      ),
+      _InfoItem(
+        icon: Icons.payments_outlined,
+        label: 'Monto mes',
+        value: _fmtMetricMoney(account?.metrics['sales_amount_this_month']),
+      ),
+      _InfoItem(
+        icon: Icons.inventory_2_outlined,
+        label: 'Inventario',
+        value: '${account?.metricInt('products_total') ?? 0}',
+      ),
+      _InfoItem(
+        icon: Icons.extension_outlined,
+        label: 'Modulos hoy',
+        value: _fmtMetricList(account?.metricString('modules_used_today')),
+      ),
+    ];
+    final items = [
+      _InfoItem(
+        icon: Icons.online_prediction_rounded,
+        label: 'Estado',
+        value: account?.statusLabel ?? 'Sin uso registrado',
+      ),
+      _InfoItem(
+        icon: Icons.schedule_rounded,
+        label: 'Ultimo uso',
+        value: _fmtUsageDate(account?.lastSeenAt),
+      ),
+      _InfoItem(
+        icon: Icons.timer_outlined,
+        label: 'Tiempo activo',
+        value: _fmtUsageDuration(account?.activeSeconds ?? 0),
+      ),
+      _InfoItem(
+        icon: Icons.devices_other_outlined,
+        label: 'Dispositivos',
+        value: '${account?.devicesCount ?? 0}',
+      ),
+      _InfoItem(
+        icon: Icons.login_rounded,
+        label: 'Sesiones',
+        value: '${account?.sessionsCount ?? 0}',
+      ),
+      _InfoItem(
+        icon: Icons.new_releases_outlined,
+        label: 'Version',
+        value: account?.appVersion ?? 'Sin version',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _UsageAlert(usage: account),
+        const SizedBox(height: AppSpacing.md),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 900
+                ? 3
+                : constraints.maxWidth >= 560
+                ? 2
+                : 1;
+            final width =
+                (constraints.maxWidth - AppSpacing.sm * (columns - 1)) /
+                columns;
+            return Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: businessItems
+                  .map((item) => SizedBox(width: width, child: item))
+                  .toList(),
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.md),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 900
+                ? 3
+                : constraints.maxWidth >= 560
+                ? 2
+                : 1;
+            final width =
+                (constraints.maxWidth - AppSpacing.sm * (columns - 1)) /
+                columns;
+            return Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: items
+                  .map((item) => SizedBox(width: width, child: item))
+                  .toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _UsageAlert extends StatelessWidget {
+  final UsageAccount? usage;
+
+  const _UsageAlert({required this.usage});
+
+  @override
+  Widget build(BuildContext context) {
+    final account = usage;
+    final status = account?.usageStatus ?? 'NEVER_USED';
+    final color = _usageStatusColor(status);
+    final title = account == null
+        ? 'Sin actividad enviada'
+        : account.statusLabel;
+    final detail = account == null
+        ? 'DaleVentas POS aun no ha reportado heartbeat para esta empresa.'
+        : 'Eventos ${account.eventsCount} · App ${account.appCode}';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(_usageStatusIcon(status), color: color, size: 22),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompanyUsagePreview extends StatelessWidget {
+  final UsageAccount? usage;
+
+  const _CompanyUsagePreview({required this.usage});
+
+  @override
+  Widget build(BuildContext context) {
+    final account = usage;
+    final status = account?.usageStatus ?? 'NEVER_USED';
+    final color = _usageStatusColor(status);
+    final label = account?.statusLabel ?? 'Sin uso';
+    final when = account == null
+        ? 'Sin reporte'
+        : _fmtUsageDate(account.lastSeenAt);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          Icon(_usageStatusIcon(status), color: color, size: 15),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              '$label · $when',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MobileDetailSheet extends StatelessWidget {
   final DaleVentasCompanyLicense company;
+  final UsageAccount? usage;
   final DaleVentasLicenseService service;
   final ValueChanged<DaleVentasCompanyLicense> onChanged;
   final ValueChanged<String> onDeleted;
 
   const _MobileDetailSheet({
     required this.company,
+    required this.usage,
     required this.service,
     required this.onChanged,
     required this.onDeleted,
@@ -1952,6 +2266,7 @@ class _MobileDetailSheet extends StatelessWidget {
               Expanded(
                 child: _LicenseControlPanel(
                   company: company,
+                  usage: usage,
                   service: service,
                   onChanged: onChanged,
                   onDeleted: onDeleted,
@@ -2335,4 +2650,73 @@ String _fmtDateOnly(DateTime? date) {
 String _fmtDateTime(DateTime? date) {
   if (date == null) return '';
   return DateFormat('dd/MM/yyyy HH:mm').format(date.toLocal());
+}
+
+String? _usageKey(String? value) {
+  final text = value?.trim().toLowerCase() ?? '';
+  return text.isEmpty ? null : text;
+}
+
+String _fmtUsageDate(DateTime? date) {
+  if (date == null) return 'Sin uso';
+  return DateFormat('dd/MM/yyyy HH:mm').format(date.toLocal());
+}
+
+String _fmtUsageDuration(int seconds) {
+  if (seconds <= 0) return '0 h';
+  if (seconds < 3600) return '${(seconds / 60).round()} min';
+  final hours = seconds / 3600;
+  return '${hours.toStringAsFixed(hours >= 10 ? 0 : 1)} h';
+}
+
+String _fmtMetricMoney(dynamic value) {
+  final number = value is num ? value : num.tryParse(value?.toString() ?? '');
+  if (number == null || number <= 0) return r'$0.00';
+  return NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(number);
+}
+
+String _fmtMetricList(String? value) {
+  final parts = (value ?? '')
+      .split(',')
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return 'Sin modulo hoy';
+  return parts.take(3).join(', ');
+}
+
+Color _usageStatusColor(String status) {
+  switch (status) {
+    case 'USING_NOW':
+    case 'ACTIVE_TODAY':
+      return AppColors.success;
+    case 'ACTIVE_WEEK':
+    case 'ACTIVE_RECENT':
+      return AppColors.primary;
+    case 'INACTIVE_15_DAYS':
+      return AppColors.warning;
+    case 'INACTIVE_30_DAYS':
+    case 'NEVER_USED':
+      return AppColors.error;
+    default:
+      return AppColors.textSecondary;
+  }
+}
+
+IconData _usageStatusIcon(String status) {
+  switch (status) {
+    case 'USING_NOW':
+      return Icons.online_prediction_rounded;
+    case 'ACTIVE_TODAY':
+    case 'ACTIVE_WEEK':
+    case 'ACTIVE_RECENT':
+      return Icons.check_circle_outline_rounded;
+    case 'INACTIVE_15_DAYS':
+      return Icons.warning_amber_rounded;
+    case 'INACTIVE_30_DAYS':
+    case 'NEVER_USED':
+      return Icons.error_outline_rounded;
+    default:
+      return Icons.query_stats_rounded;
+  }
 }

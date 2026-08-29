@@ -65,6 +65,7 @@ class UsageAccount {
   final int eventsCount;
   final int devicesCount;
   final String usageStatus;
+  final Map<String, dynamic> metrics;
 
   const UsageAccount({
     required this.customerName,
@@ -74,6 +75,7 @@ class UsageAccount {
     required this.eventsCount,
     required this.devicesCount,
     required this.usageStatus,
+    this.metrics = const {},
     this.licenseId,
     this.licenseKey,
     this.licenseStatus,
@@ -111,8 +113,17 @@ class UsageAccount {
       eventsCount: _int(json['events_count']),
       devicesCount: _int(json['devices_count']),
       usageStatus: _string(json['usage_status']) ?? 'NEVER_USED',
+      metrics: _map(json['last_metrics'] ?? json['metrics']),
     );
   }
+
+  String? metricString(String key) {
+    final value = metrics[key];
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
+
+  int metricInt(String key) => _int(metrics[key]);
 
   String get statusLabel {
     switch (usageStatus) {
@@ -172,6 +183,14 @@ int _int(dynamic value) {
 String? _string(dynamic value) {
   final text = value?.toString().trim() ?? '';
   return text.isEmpty ? null : text;
+}
+
+Map<String, dynamic> _map(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) {
+    return value.map((key, item) => MapEntry(key.toString(), item));
+  }
+  return const {};
 }
 
 DateTime? _date(dynamic value) {

@@ -274,14 +274,23 @@ async function listAccounts(query = {}) {
   const projectCode = String(query.project_code || '').trim().toUpperCase();
   const appCode = String(query.app_code || '').trim().toUpperCase();
   const status = String(query.status || '').trim().toUpperCase();
+  const businessId = String(query.business_id || '').trim();
   const from = String(query.from || '').trim();
   const to = String(query.to || '').trim();
 
   const params = [];
   const licenseWhere = [];
+  let projectParam = null;
+  let businessParam = null;
   if (projectCode) {
     params.push(projectCode);
+    projectParam = params.length;
     licenseWhere.push(`p.code = $${params.length}`);
+  }
+  if (businessId) {
+    params.push(businessId);
+    businessParam = params.length;
+    licenseWhere.push(`c.business_id = $${params.length}`);
   }
   const licenseWhereSql = licenseWhere.length ? `WHERE ${licenseWhere.join(' AND ')}` : '';
 
@@ -302,7 +311,7 @@ async function listAccounts(query = {}) {
        SELECT
          l.id AS license_id,
          l.license_key,
-         l.estado AS license_status,
+         l.estado::text AS license_status,
          l.fecha_fin AS license_expires_at,
          c.id AS customer_id,
          c.business_id,
@@ -316,6 +325,14 @@ async function listAccounts(query = {}) {
        LEFT JOIN projects p ON p.id = l.project_id
        ${licenseWhereSql}
      ),
+     linked_usage_keys AS (
+       SELECT DISTINCT u.subject_key
+       FROM usage_daily_stats u
+       JOIN license_accounts la
+         ON u.license_id = la.license_id
+         OR u.customer_id = la.customer_id
+         OR (la.business_id IS NOT NULL AND u.business_id = la.business_id)
+     ),
      account_usage AS (
        SELECT
          la.*,
@@ -326,7 +343,8 @@ async function listAccounts(query = {}) {
          COALESCE(du.active_seconds, 0) AS active_seconds,
          COALESCE(du.sessions_count, 0) AS sessions_count,
          COALESCE(du.events_count, 0) AS events_count,
-         COALESCE(du.devices_count, 0) AS devices_count
+         COALESCE(du.devices_count, 0) AS devices_count,
+         COALESCE(du.last_metrics, '{}'::jsonb) AS last_metrics
        FROM license_accounts la
        LEFT JOIN LATERAL (
          SELECT
@@ -337,7 +355,8 @@ async function listAccounts(query = {}) {
            SUM(u.active_seconds)::bigint AS active_seconds,
            SUM(u.sessions_count)::bigint AS sessions_count,
            SUM(u.events_count)::bigint AS events_count,
-           COUNT(DISTINCT u.device_id)::bigint AS devices_count
+           COUNT(DISTINCT u.device_id)::bigint AS devices_count,
+           (ARRAY_AGG(u.last_metrics ORDER BY u.last_seen_at DESC))[1] AS last_metrics
          FROM usage_daily_stats u
          WHERE (u.license_id = la.license_id OR u.customer_id = la.customer_id OR (la.business_id IS NOT NULL AND u.business_id = la.business_id))
            AND ($${appParam}::text IS NULL OR UPPER(u.app_code) = $${appParam})
@@ -345,9 +364,46 @@ async function listAccounts(query = {}) {
            AND ($${toParam}::text IS NULL OR u.stat_date <= $${toParam}::date)
        ) du ON true
      ),
+     external_usage AS (
+       SELECT
+         NULL::uuid AS license_id,
+         NULL::text AS license_key,
+         NULL::text AS license_status,
+         NULL::timestamp AS license_expires_at,
+         NULL::uuid AS customer_id,
+         u.business_id,
+         COALESCE((ARRAY_AGG(u.last_metrics->>'business_name' ORDER BY u.last_seen_at DESC))[1], u.business_id, 'Cuenta externa') AS customer_name,
+         NULL::text AS customer_email,
+         u.project_id,
+         p.code AS project_code,
+         p.name AS project_name,
+         (ARRAY_AGG(u.app_code ORDER BY u.last_seen_at DESC))[1] AS app_code,
+         MAX(u.last_seen_at) AS last_seen_at,
+         MIN(u.first_seen_at) AS first_seen_at,
+         (ARRAY_AGG(u.app_version ORDER BY u.last_seen_at DESC))[1] AS app_version,
+         SUM(u.active_seconds)::bigint AS active_seconds,
+         SUM(u.sessions_count)::bigint AS sessions_count,
+         SUM(u.events_count)::bigint AS events_count,
+         COUNT(DISTINCT u.device_id)::bigint AS devices_count,
+         (ARRAY_AGG(u.last_metrics ORDER BY u.last_seen_at DESC))[1] AS last_metrics
+       FROM usage_daily_stats u
+       LEFT JOIN projects p ON p.id = u.project_id
+       WHERE NOT EXISTS (SELECT 1 FROM linked_usage_keys lk WHERE lk.subject_key = u.subject_key)
+         AND ($${appParam}::text IS NULL OR UPPER(u.app_code) = $${appParam})
+         AND ($${fromParam}::text IS NULL OR u.stat_date >= $${fromParam}::date)
+         AND ($${toParam}::text IS NULL OR u.stat_date <= $${toParam}::date)
+         ${projectParam ? `AND p.code = $${projectParam}` : ''}
+         ${businessParam ? `AND u.business_id = $${businessParam}` : ''}
+       GROUP BY u.business_id, u.project_id, p.code, p.name
+     ),
+     all_usage AS (
+       SELECT * FROM account_usage
+       UNION ALL
+       SELECT * FROM external_usage
+     ),
      with_status AS (
-       SELECT *, ${usageStatusSql('account_usage')} AS usage_status
-       FROM account_usage
+       SELECT *, ${usageStatusSql('all_usage')} AS usage_status
+       FROM all_usage
      )
      SELECT *, COUNT(*) OVER()::int AS total
      FROM with_status
