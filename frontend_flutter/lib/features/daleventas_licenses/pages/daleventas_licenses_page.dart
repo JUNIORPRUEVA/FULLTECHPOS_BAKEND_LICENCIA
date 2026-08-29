@@ -2059,6 +2059,16 @@ class _DaleVentasUsageSummary extends StatelessWidget {
         value: '${account?.devicesCount ?? 0}',
       ),
       _InfoItem(
+        icon: Icons.computer_rounded,
+        label: 'Plataforma principal',
+        value: _fmtPrimaryPlatform(account),
+      ),
+      _InfoItem(
+        icon: Icons.devices_rounded,
+        label: 'Uso por plataforma',
+        value: _fmtPlatformBreakdown(account),
+      ),
+      _InfoItem(
         icon: Icons.login_rounded,
         label: 'Sesiones',
         value: '${account?.sessionsCount ?? 0}',
@@ -2683,6 +2693,49 @@ String _fmtMetricList(String? value) {
       .toList();
   if (parts.isEmpty) return 'Sin modulo hoy';
   return parts.take(3).join(', ');
+}
+
+String _fmtPrimaryPlatform(UsageAccount? account) {
+  final platform = account?.platformBreakdown.isNotEmpty == true
+      ? account!.platformBreakdown.first
+      : null;
+  if (platform == null) return 'Sin datos';
+  final label = _platformLabel(platform.platform);
+  final events = platform.eventsCount;
+  return events > 0 ? '$label · $events eventos' : label;
+}
+
+String _fmtPlatformBreakdown(UsageAccount? account) {
+  final items = account?.platformBreakdown ?? const [];
+  if (items.isEmpty) return 'Sin datos';
+  return items.take(3).map((item) {
+    final label = _platformLabel(item.platform);
+    final devices = item.devicesCount;
+    return devices > 0 ? '$label $devices' : label;
+  }).join(', ');
+}
+
+String _platformLabel(String value) {
+  switch (value.trim().toLowerCase()) {
+    case 'windows':
+      return 'Windows';
+    case 'android':
+      return 'Android';
+    case 'ios':
+      return 'iPhone/iPad';
+    case 'web':
+      return 'Web';
+    case 'macos':
+      return 'macOS';
+    case 'linux':
+      return 'Linux';
+    case 'unknown_native':
+      return 'App nativa';
+    case 'api':
+      return 'Servidor';
+    default:
+      return 'Desconocido';
+  }
 }
 
 String _daleUsageStatusLabel(UsageAccount? account) {

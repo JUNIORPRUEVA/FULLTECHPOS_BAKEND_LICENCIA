@@ -344,7 +344,8 @@ async function listAccounts(query = {}) {
          COALESCE(du.sessions_count, 0) AS sessions_count,
          COALESCE(du.events_count, 0) AS events_count,
          COALESCE(du.devices_count, 0) AS devices_count,
-         COALESCE(du.last_metrics, '{}'::jsonb) AS last_metrics
+         COALESCE(du.last_metrics, '{}'::jsonb) AS last_metrics,
+         COALESCE(du.platform_breakdown, '[]'::jsonb) AS platform_breakdown
        FROM license_accounts la
        LEFT JOIN LATERAL (
          SELECT
@@ -356,7 +357,31 @@ async function listAccounts(query = {}) {
            SUM(u.sessions_count)::bigint AS sessions_count,
            SUM(u.events_count)::bigint AS events_count,
            COUNT(DISTINCT u.device_id)::bigint AS devices_count,
-           (ARRAY_AGG(u.last_metrics ORDER BY u.last_seen_at DESC))[1] AS last_metrics
+           (ARRAY_AGG(u.last_metrics ORDER BY u.last_seen_at DESC))[1] AS last_metrics,
+           COALESCE((
+             SELECT jsonb_agg(
+               jsonb_build_object(
+                 'platform', platform,
+                 'events_count', events_count,
+                 'active_seconds', active_seconds,
+                 'devices_count', devices_count
+               )
+               ORDER BY events_count DESC, devices_count DESC, platform ASC
+             )
+             FROM (
+               SELECT
+                 COALESCE(NULLIF(LOWER(x.last_metrics->>'platform'), ''), 'api') AS platform,
+                 SUM(x.events_count)::bigint AS events_count,
+                 SUM(x.active_seconds)::bigint AS active_seconds,
+                 COUNT(DISTINCT x.device_id)::bigint AS devices_count
+               FROM usage_daily_stats x
+               WHERE (x.license_id = la.license_id OR x.customer_id = la.customer_id OR (la.business_id IS NOT NULL AND x.business_id = la.business_id))
+                 AND ($${appParam}::text IS NULL OR UPPER(x.app_code) = $${appParam})
+                 AND ($${fromParam}::text IS NULL OR x.stat_date >= $${fromParam}::date)
+                 AND ($${toParam}::text IS NULL OR x.stat_date <= $${toParam}::date)
+               GROUP BY platform
+             ) platform_rows
+           ), '[]'::jsonb) AS platform_breakdown
          FROM usage_daily_stats u
          WHERE (u.license_id = la.license_id OR u.customer_id = la.customer_id OR (la.business_id IS NOT NULL AND u.business_id = la.business_id))
            AND ($${appParam}::text IS NULL OR UPPER(u.app_code) = $${appParam})
@@ -385,7 +410,31 @@ async function listAccounts(query = {}) {
          SUM(u.sessions_count)::bigint AS sessions_count,
          SUM(u.events_count)::bigint AS events_count,
          COUNT(DISTINCT u.device_id)::bigint AS devices_count,
-         (ARRAY_AGG(u.last_metrics ORDER BY u.last_seen_at DESC))[1] AS last_metrics
+         (ARRAY_AGG(u.last_metrics ORDER BY u.last_seen_at DESC))[1] AS last_metrics,
+         COALESCE((
+           SELECT jsonb_agg(
+             jsonb_build_object(
+               'platform', platform,
+               'events_count', events_count,
+               'active_seconds', active_seconds,
+               'devices_count', devices_count
+             )
+             ORDER BY events_count DESC, devices_count DESC, platform ASC
+           )
+           FROM (
+             SELECT
+               COALESCE(NULLIF(LOWER(x.last_metrics->>'platform'), ''), 'api') AS platform,
+               SUM(x.events_count)::bigint AS events_count,
+               SUM(x.active_seconds)::bigint AS active_seconds,
+               COUNT(DISTINCT x.device_id)::bigint AS devices_count
+             FROM usage_daily_stats x
+             WHERE x.business_id = u.business_id
+               AND (($${appParam})::text IS NULL OR UPPER(x.app_code) = $${appParam})
+               AND ($${fromParam}::text IS NULL OR x.stat_date >= $${fromParam}::date)
+               AND ($${toParam}::text IS NULL OR x.stat_date <= $${toParam}::date)
+             GROUP BY platform
+           ) platform_rows
+         ), '[]'::jsonb) AS platform_breakdown
        FROM usage_daily_stats u
        LEFT JOIN projects p ON p.id = u.project_id
        WHERE NOT EXISTS (SELECT 1 FROM linked_usage_keys lk WHERE lk.subject_key = u.subject_key)

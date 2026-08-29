@@ -66,6 +66,7 @@ class UsageAccount {
   final int devicesCount;
   final String usageStatus;
   final Map<String, dynamic> metrics;
+  final List<UsagePlatformBreakdown> platformBreakdown;
 
   const UsageAccount({
     required this.customerName,
@@ -76,6 +77,7 @@ class UsageAccount {
     required this.devicesCount,
     required this.usageStatus,
     this.metrics = const {},
+    this.platformBreakdown = const [],
     this.licenseId,
     this.licenseKey,
     this.licenseStatus,
@@ -114,6 +116,7 @@ class UsageAccount {
       devicesCount: _int(json['devices_count']),
       usageStatus: _string(json['usage_status']) ?? 'NEVER_USED',
       metrics: _map(json['last_metrics'] ?? json['metrics']),
+      platformBreakdown: _platformBreakdown(json['platform_breakdown']),
     );
   }
 
@@ -150,6 +153,29 @@ class UsageAccount {
       usageStatus == 'INACTIVE_15_DAYS' ||
       usageStatus == 'INACTIVE_30_DAYS' ||
       usageStatus == 'NEVER_USED';
+}
+
+class UsagePlatformBreakdown {
+  final String platform;
+  final int eventsCount;
+  final int activeSeconds;
+  final int devicesCount;
+
+  const UsagePlatformBreakdown({
+    required this.platform,
+    required this.eventsCount,
+    required this.activeSeconds,
+    required this.devicesCount,
+  });
+
+  factory UsagePlatformBreakdown.fromJson(Map<String, dynamic> json) {
+    return UsagePlatformBreakdown(
+      platform: _string(json['platform']) ?? 'unknown',
+      eventsCount: _int(json['events_count']),
+      activeSeconds: _int(json['active_seconds']),
+      devicesCount: _int(json['devices_count']),
+    );
+  }
 }
 
 class UsageAccountsResult {
@@ -191,6 +217,15 @@ Map<String, dynamic> _map(dynamic value) {
     return value.map((key, item) => MapEntry(key.toString(), item));
   }
   return const {};
+}
+
+List<UsagePlatformBreakdown> _platformBreakdown(dynamic value) {
+  if (value is! List) return const [];
+  return value
+      .whereType<Map>()
+      .map((item) => UsagePlatformBreakdown.fromJson(_map(item)))
+      .where((item) => item.eventsCount > 0 || item.devicesCount > 0)
+      .toList(growable: false);
 }
 
 DateTime? _date(dynamic value) {
