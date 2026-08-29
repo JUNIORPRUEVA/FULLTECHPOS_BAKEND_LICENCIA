@@ -90,7 +90,8 @@ async function runMigrations({ endPool = true } = {}) {
     '045_create_password_reset_tokens_table.sql',
     '047_force_fullpos_fullcredit_usd.sql',
     '048_add_project_product_profiles.sql',
-    '049_set_fullpos_latest_download_url.sql'
+    '049_set_fullpos_latest_download_url.sql',
+    '050_create_usage_analytics.sql'
   ]);
 
   const selectedFiles = licenseOnly

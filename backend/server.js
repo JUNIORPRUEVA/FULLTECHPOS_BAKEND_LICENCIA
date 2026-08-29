@@ -50,6 +50,8 @@ const daleventasLicenseController = require('./controllers/daleventasLicenseCont
 const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const licensesPublicRoutes = require('./routes/licensesPublicRoutes');
 const activationsRoutes = require('./routes/activationsRoutes');
+const usageAnalyticsRoutes = require('./routes/usageAnalyticsRoutes');
+const adminUsageAnalyticsRoutes = require('./routes/adminUsageAnalyticsRoutes');
 const paypalRoutes = require('./routes/paypalRoutes');
 const billingPortalRoutes = require('./routes/billingPortalRoutes');
 const licenseValidationRoutes = require('./routes/licenseValidationRoutes');
@@ -941,6 +943,7 @@ app.use('/api/admin/projects', adminProjectsRoutes);
 app.use('/api/admin/payments', adminPaymentsRoutes);
 app.use('/api/admin/license-payments', adminLicensePaymentsRoutes);
 app.use('/api/admin/daleventas-licenses', daleventasLicenseRoutes);
+app.use('/api/admin/usage', adminUsageAnalyticsRoutes);
 app.use('/api/admin', adminDashboardRoutes);
 
 // APP ESCRITORIO
@@ -949,6 +952,7 @@ app.use('/api/admin', adminDashboardRoutes);
 const licensePublicLimiter = rateLimit({ windowMs: 60_000, max: 120, message: 'Límite de peticiones alcanzado. Espere un momento.' });
 app.use('/api', licensePublicLimiter, billingPortalRoutes);
 app.use('/api/activations', licensePublicLimiter, activationsRoutes);
+app.use('/api/usage', licensePublicLimiter, usageAnalyticsRoutes);
 app.use('/api/paypal', (req, res, next) => {
   if (req.path === '/webhook') return next();
   return licensePublicLimiter(req, res, next);

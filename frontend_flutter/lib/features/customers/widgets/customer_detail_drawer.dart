@@ -12,6 +12,7 @@ import '../../licenses/models/project.dart';
 import '../../../core/auth/session_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/marketing_contact_actions.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../models/customer.dart';
 
@@ -1161,6 +1162,9 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
           ]),
           const SizedBox(height: 8),
 
+          MarketingContactPanel(contact: _marketingContact(customer)),
+          const SizedBox(height: 8),
+
           // ── Licencia principal ──
           const SizedBox(height: 8),
 
@@ -1567,6 +1571,16 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
   Widget _buildActionsSection({bool compact = false}) {
     final actions = <Widget>[
       _buildActionButton(
+        icon: Icons.chat_outlined,
+        label: 'WhatsApp',
+        subtitle: 'Mensaje personalizado',
+        onTap: () => showMarketingContactDialog(
+          context,
+          _marketingContact(_currentCustomer!),
+        ),
+        compact: compact,
+      ),
+      _buildActionButton(
         icon: Icons.vpn_key_outlined,
         label: 'Ver licencias',
         subtitle: 'Gestiona las licencias',
@@ -1745,6 +1759,16 @@ class _CustomerDetailDrawerState extends State<CustomerDetailDrawer> {
       ),
     );
   }
+
+  MarketingContact _marketingContact(Customer customer) => MarketingContact(
+    businessName: customer.nombreNegocio,
+    contactName: customer.contactoNombre,
+    phone: customer.contactoTelefono,
+    email: customer.contactoEmail,
+    licenseStatus: customer.displayLicenseStatus,
+    productName: customer.licenseTipo,
+    licenseLabel: customer.displayCommercialStatus,
+  );
 
   // ═══════════════════════════════════════════════════════════════
   // VISTA: LISTA DE LICENCIAS

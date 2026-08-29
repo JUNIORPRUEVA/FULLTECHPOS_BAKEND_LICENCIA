@@ -9,6 +9,7 @@ import '../../../core/auth/session_manager.dart';
 import '../../../core/layout/app_shell_actions.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/marketing_contact_actions.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_view.dart';
@@ -464,6 +465,20 @@ class _HorizontalChipList extends StatelessWidget {
   }
 }
 
+MarketingContact _daleVentasMarketingContact(DaleVentasCompanyLicense company) {
+  final account = company.account;
+  return MarketingContact(
+    businessName: account.businessName ?? company.companyName,
+    contactName: account.responsibleName,
+    phone: account.responsibleWhatsapp ?? account.businessPhone,
+    email: account.responsibleEmail,
+    licenseStatus: company.planLabel,
+    productName: 'DaleVentas POS',
+    licenseLabel: company.status,
+    expiresAt: company.endsAt,
+  );
+}
+
 class _CompanyList extends StatelessWidget {
   final List<DaleVentasCompanyLicense> companies;
   final String? selectedId;
@@ -662,6 +677,11 @@ class _CompanyCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
+                  MarketingWhatsAppButton(
+                    contact: _daleVentasMarketingContact(company),
+                    dense: true,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
                   _StatusPill(status: company.status),
                 ],
               ),
@@ -1149,6 +1169,10 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
               title: 'Cuenta y contacto',
               icon: Icons.badge_outlined,
               child: _AccountSummary(company: company),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            MarketingContactPanel(
+              contact: _daleVentasMarketingContact(company),
             ),
             const SizedBox(height: AppSpacing.md),
             _SectionPanel(

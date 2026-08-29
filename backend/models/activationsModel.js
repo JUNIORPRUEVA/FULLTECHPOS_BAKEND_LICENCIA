@@ -33,6 +33,7 @@ function selectBase() {
            l.fecha_fin,
            l.max_dispositivos AS max_devices,
            c.id AS customer_id,
+           c.business_id,
            c.nombre_negocio AS customer_name,
            c.contacto_email AS customer_email,
            cs.id AS subscription_id,
@@ -40,6 +41,7 @@ function selectBase() {
            cs.next_payment_date,
            pp.name AS plan_name,
            p.name AS product_name,
+           pr.code AS project_code,
            pr.name AS project_name
     FROM license_activations a
     INNER JOIN licenses l ON l.id = a.license_id

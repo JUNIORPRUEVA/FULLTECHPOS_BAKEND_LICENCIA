@@ -11,6 +11,7 @@ import '../../features/dashboard/pages/dashboard_page.dart';
 import '../../features/licenses/pages/licenses_page.dart';
 import '../../features/payments/pages/payments_page.dart';
 import '../../features/projects/pages/projects_page.dart';
+import '../../features/usage_analytics/pages/usage_analytics_page.dart';
 import '../auth/auth_service.dart';
 import '../layout/admin_shell.dart';
 
@@ -75,6 +76,10 @@ class AppRouter {
               builder: (context, state) => const DaleVentasLicensesPage(),
             ),
             GoRoute(
+              path: '/admin/uso',
+              builder: (context, state) => const UsageAnalyticsPage(),
+            ),
+            GoRoute(
               path: '/admin/proyectos',
               builder: (context, state) => const ProjectsPage(),
             ),
@@ -103,6 +108,8 @@ class AppRouter {
         return 'Licencias';
       case '/admin/daleventas-licencias':
         return 'DaleVentas Cloud';
+      case '/admin/uso':
+        return 'Uso del sistema';
       case '/admin/proyectos':
         return 'Proyectos';
       case '/admin/usuarios':

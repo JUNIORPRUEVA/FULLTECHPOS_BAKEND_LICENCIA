@@ -1,5 +1,6 @@
 const { pool } = require('../db/pool');
 const activationsModel = require('../models/activationsModel');
+const usageAnalyticsModel = require('../models/usageAnalyticsModel');
 const auditLogService = require('./auditLogService');
 
 const VALID_DEVICE_TYPES = new Set(['pc', 'movil', 'mobile', 'tablet']);
@@ -175,6 +176,53 @@ function mapActivationResponse({ activation, license, subscription, usedDevices 
   };
 }
 
+async function recordActivationUsage({ activation, license, activationRow, payload, req, client, eventType }) {
+  const projectCode = normalizeText(
+    payload?.app_code || payload?.project_code || activationRow?.project_code,
+    { max: 80 }
+  );
+  const appCode = String(projectCode || 'LICENSED_APP').trim().toUpperCase();
+  const deviceId = normalizeText(activation?.device_id || activationRow?.device_id || payload?.device_id, { max: 200 });
+  if (!deviceId) return;
+
+  const event = {
+    project_id: license?.project_id || activation?.project_id || activationRow?.project_id || null,
+    license_id: license?.id || activation?.license_id || activationRow?.license_id || null,
+    customer_id: license?.customer_id || activationRow?.customer_id || null,
+    business_id: activationRow?.business_id || normalizeText(payload?.business_id, { max: 200 }),
+    app_code: appCode,
+    device_id: deviceId,
+    session_id: normalizeText(payload?.session_id, { max: 200 }),
+    event_type: eventType,
+    feature_code: normalizeText(payload?.feature_code, { max: 80 }),
+    app_version: normalizeText(payload?.app_version, { max: 80 }),
+    occurred_at: null,
+    active_seconds: Math.min(86400, Math.max(0, Math.floor(Number(payload?.active_seconds || 0) || 0))),
+    metrics: {},
+    metadata: { source: 'activation_service' },
+    ip_address: clientIp(req)
+  };
+
+  const subjectKey = usageAnalyticsModel.buildSubjectKey(event);
+  await usageAnalyticsModel.insertUsageEvent(event, { client });
+  await usageAnalyticsModel.upsertDailyStats(event, subjectKey, { client });
+  await usageAnalyticsModel.upsertFeatureStats(event, subjectKey, { client });
+}
+
+async function recordActivationUsageBestEffort(args) {
+  const client = args.client;
+  try {
+    await client.query('SAVEPOINT usage_analytics_sp');
+    await recordActivationUsage(args);
+    await client.query('RELEASE SAVEPOINT usage_analytics_sp');
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK TO SAVEPOINT usage_analytics_sp');
+    } catch (_) {}
+    console.warn('[usage_analytics] skipped activation usage event:', error.message || error);
+  }
+}
+
 async function activate(payload, { req } = {}) {
   const licenseKey = normalizeText(payload?.license_key, { max: 200 });
   const deviceId = normalizeText(payload?.device_id, { max: 200 });
@@ -252,6 +300,16 @@ async function activate(payload, { req } = {}) {
 
     const usedDevices = await activationsModel.countActiveActivations({ license_id: license.id, client });
 
+    await recordActivationUsageBestEffort({
+      activation,
+      license,
+      activationRow: { ...activation, business_id: null },
+      payload,
+      req,
+      client,
+      eventType: existing ? 'activation_heartbeat' : 'activation_create'
+    });
+
     await auditLogService.log({
       company_id: license.company_id || subscription?.company_id || null,
       product_id: license.product_id || subscription?.product_id || null,
@@ -322,6 +380,16 @@ async function heartbeat(payload, { req } = {}) {
       client
     });
     const usedDevices = await activationsModel.countActiveActivations({ license_id: license.id, client });
+
+    await recordActivationUsageBestEffort({
+      activation,
+      license,
+      activationRow,
+      payload,
+      req,
+      client,
+      eventType: 'app_heartbeat'
+    });
 
     await client.query('COMMIT');
     committed = true;

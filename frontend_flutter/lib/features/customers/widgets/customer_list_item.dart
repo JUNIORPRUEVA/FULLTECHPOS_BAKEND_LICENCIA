@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/marketing_contact_actions.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../models/customer.dart';
 
@@ -61,6 +62,8 @@ class CustomerListItem extends StatelessWidget {
           StatusBadge.fromString(customer.displayLicenseStatus),
         ],
         const SizedBox(width: 4),
+        MarketingWhatsAppButton(contact: _marketingContact, dense: true),
+        const SizedBox(width: 2),
         _buildEditButton(),
       ],
     );
@@ -75,6 +78,8 @@ class CustomerListItem extends StatelessWidget {
             _buildAvatar(42, 15),
             const SizedBox(width: 12),
             Expanded(child: _buildMainText(nameSize: 14.5, phoneSize: 12.5)),
+            MarketingWhatsAppButton(contact: _marketingContact, dense: true),
+            const SizedBox(width: 4),
             _buildEditButton(),
             const Icon(
               Icons.chevron_right_rounded,
@@ -209,6 +214,16 @@ class CustomerListItem extends StatelessWidget {
     final name = customer.nombreNegocio.trim();
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
+
+  MarketingContact get _marketingContact => MarketingContact(
+    businessName: customer.nombreNegocio,
+    contactName: customer.contactoNombre,
+    phone: customer.contactoTelefono,
+    email: customer.contactoEmail,
+    licenseStatus: customer.displayLicenseStatus,
+    productName: customer.licenseTipo,
+    licenseLabel: customer.displayCommercialStatus,
+  );
 }
 
 class _MiniInfo extends StatelessWidget {

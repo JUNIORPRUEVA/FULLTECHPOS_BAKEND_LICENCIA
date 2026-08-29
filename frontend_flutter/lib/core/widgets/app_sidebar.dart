@@ -70,6 +70,12 @@ const List<dynamic> sidebarItems = [
     route: '/admin/daleventas-licencias',
   ),
   AppSidebarItem(
+    label: 'Uso del sistema',
+    icon: Icons.query_stats_outlined,
+    activeIcon: Icons.query_stats_rounded,
+    route: '/admin/uso',
+  ),
+  AppSidebarItem(
     label: 'Proyectos',
     icon: Icons.folder_copy_outlined,
     activeIcon: Icons.folder_copy_rounded,
