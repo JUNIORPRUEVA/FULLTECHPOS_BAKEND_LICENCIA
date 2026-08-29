@@ -91,7 +91,8 @@ async function runMigrations({ endPool = true } = {}) {
     '047_force_fullpos_fullcredit_usd.sql',
     '048_add_project_product_profiles.sql',
     '049_set_fullpos_latest_download_url.sql',
-    '050_create_usage_analytics.sql'
+    '050_create_usage_analytics.sql',
+    '051_backfill_usage_from_license_activations.sql'
   ]);
 
   const selectedFiles = licenseOnly
