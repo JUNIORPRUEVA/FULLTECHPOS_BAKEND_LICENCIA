@@ -9,6 +9,10 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final safeMessage = message.length > 240
+        ? '${message.substring(0, 240)}...'
+        : message;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -31,8 +35,10 @@ class ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              message,
+              safeMessage,
               textAlign: TextAlign.center,
+              maxLines: 6,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,

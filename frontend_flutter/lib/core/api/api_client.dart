@@ -40,7 +40,9 @@ class ApiClient {
         headers['x-session-id'] = sessionId;
       }
       if (AppConfig.isDebug) {
-        debugPrint('[API] auth header present: ${sessionId != null && sessionId.isNotEmpty}');
+        debugPrint(
+          '[API] auth header present: ${sessionId != null && sessionId.isNotEmpty}',
+        );
       }
     }
     return headers;
@@ -164,12 +166,22 @@ class ApiClient {
 
   Map<String, dynamic> _handleResponse(http.Response response) {
     Map<String, dynamic> data = {};
+    final contentType = response.headers['content-type'] ?? '';
+    final body = response.body.trimLeft();
+    final looksLikeHtml =
+        contentType.toLowerCase().contains('text/html') ||
+        body.startsWith('<!DOCTYPE html') ||
+        body.startsWith('<html') ||
+        body.contains('<title>Not Found</title>');
+
     try {
       if (response.body.isNotEmpty) {
         data = jsonDecode(response.body) as Map<String, dynamic>;
       }
     } catch (_) {
-      data = {'message': response.body};
+      data = {
+        'message': _safeResponseMessage(response.statusCode, looksLikeHtml),
+      };
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -191,7 +203,29 @@ class ApiClient {
       throw UnauthorizedException(message);
     }
 
-    throw ApiException(message, statusCode: response.statusCode, data: data);
+    if (looksLikeHtml || response.statusCode >= 500) {
+      debugPrint(
+        '[API] Non-JSON/server error ${response.statusCode} '
+        '${response.request?.url} CT=$contentType BODY=${response.body}',
+      );
+    }
+
+    throw ApiException(
+      _safeResponseMessage(response.statusCode, looksLikeHtml, message),
+      statusCode: response.statusCode,
+      data: data,
+    );
+  }
+
+  String _safeResponseMessage(
+    int statusCode,
+    bool looksLikeHtml, [
+    String? fallback,
+  ]) {
+    if (looksLikeHtml || statusCode >= 500) {
+      return 'No se pudo conectar con el servidor. Intenta nuevamente.';
+    }
+    return fallback ?? _statusMessage(statusCode);
   }
 
   String _statusMessage(int code) {

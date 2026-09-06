@@ -10,7 +10,7 @@
             "request": "launch",
             "type": "dart",
             "toolArgs": [
-                "--dart-define=API_BASE_URL=https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host"
+                "--dart-define=API_BASE_URL=https://ventas-appyra.gcdndd.easypanel.host"
             ]
         },
         {
@@ -20,7 +20,7 @@
             "type": "dart",
             "flutterMode": "profile",
             "toolArgs": [
-                "--dart-define=API_BASE_URL=https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host"
+                "--dart-define=API_BASE_URL=https://ventas-appyra.gcdndd.easypanel.host"
             ]
         },
         {
@@ -31,7 +31,7 @@
             "flutterMode": "release",
             "toolArgs": [
                 "--dart-define=APP_ENV=production",
-                "--dart-define=API_BASE_URL=https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host"
+                "--dart-define=API_BASE_URL=https://ventas-appyra.gcdndd.easypanel.host"
             ]
         }
     ]

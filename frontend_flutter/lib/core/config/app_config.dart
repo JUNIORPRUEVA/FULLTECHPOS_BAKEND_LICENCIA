@@ -3,6 +3,10 @@ enum AppEnvironment { local, staging, production }
 class AppConfig {
   AppConfig._();
 
+  static const String appVersion = String.fromEnvironment(
+    'APP_VERSION',
+    defaultValue: '1.0.0+1',
+  );
   static const String environmentName = String.fromEnvironment(
     'APP_ENV',
     defaultValue: 'local',
@@ -13,7 +17,7 @@ class AppConfig {
   );
 
   static const String _cloudBaseUrl =
-      'https://fullpos-backend-fullposlicenciaswed.onqyr1.easypanel.host';
+      'https://ventas-appyra.gcdndd.easypanel.host';
   static const String _localBaseUrl = _cloudBaseUrl;
   static const String _stagingBaseUrl = _cloudBaseUrl;
   static const String _productionBaseUrl = _cloudBaseUrl;
