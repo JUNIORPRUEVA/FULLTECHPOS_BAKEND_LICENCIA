@@ -115,6 +115,7 @@ class _AdminShellState extends State<AdminShell> {
 
   Widget _buildTopBar(bool isDesktop) {
     final canGoBack = context.canPop();
+    final isDaleVentas = widget.currentRoute == '/admin/daleventas-licencias';
     return Container(
       height: isDesktop ? AppSpacing.appBarHeight : 66,
       decoration: BoxDecoration(
@@ -131,13 +132,15 @@ class _AdminShellState extends State<AdminShell> {
       padding: EdgeInsets.symmetric(horizontal: isDesktop ? 16 : 14),
       child: Row(
         children: [
-          // Back button (mobile) - cuando hay historial de navegación
-          if (!isDesktop && canGoBack)
+          // Back button (mobile) - cuando hay historial o una pantalla de trabajo dedicada
+          if (!isDesktop && (canGoBack || isDaleVentas))
             Material(
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(14),
               child: InkWell(
-                onTap: _safePop,
+                onTap: isDaleVentas
+                    ? () => context.go('/admin/panel')
+                    : _safePop,
                 borderRadius: BorderRadius.circular(14),
                 child: const SizedBox(
                   width: 46,
@@ -151,7 +154,7 @@ class _AdminShellState extends State<AdminShell> {
               ),
             ),
           // Menu button (mobile) - cuando NO hay historial
-          if (!isDesktop && !canGoBack)
+          if (!isDesktop && !canGoBack && !isDaleVentas)
             Material(
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(14),
@@ -219,7 +222,10 @@ class _AdminShellState extends State<AdminShell> {
             ),
           ),
           // Menú de tres puntos con acciones de la página
-          _PageActionsMenu(actionsController: _actionsController),
+          _PageActionsMenu(
+            actionsController: _actionsController,
+            directAction: !isDesktop && isDaleVentas,
+          ),
           const SizedBox(width: 4),
           const AppBarAccountMenu(),
         ],
@@ -247,8 +253,12 @@ class _AdminShellState extends State<AdminShell> {
 /// Widget que muestra el menú de tres puntos con las acciones de la página
 class _PageActionsMenu extends StatefulWidget {
   final AppShellActionsController actionsController;
+  final bool directAction;
 
-  const _PageActionsMenu({required this.actionsController});
+  const _PageActionsMenu({
+    required this.actionsController,
+    this.directAction = false,
+  });
 
   @override
   State<_PageActionsMenu> createState() => _PageActionsMenuState();
@@ -294,6 +304,22 @@ class _PageActionsMenuState extends State<_PageActionsMenu> {
   @override
   Widget build(BuildContext context) {
     if (_actions.isEmpty) return const SizedBox.shrink();
+    if (widget.directAction) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: _actions
+            .map(
+              (action) => Tooltip(
+                message: action.label,
+                child: IconButton(
+                  onPressed: action.onTap,
+                  icon: Icon(action.icon, size: 22, color: AppColors.primary),
+                ),
+              ),
+            )
+            .toList(),
+      );
+    }
     return PopupMenuButton<int>(
       tooltip: 'Opciones',
       icon: const Icon(

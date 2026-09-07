@@ -25,6 +25,8 @@ class DaleVentasCompanyLicense {
   final int productsUsed;
   final DaleVentasAccountInfo account;
   final List<DaleVentasLicenseAuditLog> auditLogs;
+  final DaleVentasCommercialProfile? commercial;
+  final DaleVentasEffectiveEntitlements? effectiveEntitlements;
 
   const DaleVentasCompanyLicense({
     required this.companyId,
@@ -37,6 +39,8 @@ class DaleVentasCompanyLicense {
     required this.usersUsed,
     required this.productsUsed,
     this.account = const DaleVentasAccountInfo(),
+    this.commercial,
+    this.effectiveEntitlements,
     this.slug,
     this.plan,
     this.rawStatus,
@@ -60,6 +64,9 @@ class DaleVentasCompanyLicense {
     final usage = json['usage'] as Map<String, dynamic>? ?? const {};
     final account = json['account'] as Map<String, dynamic>? ?? const {};
     final logs = json['auditLogs'] as List<dynamic>? ?? const [];
+    final commercial = json['commercial'] as Map<String, dynamic>?;
+    final effectiveEntitlements =
+        json['effectiveEntitlements'] as Map<String, dynamic>?;
 
     return DaleVentasCompanyLicense(
       companyId: json['companyId']?.toString() ?? '',
@@ -91,6 +98,12 @@ class DaleVentasCompanyLicense {
           .whereType<Map<String, dynamic>>()
           .map(DaleVentasLicenseAuditLog.fromJson)
           .toList(),
+      commercial: commercial == null
+          ? null
+          : DaleVentasCommercialProfile.fromJson(commercial),
+      effectiveEntitlements: effectiveEntitlements == null
+          ? null
+          : DaleVentasEffectiveEntitlements.fromJson(effectiveEntitlements),
     );
   }
 
@@ -128,6 +141,8 @@ class DaleVentasCompanyLicense {
       licenseKey: licenseKey ?? this.licenseKey,
       notes: notes ?? this.notes,
       auditLogs: auditLogs,
+      commercial: commercial,
+      effectiveEntitlements: effectiveEntitlements,
     );
   }
 
@@ -140,12 +155,74 @@ class DaleVentasCompanyLicense {
   bool get isTrial => status == 'TRIAL';
   bool get isActive => status == 'ACTIVE';
   String get planCode {
+    final commercialCode = commercialPlanCode;
+    if (commercialCode == 'BASIC' ||
+        commercialCode == 'BUSINESS' ||
+        commercialCode == 'PRO') {
+      return commercialCode;
+    }
     final cleaned = (plan ?? '').trim().toUpperCase();
     if (cleaned == 'ENTERPRISE') return 'ENTERPRISE';
     return 'STANDARD';
   }
 
+  String get commercialPlanCode {
+    final snapshot = commercial?.planCodeSnapshot?.trim().toUpperCase() ?? '';
+    if (snapshot.isNotEmpty) return snapshot;
+    final classification =
+        commercial?.planClassification.trim().toUpperCase() ?? '';
+    if (classification == 'CUSTOM') return 'CUSTOM';
+    return 'LEGACY';
+  }
+
+  String get commercialPlanLabel {
+    final snapshot = commercial?.planNameSnapshot?.trim();
+    if (snapshot != null && snapshot.isNotEmpty) return snapshot;
+    switch (commercialPlanCode) {
+      case 'BASIC':
+        return 'Básico';
+      case 'BUSINESS':
+        return 'Negocio';
+      case 'PRO':
+        return 'Pro';
+      case 'CUSTOM':
+        return 'Custom';
+      default:
+        return 'Legacy/Custom';
+    }
+  }
+
+  String get commercialStatusLabel {
+    switch ((commercial?.commercialStatus ?? 'DEMO').toUpperCase()) {
+      case 'CONTACTED':
+        return 'Contactado';
+      case 'INTERESTED':
+        return 'Interesado';
+      case 'PURCHASED':
+        return 'Compró';
+      case 'ACTIVE_CUSTOMER':
+        return 'Cliente activo';
+      case 'RENEWAL_DUE':
+        return 'Por renovar';
+      case 'EXPIRED':
+        return 'Vencido';
+      case 'LOST':
+        return 'Perdido';
+      default:
+        return 'Demo';
+    }
+  }
+
+  bool get hasCommercialOverride =>
+      commercial?.overrideExpirationDate != null ||
+      commercial?.overrideExtraDays != null ||
+      commercial?.overrideMaxUsers != null ||
+      commercial?.overrideMaxProducts != null ||
+      commercial?.overrideMaxWarehouses != null ||
+      commercial?.overrideMaxDevices != null;
+
   String get planLabel {
+    if (commercial != null) return commercialPlanLabel;
     final label = licenseTypeLabel?.trim();
     if (label != null && label.isNotEmpty && !isTrial) return label;
     if (isTrial) return 'Plan demo';
@@ -164,6 +241,121 @@ class DaleVentasCompanyLicense {
     if (periodEndsAt != null) return periodEndsAt;
     if (isTrial) return trialEndsAt;
     return licenseExpiresAt;
+  }
+}
+
+class DaleVentasCommercialProfile {
+  final String id;
+  final String externalCompanyId;
+  final String commercialStatus;
+  final String planClassification;
+  final String? planCodeSnapshot;
+  final String? planNameSnapshot;
+  final String? currencySnapshot;
+  final String? monthlyEquivalentPriceSnapshot;
+  final int? minimumBillingMonthsSnapshot;
+  final String? minimumPaymentSnapshot;
+  final DateTime? planAssignedAt;
+  final DateTime? overrideExpirationDate;
+  final int? overrideExtraDays;
+  final int? overrideMaxUsers;
+  final int? overrideMaxProducts;
+  final int? overrideMaxWarehouses;
+  final int? overrideMaxDevices;
+  final String? overrideNotes;
+  final String? leadSource;
+  final DateTime? nextFollowUpAt;
+  final String? commercialNotes;
+
+  const DaleVentasCommercialProfile({
+    required this.id,
+    required this.externalCompanyId,
+    required this.commercialStatus,
+    required this.planClassification,
+    this.planCodeSnapshot,
+    this.planNameSnapshot,
+    this.currencySnapshot,
+    this.monthlyEquivalentPriceSnapshot,
+    this.minimumBillingMonthsSnapshot,
+    this.minimumPaymentSnapshot,
+    this.planAssignedAt,
+    this.overrideExpirationDate,
+    this.overrideExtraDays,
+    this.overrideMaxUsers,
+    this.overrideMaxProducts,
+    this.overrideMaxWarehouses,
+    this.overrideMaxDevices,
+    this.overrideNotes,
+    this.leadSource,
+    this.nextFollowUpAt,
+    this.commercialNotes,
+  });
+
+  factory DaleVentasCommercialProfile.fromJson(Map<String, dynamic> json) {
+    return DaleVentasCommercialProfile(
+      id: json['id']?.toString() ?? '',
+      externalCompanyId: json['external_company_id']?.toString() ?? '',
+      commercialStatus:
+          json['commercial_status']?.toString().toUpperCase() ?? 'DEMO',
+      planClassification:
+          json['plan_classification']?.toString().toUpperCase() ?? 'LEGACY',
+      planCodeSnapshot: _string(json['plan_code_snapshot']),
+      planNameSnapshot: _string(json['plan_name_snapshot']),
+      currencySnapshot: _string(json['currency_snapshot']),
+      monthlyEquivalentPriceSnapshot: _string(
+        json['monthly_equivalent_price_snapshot'],
+      ),
+      minimumBillingMonthsSnapshot: _nullableInt(
+        json['minimum_billing_months_snapshot'],
+      ),
+      minimumPaymentSnapshot: _string(json['minimum_payment_snapshot']),
+      planAssignedAt: _date(json['plan_assigned_at']),
+      overrideExpirationDate: _date(json['override_expiration_date']),
+      overrideExtraDays: _nullableInt(json['override_extra_days']),
+      overrideMaxUsers: _nullableInt(json['override_max_users']),
+      overrideMaxProducts: _nullableInt(json['override_max_products']),
+      overrideMaxWarehouses: _nullableInt(json['override_max_warehouses']),
+      overrideMaxDevices: _nullableInt(json['override_max_devices']),
+      overrideNotes: _string(json['override_notes']),
+      leadSource: _string(json['lead_source']),
+      nextFollowUpAt: _date(json['next_follow_up_at']),
+      commercialNotes: _string(json['commercial_notes']),
+    );
+  }
+}
+
+class DaleVentasEffectiveEntitlements {
+  final int? maxUsers;
+  final int? maxProducts;
+  final int? maxWarehouses;
+  final int? maxDevices;
+  final DateTime? expirationDate;
+  final int? extraDays;
+  final Map<String, String> sources;
+
+  const DaleVentasEffectiveEntitlements({
+    this.maxUsers,
+    this.maxProducts,
+    this.maxWarehouses,
+    this.maxDevices,
+    this.expirationDate,
+    this.extraDays,
+    this.sources = const {},
+  });
+
+  factory DaleVentasEffectiveEntitlements.fromJson(Map<String, dynamic> json) {
+    final rawSources = json['sources'] as Map<String, dynamic>? ?? const {};
+    return DaleVentasEffectiveEntitlements(
+      maxUsers: _nullableInt(json['maxUsers']),
+      maxProducts: _nullableInt(json['maxProducts']),
+      maxWarehouses: _nullableInt(json['maxWarehouses']),
+      maxDevices: _nullableInt(json['maxDevices']),
+      expirationDate: _date(json['expirationDate']),
+      extraDays: _nullableInt(json['extraDays']),
+      sources: rawSources.map(
+        (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+      ),
+    );
   }
 }
 
@@ -240,6 +432,12 @@ int _int(dynamic value, {int fallback = 0}) {
   if (value == null) return fallback;
   if (value is int) return value;
   return int.tryParse(value.toString()) ?? fallback;
+}
+
+int? _nullableInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  return int.tryParse(value.toString());
 }
 
 String? _string(dynamic value) {

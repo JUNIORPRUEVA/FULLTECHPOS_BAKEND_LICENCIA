@@ -30,8 +30,23 @@ async function events(req, res) {
   }
 }
 
+async function activity(req, res) {
+  try {
+    const result = await usageAnalyticsModel.getCompanyActivity(
+      req.params.businessId,
+      { limit: req.query?.limit }
+    );
+    if (!result) return res.status(404).json({ ok: false, message: 'Actividad no encontrada' });
+    return res.json({ ok: true, activity: result });
+  } catch (error) {
+    console.error('admin usage activity error:', error);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor' });
+  }
+}
+
 module.exports = {
   overview,
   accounts,
-  events
+  events,
+  activity
 };

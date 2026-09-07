@@ -92,7 +92,9 @@ async function runMigrations({ endPool = true } = {}) {
     '048_add_project_product_profiles.sql',
     '049_set_fullpos_latest_download_url.sql',
     '050_create_usage_analytics.sql',
-    '051_backfill_usage_from_license_activations.sql'
+    '051_backfill_usage_from_license_activations.sql',
+    '052_create_daleventas_commercial_foundation.sql',
+    '053_usage_events_idempotent_activity.sql'
   ]);
 
   const selectedFiles = licenseOnly

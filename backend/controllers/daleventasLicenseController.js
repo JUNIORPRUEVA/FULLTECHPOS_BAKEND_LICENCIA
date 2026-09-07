@@ -11,6 +11,7 @@ const ADMIN_SECRET_ENV_NAMES = [
   'DALEVENTAS_ADMIN_SECRET',
   'LICENSE_ADMIN_SECRET',
 ];
+const daleventasCommercialModel = require('../models/daleventasCommercialModel');
 
 function readEnv(name) {
   const value = process.env[name];
@@ -86,18 +87,22 @@ function buildQuery(query) {
   return qs ? `?${qs}` : '';
 }
 
-async function requestDaleVentas(req, res, method, path, body) {
+async function requestDaleVentasJson(req, method, path, body, options = {}) {
   const { baseUrl, secret, missing } = getConfig();
   if (!baseUrl || !secret) {
-    return res.status(503).json({
+    const error = new Error(
+      `El puente de licencias DaleVentas no esta configurado. Falta definir: ${missing.join(', ')}.`
+    );
+    error.status = 503;
+    error.payload = {
       success: false,
       errorCode: 'DALEVENTAS_LICENSE_BRIDGE_NOT_CONFIGURED',
-      message:
-        `El puente de licencias DaleVentas no esta configurado. Falta definir: ${missing.join(', ')}.`,
+      message: error.message,
       missing,
       acceptedBaseUrlEnvNames: BASE_URL_ENV_NAMES,
       acceptedAdminSecretEnvNames: ADMIN_SECRET_ENV_NAMES,
-    });
+    };
+    throw error;
   }
 
   const controller = new AbortController();
@@ -126,18 +131,43 @@ async function requestDaleVentas(req, res, method, path, body) {
       }
     }
 
-    return res.status(response.status).json(data);
+    if (response.ok && typeof options.transform === 'function') {
+      try {
+        data = await options.transform(data);
+      } catch (error) {
+        console.warn('[daleventas-license-bridge] commercial decoration skipped:', error.message || error);
+      }
+    }
+
+    return { status: response.status, ok: response.ok, data };
   } catch (error) {
     const isTimeout = error && error.name === 'AbortError';
-    return res.status(isTimeout ? 504 : 502).json({
-      success: false,
-      message: isTimeout
+    const bridgeError = new Error(
+      isTimeout
         ? 'DaleVentas no respondio a tiempo.'
-        : 'No se pudo conectar con DaleVentas para gestionar la licencia.',
+        : 'No se pudo conectar con DaleVentas para gestionar la licencia.'
+    );
+    bridgeError.status = isTimeout ? 504 : 502;
+    bridgeError.payload = {
+      success: false,
+      message: bridgeError.message,
       details: process.env.NODE_ENV === 'production' ? undefined : String(error.message || error),
-    });
+    };
+    throw bridgeError;
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+async function requestDaleVentas(req, res, method, path, body, options = {}) {
+  try {
+    const result = await requestDaleVentasJson(req, method, path, body, options);
+    return res.status(result.status).json(result.data);
+  } catch (error) {
+    return res.status(error.status || 502).json(error.payload || {
+      success: false,
+      message: String(error.message || error),
+    });
   }
 }
 
@@ -146,7 +176,17 @@ exports.listCompanies = (req, res) => {
     req,
     res,
     'GET',
-    `/license/admin/companies${buildQuery(req.query)}`
+    `/license/admin/companies${buildQuery(req.query)}`,
+    null,
+    {
+      transform: async (data) => {
+        if (Array.isArray(data?.items)) {
+          return { ...data, items: await daleventasCommercialModel.decorateCompanies(data.items) };
+        }
+        if (Array.isArray(data)) return daleventasCommercialModel.decorateCompanies(data);
+        return data;
+      }
+    }
   );
 };
 
@@ -155,7 +195,21 @@ exports.getCompany = (req, res) => {
     req,
     res,
     'GET',
-    `/license/admin/${encodeURIComponent(req.params.companyId)}`
+    `/license/admin/${encodeURIComponent(req.params.companyId)}`,
+    null,
+    {
+      transform: async (data) => daleventasCommercialModel.decorateCompany(data)
+    }
+  );
+};
+
+exports.getCompanyUsage = (req, res) => {
+  return requestDaleVentas(
+    req,
+    res,
+    'GET',
+    `/license/admin/${encodeURIComponent(req.params.companyId)}/usage`,
+    null
   );
 };
 
@@ -210,3 +264,4 @@ exports.permanentlyDeleteCompanyLicense = (req, res) => {
 };
 
 exports.getConfigStatus = getConfigStatus;
+exports.requestDaleVentasJson = requestDaleVentasJson;

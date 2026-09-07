@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
@@ -65,7 +67,7 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexion: $e');
+      throw ApiException(_connectionMessage(e));
     }
   }
 
@@ -92,7 +94,7 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexion: $e');
+      throw ApiException(_connectionMessage(e));
     }
   }
 
@@ -119,7 +121,7 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexion: $e');
+      throw ApiException(_connectionMessage(e));
     }
   }
 
@@ -141,7 +143,7 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexion: $e');
+      throw ApiException(_connectionMessage(e));
     }
   }
 
@@ -160,8 +162,20 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error de conexion: $e');
+      throw ApiException(_connectionMessage(e));
     }
+  }
+
+  String _connectionMessage(Object error) {
+    if (error is TimeoutException ||
+        error is SocketException ||
+        error is http.ClientException) {
+      return 'No se pudo conectar con el servidor. Revisa tu internet e intenta nuevamente.';
+    }
+    if (AppConfig.isDebug) {
+      debugPrint('[API] Connection error: $error');
+    }
+    return 'No se pudo conectar con el servidor. Intenta nuevamente.';
   }
 
   Map<String, dynamic> _handleResponse(http.Response response) {

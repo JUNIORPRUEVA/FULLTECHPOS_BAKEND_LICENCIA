@@ -18,4 +18,8 @@ router.get('/events', (req, res, next) => {
   Promise.resolve(adminUsageAnalyticsController.events(req, res)).catch(next);
 });
 
+router.get('/activity/:businessId', (req, res, next) => {
+  Promise.resolve(adminUsageAnalyticsController.activity(req, res)).catch(next);
+});
+
 module.exports = router;

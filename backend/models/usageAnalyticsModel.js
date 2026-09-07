@@ -80,16 +80,21 @@ async function insertUsageEvent(event, { client = pool } = {}) {
   const subjectKey = buildSubjectKey(event);
   const res = await client.query(
     `INSERT INTO usage_events (
-       project_id, license_id, customer_id, business_id, app_code, device_id,
-       session_id, event_type, app_version, occurred_at, active_seconds,
-       metrics, metadata, ip_address
+       event_id, schema_version, project_id, license_id, customer_id,
+       business_id, app_code, device_id, session_id, event_type,
+       actor_user_id, entity_type, entity_id, feature_code, platform,
+       app_version, occurred_at, active_seconds, metrics, metadata, ip_address
      ) VALUES (
-       $1, $2, $3, $4, $5, $6,
-       $7, $8, $9, COALESCE($10::timestamptz, now()), $11,
-       $12::jsonb, $13::jsonb, $14
+       $1, $2, $3, $4, $5,
+       $6, $7, $8, $9, $10,
+       $11, $12, $13, $14, $15,
+       $16, COALESCE($17::timestamptz, now()), $18, $19::jsonb, $20::jsonb, $21
      )
+     ON CONFLICT (event_id) DO NOTHING
      RETURNING *`,
     [
+      event.event_id,
+      event.schema_version || 1,
       event.project_id || null,
       event.license_id || null,
       event.customer_id || null,
@@ -98,6 +103,11 @@ async function insertUsageEvent(event, { client = pool } = {}) {
       event.device_id,
       event.session_id || null,
       event.event_type,
+      event.actor_user_id || null,
+      event.entity_type || null,
+      event.entity_id || null,
+      event.feature_code || null,
+      event.platform || null,
       event.app_version || null,
       event.occurred_at || null,
       event.active_seconds || 0,
@@ -107,7 +117,13 @@ async function insertUsageEvent(event, { client = pool } = {}) {
     ]
   );
 
-  return { row: res.rows[0], subjectKey };
+  if (res.rows[0]) return { row: res.rows[0], subjectKey, duplicate: false };
+
+  const existing = await client.query(
+    `SELECT * FROM usage_events WHERE event_id = $1 LIMIT 1`,
+    [event.event_id]
+  );
+  return { row: existing.rows[0], subjectKey, duplicate: true };
 }
 
 async function upsertDailyStats(event, subjectKey, { client = pool } = {}) {
@@ -191,6 +207,55 @@ async function upsertFeatureStats(event, subjectKey, { client = pool } = {}) {
       event.occurred_at || null
     ]
   );
+}
+
+async function getCompanyActivity(businessId, { limit = 25, client = pool } = {}) {
+  const companyId = String(businessId || '').trim();
+  if (!companyId) return null;
+  const params = [companyId];
+  const summary = await client.query(
+    `SELECT
+       MAX(occurred_at) AS last_active_at,
+       MAX(occurred_at) FILTER (WHERE event_type = 'SALE_COMPLETED') AS last_sale_at,
+       COUNT(*) FILTER (WHERE event_type = 'SALE_COMPLETED' AND occurred_at >= now() - interval '30 days')::int AS sales_30_days,
+       MAX(occurred_at) FILTER (WHERE event_type IN ('QUOTATION_CREATED', 'QUOTATION_UPDATED', 'QUOTATION_CONVERTED_TO_SALE')) AS last_quotation_at,
+       COUNT(*) FILTER (WHERE event_type IN ('QUOTATION_CREATED', 'QUOTATION_UPDATED', 'QUOTATION_CONVERTED_TO_SALE') AND occurred_at >= now() - interval '30 days')::int AS quotations_30_days,
+       MAX(occurred_at) FILTER (WHERE event_type LIKE 'PRODUCT_%') AS last_product_activity_at,
+       MAX(occurred_at) FILTER (WHERE event_type LIKE 'CASH_%') AS last_cash_activity_at,
+       MAX(occurred_at) FILTER (WHERE event_type IN ('INVENTORY_ADJUSTED', 'STOCK_RECEIVED', 'WAREHOUSE_TRANSFER_COMPLETED')) AS last_inventory_activity_at,
+       MAX(occurred_at) FILTER (WHERE event_type = 'CUSTOMER_CREATED') AS last_customer_activity_at,
+       MAX(occurred_at) FILTER (WHERE event_type IN ('WAREHOUSE_CREATED', 'WAREHOUSE_DEACTIVATED', 'WAREHOUSE_TRANSFER_COMPLETED')) AS last_warehouse_activity_at
+     FROM usage_events
+     WHERE business_id = $1`,
+    params
+  );
+  const modules = await client.query(
+    `SELECT feature_code, MAX(occurred_at) AS last_used_at, COUNT(*)::int AS events_count
+     FROM usage_events
+     WHERE business_id = $1 AND event_type = 'MODULE_USED' AND feature_code IS NOT NULL
+     GROUP BY feature_code
+     ORDER BY last_used_at DESC`,
+    params
+  );
+  const recent = await client.query(
+    `SELECT event_id, event_type, occurred_at, feature_code, actor_user_id,
+            entity_type, entity_id, platform
+     FROM usage_events
+     WHERE business_id = $1
+     ORDER BY occurred_at DESC, received_at DESC
+     LIMIT $2`,
+    [companyId, Math.min(100, Math.max(1, Number(limit) || 25))]
+  );
+  return {
+    business_id: companyId,
+    ...summary.rows[0],
+    module_last_used_at: modules.rows.reduce((acc, row) => {
+      acc[row.feature_code] = row.last_used_at;
+      return acc;
+    }, {}),
+    modules: modules.rows,
+    recent: recent.rows
+  };
 }
 
 function usageStatusSql(alias = 'u') {
@@ -522,6 +587,7 @@ module.exports = {
   insertUsageEvent,
   upsertDailyStats,
   upsertFeatureStats,
+  getCompanyActivity,
   getOverview,
   listAccounts,
   listEvents

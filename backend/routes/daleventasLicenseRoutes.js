@@ -8,6 +8,10 @@ router.get('/companies', isAdmin, (req, res, next) => {
   Promise.resolve(controller.listCompanies(req, res)).catch(next);
 });
 
+router.get('/companies/:companyId/usage', isAdmin, (req, res, next) => {
+  Promise.resolve(controller.getCompanyUsage(req, res)).catch(next);
+});
+
 router.get('/companies/:companyId', isAdmin, (req, res, next) => {
   Promise.resolve(controller.getCompany(req, res)).catch(next);
 });

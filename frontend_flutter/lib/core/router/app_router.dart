@@ -107,7 +107,7 @@ class AppRouter {
       case '/admin/licencias':
         return 'Licencias';
       case '/admin/daleventas-licencias':
-        return 'DaleVentas Cloud';
+        return 'DaleVentas';
       case '/admin/uso':
         return 'Uso del sistema';
       case '/admin/proyectos':

@@ -186,6 +186,8 @@ async function recordActivationUsage({ activation, license, activationRow, paylo
   if (!deviceId) return;
 
   const event = {
+    event_id: `activation:${eventType}:${activation?.id || activationRow?.activation_id || deviceId}:${Date.now()}`,
+    schema_version: 1,
     project_id: license?.project_id || activation?.project_id || activationRow?.project_id || null,
     license_id: license?.id || activation?.license_id || activationRow?.license_id || null,
     customer_id: license?.customer_id || activationRow?.customer_id || null,

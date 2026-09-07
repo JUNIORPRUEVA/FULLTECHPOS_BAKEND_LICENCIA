@@ -52,6 +52,20 @@ class DaleVentasLicenseService {
     return DaleVentasCompanyLicense.fromJson(data);
   }
 
+  Future<DaleVentasCompanyLicense> refreshUsage(String companyId) async {
+    await _ensureInit();
+    await _client.get(
+      '/api/admin/daleventas-licenses/companies/$companyId/usage',
+    );
+    return getCompany(companyId);
+  }
+
+  Future<Map<String, dynamic>> getActivity(String companyId) async {
+    await _ensureInit();
+    final data = await _client.get('/api/admin/usage/activity/$companyId');
+    return data['activity'] as Map<String, dynamic>? ?? const {};
+  }
+
   Future<DaleVentasCompanyLicense> updateCompany(
     String companyId,
     Map<String, dynamic> body,
@@ -103,6 +117,40 @@ class DaleVentasLicenseService {
     await _client.delete(
       '/api/admin/daleventas-licenses/companies/$companyId/permanent',
     );
+  }
+
+  Future<List<Map<String, dynamic>>> listCommercialPlans() async {
+    await _ensureInit();
+    final data = await _client.get(
+      '/api/admin/daleventas-commercial/plans?active=true',
+    );
+    final plans = data['plans'] as List<dynamic>? ?? const [];
+    return plans.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<DaleVentasCompanyLicense> assignCommercialPlan(
+    String companyId, {
+    required String planCode,
+    required String commercialStatus,
+  }) async {
+    await _ensureInit();
+    await _client.post(
+      '/api/admin/daleventas-commercial/profiles/$companyId/assign-plan',
+      {'planCode': planCode, 'commercialStatus': commercialStatus},
+    );
+    return getCompany(companyId);
+  }
+
+  Future<DaleVentasCompanyLicense> updateCommercialOverrides(
+    String companyId,
+    Map<String, dynamic> body,
+  ) async {
+    await _ensureInit();
+    await _client.patch(
+      '/api/admin/daleventas-commercial/profiles/$companyId/overrides',
+      body,
+    );
+    return getCompany(companyId);
   }
 }
 
