@@ -82,7 +82,8 @@ test('commercial propagation sends only DaleVentas-supported limits', () => {
         expirationDate: '2026-12-31T00:00:00.000Z'
       }
     },
-    'Plan actualizado desde Appyra'
+    'Plan actualizado desde Appyra',
+    { expiresAt: '2026-12-31T00:00:00.000Z' }
   );
 
   assert.deepEqual(patch, {
@@ -94,4 +95,48 @@ test('commercial propagation sends only DaleVentas-supported limits', () => {
   });
   assert.equal(Object.hasOwn(patch, 'maxWarehouses'), false);
   assert.equal(Object.hasOwn(patch, 'maxDevices'), false);
+});
+
+test('commercial plan assignment does not propagate stale technical expiration', () => {
+  const patch = commercialController._test.supportedLicensePatch(
+    {
+      plan_code_snapshot: 'BASIC',
+      effective_entitlements: {
+        maxUsers: 2,
+        maxProducts: 100,
+        expirationDate: '2026-08-17T13:21:01.257Z'
+      }
+    },
+    'Plan actualizado desde Appyra'
+  );
+
+  assert.deepEqual(patch, {
+    plan: 'STANDARD',
+    maxUsers: 2,
+    maxProducts: 100,
+    notes: 'Plan actualizado desde Appyra'
+  });
+});
+
+test('commercial expiration override propagates explicit expiration only', () => {
+  const patch = commercialController._test.supportedLicensePatch(
+    {
+      plan_code_snapshot: 'BASIC',
+      effective_entitlements: {
+        maxUsers: 2,
+        maxProducts: 100,
+        expirationDate: '2026-08-17T13:21:01.257Z'
+      }
+    },
+    'Fecha ajustada desde Appyra',
+    { expiresAt: '2026-11-12' }
+  );
+
+  assert.deepEqual(patch, {
+    plan: 'STANDARD',
+    maxUsers: 2,
+    maxProducts: 100,
+    expiresAt: '2026-11-12',
+    notes: 'Fecha ajustada desde Appyra'
+  });
 });

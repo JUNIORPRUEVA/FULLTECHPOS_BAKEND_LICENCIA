@@ -8,22 +8,22 @@ function technicalPlanValue(profile) {
   return undefined;
 }
 
-function supportedLicensePatch(profile, reason) {
+function supportedLicensePatch(profile, reason, options = {}) {
   const entitlements = profile?.effective_entitlements || {};
   const body = {};
   const plan = technicalPlanValue(profile);
   if (plan) body.plan = plan;
   if (entitlements.maxUsers != null) body.maxUsers = entitlements.maxUsers;
   if (entitlements.maxProducts != null) body.maxProducts = entitlements.maxProducts;
-  if (entitlements.expirationDate !== undefined) {
-    body.expiresAt = entitlements.expirationDate;
+  if (Object.prototype.hasOwnProperty.call(options, 'expiresAt')) {
+    body.expiresAt = options.expiresAt;
   }
   if (reason) body.notes = reason;
   return body;
 }
 
-async function propagateSupportedLicensePatch(req, profile, reason) {
-  const patch = supportedLicensePatch(profile, reason);
+async function propagateSupportedLicensePatch(req, profile, reason, options = {}) {
+  const patch = supportedLicensePatch(profile, reason, options);
   const result = await daleventasLicenseBridge.requestDaleVentasJson(
     req,
     'PATCH',
@@ -179,7 +179,17 @@ async function getOverrides(req, res) {
 async function updateOverrides(req, res) {
   try {
     const profile = await commercialModel.updateOverrides(req.params.companyId, req.body || {}, actorFromReq(req));
-    const propagation = await propagateSupportedLicensePatch(req, profile, req.body?.reason);
+    const hasExplicitExpiration =
+      Object.prototype.hasOwnProperty.call(req.body || {}, 'expirationDate') ||
+      Object.prototype.hasOwnProperty.call(req.body || {}, 'override_expiration_date');
+    const propagation = await propagateSupportedLicensePatch(
+      req,
+      profile,
+      req.body?.reason,
+      hasExplicitExpiration
+        ? { expiresAt: req.body?.expirationDate ?? req.body?.override_expiration_date ?? null }
+        : {}
+    );
     return res.json({
       ok: true,
       success: true,
