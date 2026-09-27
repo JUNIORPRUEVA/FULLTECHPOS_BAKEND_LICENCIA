@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const commercialModel = require('../backend/models/daleventasCommercialModel');
 const commercialController = require('../backend/controllers/adminDaleventasCommercialController');
+const usageAnalyticsModel = require('../backend/models/usageAnalyticsModel');
 
 test('commercial plan codes match the approved public catalog', () => {
   assert.deepEqual([...commercialModel.PLAN_CODES].sort(), ['BASIC', 'BUSINESS', 'PRO']);
@@ -139,4 +140,18 @@ test('commercial expiration override propagates explicit expiration only', () =>
     expiresAt: '2026-11-12',
     notes: 'Fecha ajustada desde Appyra'
   });
+});
+
+test('DaleVentas activity lookup accepts company, license, customer and business identities', () => {
+  const cte = usageAnalyticsModel._test.activityIdentityCteSql();
+  const where = usageAnalyticsModel._test.activityIdentityWhereSql('e');
+
+  assert.match(cte, /daleventas_commercial_profiles/);
+  assert.match(cte, /external_company_id = \$1/);
+  assert.match(cte, /technical_license_key/);
+  assert.match(cte, /l\.license_key IN/);
+  assert.match(where, /e\.business_id = \$1/);
+  assert.match(where, /e\.license_id::text = \$1/);
+  assert.match(where, /e\.customer_id::text = \$1/);
+  assert.match(where, /activity_identity_licenses/);
 });

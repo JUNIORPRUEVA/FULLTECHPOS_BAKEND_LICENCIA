@@ -36,6 +36,21 @@ function normalizeDeviceType(value) {
   return null;
 }
 
+function normalizePlatform(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return null;
+  if (['win', 'windows', 'pc', 'desktop'].includes(raw)) return 'windows';
+  if (['android', 'apk'].includes(raw)) return 'android';
+  if (['ios', 'iphone', 'ipad'].includes(raw)) return 'ios';
+  if (['pwa', 'progressive_web_app'].includes(raw)) return 'pwa';
+  if (['web', 'browser', 'navegador'].includes(raw)) return 'web';
+  if (['mac', 'macos', 'osx'].includes(raw)) return 'macos';
+  if (['linux'].includes(raw)) return 'linux';
+  if (['movil', 'móvil', 'mobile'].includes(raw)) return 'mobile';
+  if (raw === 'tablet') return 'tablet';
+  return raw.slice(0, 80);
+}
+
 function normalizeSubscriptionStatus(value) {
   const raw = String(value || '').trim();
   if (!raw) return null;
@@ -194,9 +209,12 @@ async function recordActivationUsage({ activation, license, activationRow, paylo
     business_id: activationRow?.business_id || normalizeText(payload?.business_id, { max: 200 }),
     app_code: appCode,
     device_id: deviceId,
+    device_name: normalizeText(activation?.device_name || activationRow?.device_name || payload?.device_name, { max: 200 }),
+    device_type: normalizeText(activation?.device_type || activationRow?.device_type || payload?.device_type, { max: 80 }),
     session_id: normalizeText(payload?.session_id, { max: 200 }),
     event_type: eventType,
     feature_code: normalizeText(payload?.feature_code, { max: 80 }),
+    platform: normalizePlatform(payload?.platform || activation?.device_type || activationRow?.device_type || payload?.device_type),
     app_version: normalizeText(payload?.app_version, { max: 80 }),
     occurred_at: null,
     active_seconds: Math.min(86400, Math.max(0, Math.floor(Number(payload?.active_seconds || 0) || 0))),

@@ -129,6 +129,12 @@ async function insertUsageEvent(event, { client = pool } = {}) {
 async function upsertDailyStats(event, subjectKey, { client = pool } = {}) {
   const isSession = ['app_open', 'session_start', 'login', 'activation_create'].includes(event.event_type);
   const isHeartbeat = ['app_heartbeat', 'heartbeat', 'activation_heartbeat'].includes(event.event_type);
+  const lastMetrics = {
+    ...(event.metrics || {}),
+    ...(event.platform ? { platform: event.platform } : {}),
+    ...(event.device_name ? { device_name: event.device_name } : {}),
+    ...(event.device_type ? { device_type: event.device_type } : {})
+  };
 
   await client.query(
     `INSERT INTO usage_daily_stats (
@@ -169,7 +175,7 @@ async function upsertDailyStats(event, subjectKey, { client = pool } = {}) {
       event.occurred_at || null,
       isSession ? 1 : 0,
       isHeartbeat ? 1 : 0,
-      JSON.stringify(event.metrics || {})
+      JSON.stringify(lastMetrics)
     ]
   );
 }
@@ -209,12 +215,59 @@ async function upsertFeatureStats(event, subjectKey, { client = pool } = {}) {
   );
 }
 
-async function getCompanyActivity(businessId, { limit = 25, client = pool } = {}) {
-  const companyId = String(businessId || '').trim();
+function activityIdentityWhereSql(alias = 'e') {
+  return `(
+    ${alias}.business_id = $1
+    OR ${alias}.license_id::text = $1
+    OR ${alias}.customer_id::text = $1
+    OR ${alias}.license_id IN (SELECT license_id FROM activity_identity_licenses)
+    OR ${alias}.customer_id IN (
+      SELECT customer_id
+      FROM activity_identity_licenses
+      WHERE customer_id IS NOT NULL
+    )
+    OR (
+      ${alias}.business_id IS NOT NULL
+      AND ${alias}.business_id IN (
+        SELECT business_id
+        FROM activity_identity_licenses
+        WHERE business_id IS NOT NULL
+      )
+    )
+  )`;
+}
+
+function activityIdentityCteSql() {
+  return `WITH activity_identity_profiles AS (
+      SELECT technical_license_key
+      FROM daleventas_commercial_profiles
+      WHERE external_company_id = $1
+        AND technical_license_key IS NOT NULL
+    ),
+    activity_identity_licenses AS (
+      SELECT l.id AS license_id, l.customer_id, c.business_id
+      FROM licenses l
+      LEFT JOIN customers c ON c.id = l.customer_id
+      WHERE l.id::text = $1
+         OR l.license_key = $1
+         OR c.id::text = $1
+         OR c.business_id = $1
+         OR l.license_key IN (
+           SELECT technical_license_key
+           FROM activity_identity_profiles
+         )
+    )`;
+}
+
+async function getCompanyActivity(identity, { limit = 25, client = pool } = {}) {
+  const companyId = String(identity || '').trim();
   if (!companyId) return null;
   const params = [companyId];
+  const cte = activityIdentityCteSql();
+  const where = activityIdentityWhereSql('e');
   const summary = await client.query(
-    `SELECT
+    `${cte}
+     SELECT
        MAX(occurred_at) AS last_active_at,
        MAX(occurred_at) FILTER (WHERE event_type = 'SALE_COMPLETED') AS last_sale_at,
        COUNT(*) FILTER (WHERE event_type = 'SALE_COMPLETED' AND occurred_at >= now() - interval '30 days')::int AS sales_30_days,
@@ -223,25 +276,28 @@ async function getCompanyActivity(businessId, { limit = 25, client = pool } = {}
        MAX(occurred_at) FILTER (WHERE event_type LIKE 'PRODUCT_%') AS last_product_activity_at,
        MAX(occurred_at) FILTER (WHERE event_type LIKE 'CASH_%') AS last_cash_activity_at,
        MAX(occurred_at) FILTER (WHERE event_type IN ('INVENTORY_ADJUSTED', 'STOCK_RECEIVED', 'WAREHOUSE_TRANSFER_COMPLETED')) AS last_inventory_activity_at,
+       MAX(occurred_at) FILTER (WHERE event_type LIKE 'PURCHASE_%' OR event_type = 'STOCK_RECEIVED') AS last_purchase_activity_at,
        MAX(occurred_at) FILTER (WHERE event_type = 'CUSTOMER_CREATED') AS last_customer_activity_at,
        MAX(occurred_at) FILTER (WHERE event_type IN ('WAREHOUSE_CREATED', 'WAREHOUSE_DEACTIVATED', 'WAREHOUSE_TRANSFER_COMPLETED')) AS last_warehouse_activity_at
-     FROM usage_events
-     WHERE business_id = $1`,
+     FROM usage_events e
+     WHERE ${where}`,
     params
   );
   const modules = await client.query(
-    `SELECT feature_code, MAX(occurred_at) AS last_used_at, COUNT(*)::int AS events_count
-     FROM usage_events
-     WHERE business_id = $1 AND event_type = 'MODULE_USED' AND feature_code IS NOT NULL
+    `${cte}
+     SELECT feature_code, MAX(occurred_at) AS last_used_at, COUNT(*)::int AS events_count
+     FROM usage_events e
+     WHERE ${where} AND event_type = 'MODULE_USED' AND feature_code IS NOT NULL
      GROUP BY feature_code
      ORDER BY last_used_at DESC`,
     params
   );
   const recent = await client.query(
-    `SELECT event_id, event_type, occurred_at, feature_code, actor_user_id,
+    `${cte}
+     SELECT event_id, event_type, occurred_at, feature_code, actor_user_id,
             entity_type, entity_id, platform
-     FROM usage_events
-     WHERE business_id = $1
+     FROM usage_events e
+     WHERE ${where}
      ORDER BY occurred_at DESC, received_at DESC
      LIMIT $2`,
     [companyId, Math.min(100, Math.max(1, Number(limit) || 25))]
@@ -410,7 +466,8 @@ async function listAccounts(query = {}) {
          COALESCE(du.events_count, 0) AS events_count,
          COALESCE(du.devices_count, 0) AS devices_count,
          COALESCE(du.last_metrics, '{}'::jsonb) AS last_metrics,
-         COALESCE(du.platform_breakdown, '[]'::jsonb) AS platform_breakdown
+         COALESCE(du.platform_breakdown, '[]'::jsonb) AS platform_breakdown,
+         COALESCE(du.device_breakdown, '[]'::jsonb) AS device_breakdown
        FROM license_accounts la
        LEFT JOIN LATERAL (
          SELECT
@@ -446,7 +503,41 @@ async function listAccounts(query = {}) {
                  AND ($${toParam}::text IS NULL OR x.stat_date <= $${toParam}::date)
                GROUP BY platform
              ) platform_rows
-           ), '[]'::jsonb) AS platform_breakdown
+           ), '[]'::jsonb) AS platform_breakdown,
+           COALESCE((
+             SELECT jsonb_agg(
+               jsonb_build_object(
+                 'device_id', device_id,
+                 'device_name', device_name,
+                 'platform', platform,
+                 'app_version', app_version,
+                 'last_seen_at', last_seen_at,
+                 'events_count', events_count,
+                 'active_seconds', active_seconds,
+                 'sessions_count', sessions_count,
+                 'heartbeat_count', heartbeat_count
+               )
+               ORDER BY last_seen_at DESC, events_count DESC, device_id ASC
+             )
+             FROM (
+               SELECT
+                 x.device_id,
+                 (ARRAY_AGG(NULLIF(x.last_metrics->>'device_name', '') ORDER BY x.last_seen_at DESC))[1] AS device_name,
+                 COALESCE(NULLIF(LOWER((ARRAY_AGG(x.last_metrics->>'platform' ORDER BY x.last_seen_at DESC))[1]), ''), 'api') AS platform,
+                 (ARRAY_AGG(x.app_version ORDER BY x.last_seen_at DESC))[1] AS app_version,
+                 MAX(x.last_seen_at) AS last_seen_at,
+                 SUM(x.events_count)::bigint AS events_count,
+                 SUM(x.active_seconds)::bigint AS active_seconds,
+                 SUM(x.sessions_count)::bigint AS sessions_count,
+                 SUM(x.heartbeat_count)::bigint AS heartbeat_count
+               FROM usage_daily_stats x
+               WHERE (x.license_id = la.license_id OR x.customer_id = la.customer_id OR (la.business_id IS NOT NULL AND x.business_id = la.business_id))
+                 AND ($${appParam}::text IS NULL OR UPPER(x.app_code) = $${appParam})
+                 AND ($${fromParam}::text IS NULL OR x.stat_date >= $${fromParam}::date)
+                 AND ($${toParam}::text IS NULL OR x.stat_date <= $${toParam}::date)
+               GROUP BY x.device_id
+             ) device_rows
+           ), '[]'::jsonb) AS device_breakdown
          FROM usage_daily_stats u
          WHERE (u.license_id = la.license_id OR u.customer_id = la.customer_id OR (la.business_id IS NOT NULL AND u.business_id = la.business_id))
            AND ($${appParam}::text IS NULL OR UPPER(u.app_code) = $${appParam})
@@ -499,7 +590,41 @@ async function listAccounts(query = {}) {
                AND ($${toParam}::text IS NULL OR x.stat_date <= $${toParam}::date)
              GROUP BY platform
            ) platform_rows
-         ), '[]'::jsonb) AS platform_breakdown
+         ), '[]'::jsonb) AS platform_breakdown,
+         COALESCE((
+           SELECT jsonb_agg(
+             jsonb_build_object(
+               'device_id', device_id,
+               'device_name', device_name,
+               'platform', platform,
+               'app_version', app_version,
+               'last_seen_at', last_seen_at,
+               'events_count', events_count,
+               'active_seconds', active_seconds,
+               'sessions_count', sessions_count,
+               'heartbeat_count', heartbeat_count
+             )
+             ORDER BY last_seen_at DESC, events_count DESC, device_id ASC
+           )
+           FROM (
+             SELECT
+               x.device_id,
+               (ARRAY_AGG(NULLIF(x.last_metrics->>'device_name', '') ORDER BY x.last_seen_at DESC))[1] AS device_name,
+               COALESCE(NULLIF(LOWER((ARRAY_AGG(x.last_metrics->>'platform' ORDER BY x.last_seen_at DESC))[1]), ''), 'api') AS platform,
+               (ARRAY_AGG(x.app_version ORDER BY x.last_seen_at DESC))[1] AS app_version,
+               MAX(x.last_seen_at) AS last_seen_at,
+               SUM(x.events_count)::bigint AS events_count,
+               SUM(x.active_seconds)::bigint AS active_seconds,
+               SUM(x.sessions_count)::bigint AS sessions_count,
+               SUM(x.heartbeat_count)::bigint AS heartbeat_count
+             FROM usage_daily_stats x
+             WHERE x.business_id = u.business_id
+               AND (($${appParam})::text IS NULL OR UPPER(x.app_code) = $${appParam})
+               AND ($${fromParam}::text IS NULL OR x.stat_date >= $${fromParam}::date)
+               AND ($${toParam}::text IS NULL OR x.stat_date <= $${toParam}::date)
+             GROUP BY x.device_id
+           ) device_rows
+         ), '[]'::jsonb) AS device_breakdown
        FROM usage_daily_stats u
        LEFT JOIN projects p ON p.id = u.project_id
        WHERE NOT EXISTS (SELECT 1 FROM linked_usage_keys lk WHERE lk.subject_key = u.subject_key)
@@ -590,5 +715,9 @@ module.exports = {
   getCompanyActivity,
   getOverview,
   listAccounts,
-  listEvents
+  listEvents,
+  _test: {
+    activityIdentityCteSql,
+    activityIdentityWhereSql
+  }
 };

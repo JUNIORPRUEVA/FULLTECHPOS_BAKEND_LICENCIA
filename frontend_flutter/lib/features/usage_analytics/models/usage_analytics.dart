@@ -67,6 +67,7 @@ class UsageAccount {
   final String usageStatus;
   final Map<String, dynamic> metrics;
   final List<UsagePlatformBreakdown> platformBreakdown;
+  final List<UsageDeviceBreakdown> deviceBreakdown;
 
   const UsageAccount({
     required this.customerName,
@@ -78,6 +79,7 @@ class UsageAccount {
     required this.usageStatus,
     this.metrics = const {},
     this.platformBreakdown = const [],
+    this.deviceBreakdown = const [],
     this.licenseId,
     this.licenseKey,
     this.licenseStatus,
@@ -117,6 +119,7 @@ class UsageAccount {
       usageStatus: _string(json['usage_status']) ?? 'NEVER_USED',
       metrics: _map(json['last_metrics'] ?? json['metrics']),
       platformBreakdown: _platformBreakdown(json['platform_breakdown']),
+      deviceBreakdown: _deviceBreakdown(json['device_breakdown']),
     );
   }
 
@@ -178,6 +181,44 @@ class UsagePlatformBreakdown {
   }
 }
 
+class UsageDeviceBreakdown {
+  final String deviceId;
+  final String? deviceName;
+  final String platform;
+  final String? appVersion;
+  final DateTime? lastSeenAt;
+  final int eventsCount;
+  final int activeSeconds;
+  final int sessionsCount;
+  final int heartbeatCount;
+
+  const UsageDeviceBreakdown({
+    required this.deviceId,
+    required this.platform,
+    required this.eventsCount,
+    required this.activeSeconds,
+    required this.sessionsCount,
+    required this.heartbeatCount,
+    this.deviceName,
+    this.appVersion,
+    this.lastSeenAt,
+  });
+
+  factory UsageDeviceBreakdown.fromJson(Map<String, dynamic> json) {
+    return UsageDeviceBreakdown(
+      deviceId: _string(json['device_id']) ?? 'unknown',
+      deviceName: _string(json['device_name']),
+      platform: _string(json['platform']) ?? 'unknown',
+      appVersion: _string(json['app_version']),
+      lastSeenAt: _date(json['last_seen_at']),
+      eventsCount: _int(json['events_count']),
+      activeSeconds: _int(json['active_seconds']),
+      sessionsCount: _int(json['sessions_count']),
+      heartbeatCount: _int(json['heartbeat_count']),
+    );
+  }
+}
+
 class UsageAccountsResult {
   final int page;
   final int limit;
@@ -225,6 +266,15 @@ List<UsagePlatformBreakdown> _platformBreakdown(dynamic value) {
       .whereType<Map>()
       .map((item) => UsagePlatformBreakdown.fromJson(_map(item)))
       .where((item) => item.eventsCount > 0 || item.devicesCount > 0)
+      .toList(growable: false);
+}
+
+List<UsageDeviceBreakdown> _deviceBreakdown(dynamic value) {
+  if (value is! List) return const [];
+  return value
+      .whereType<Map>()
+      .map((item) => UsageDeviceBreakdown.fromJson(_map(item)))
+      .where((item) => item.deviceId.trim().isNotEmpty)
       .toList(growable: false);
 }
 

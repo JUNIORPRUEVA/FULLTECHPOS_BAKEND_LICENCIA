@@ -20,6 +20,15 @@ const ALLOWED_EVENT_TYPES = new Set([
   'INVENTORY_ADJUSTED',
   'STOCK_RECEIVED',
   'WAREHOUSE_TRANSFER_COMPLETED',
+  'PURCHASE_ORDER_CREATED',
+  'PURCHASE_ORDER_UPDATED',
+  'PURCHASE_ORDER_APPROVED',
+  'PURCHASE_ORDER_SENT',
+  'PURCHASE_ORDER_CANCELLED',
+  'PURCHASE_ORDER_DELETED',
+  'PURCHASE_ORDER_RECEIVED',
+  'PURCHASE_INVOICE_CREATED',
+  'PURCHASE_INVOICE_DELETED',
   'CASH_SESSION_OPENED',
   'CASH_SESSION_CLOSED',
   'CUSTOMER_CREATED',
@@ -75,6 +84,21 @@ function normalizeDate(value) {
   return date.toISOString();
 }
 
+function normalizePlatform(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return null;
+  if (['win', 'windows', 'pc', 'desktop'].includes(raw)) return 'windows';
+  if (['android', 'apk'].includes(raw)) return 'android';
+  if (['ios', 'iphone', 'ipad'].includes(raw)) return 'ios';
+  if (['pwa', 'progressive_web_app'].includes(raw)) return 'pwa';
+  if (['web', 'browser', 'navegador'].includes(raw)) return 'web';
+  if (['mac', 'macos', 'osx'].includes(raw)) return 'macos';
+  if (['linux'].includes(raw)) return 'linux';
+  if (['movil', 'móvil', 'mobile'].includes(raw)) return 'mobile';
+  if (['tablet'].includes(raw)) return 'tablet';
+  return raw.slice(0, 80);
+}
+
 function clientIp(req) {
   const forwarded = String(req?.headers?.['x-forwarded-for'] || '').split(',')[0].trim();
   return forwarded || req?.ip || req?.socket?.remoteAddress || null;
@@ -115,14 +139,16 @@ function normalizeUsageEvent(payload, req) {
     license_key: normalizeText(payload?.license_key, { max: 200 }),
     business_id: normalizeText(payload?.business_id, { max: 200 }),
     device_id: deviceId,
+    device_name: normalizeText(payload?.device_name || payload?.metadata?.device_name || payload?.metadata?.deviceName, { max: 200 }),
+    device_type: normalizeText(payload?.device_type || payload?.metadata?.device_type || payload?.metadata?.deviceType, { max: 80 }),
     session_id: normalizeText(payload?.session_id, { max: 200 }),
     event_type: eventType,
     actor_user_id: normalizeText(payload?.actorUserId || payload?.actor_user_id, { max: 120 }),
     entity_type: normalizeText(payload?.entityType || payload?.entity_type, { max: 80 }),
     entity_id: normalizeText(payload?.entityId || payload?.entity_id, { max: 160 }),
     feature_code: normalizeText(payload?.feature || payload?.feature_code, { max: 80, upper: true }),
-    platform: normalizeText(payload?.platform || payload?.metadata?.platform, { max: 80 }),
-    app_version: normalizeText(payload?.app_version, { max: 80 }),
+    platform: normalizePlatform(payload?.platform || payload?.metadata?.platform || payload?.device_type || payload?.metadata?.device_type || payload?.metadata?.deviceType),
+    app_version: normalizeText(payload?.app_version || payload?.metadata?.app_version || payload?.metadata?.appVersion, { max: 80 }),
     occurred_at: normalizeDate(payload?.occurredAt || payload?.occurred_at || payload?.timestamp),
     active_seconds: normalizeActiveSeconds(payload?.active_seconds || payload?.metadata?.active_seconds),
     metrics: normalizeObject(payload?.metrics || payload?.stats || payload?.metadata?.metrics),

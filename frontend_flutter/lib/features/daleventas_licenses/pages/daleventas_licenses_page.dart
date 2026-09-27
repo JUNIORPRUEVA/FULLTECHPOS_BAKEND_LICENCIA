@@ -34,7 +34,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
   Timer? _pollTimer;
 
   DaleVentasCompanyLicense? _selected;
-  String _status = 'DEMO_ACTIVE';
+  String _status = 'DEMO';
   String _planFilter = 'TODOS';
   final bool _showSearch = false;
   AppShellActionsController? _shellActionsController;
@@ -115,10 +115,7 @@ class _DaleVentasLicensesPageState extends State<DaleVentasLicensesPage> {
         .then(_applyCommercialFilters);
 
     try {
-      final usage = await _usageService.getDashboard(
-        appCode: 'DALEVENTAS_POS',
-        limit: 200,
-      );
+      final usage = await _usageService.getDashboard(limit: 200);
       _usageByCompany = _indexUsage(usage.accounts.accounts);
     } catch (_) {
       _usageByCompany = {};
@@ -1114,9 +1111,9 @@ class _FilterChoice {
 }
 
 const _statusFilterChoices = [
+  _FilterChoice('Licencias demo', 'DEMO'),
   _FilterChoice('Demo activos', 'DEMO_ACTIVE'),
   _FilterChoice('Todos', 'TODOS'),
-  _FilterChoice('Demo', 'DEMO'),
   _FilterChoice('Compraron', 'COMPRARON'),
   _FilterChoice('Activos', 'ACTIVE'),
   _FilterChoice('Por vencer', 'POR_VENCER'),
@@ -2439,7 +2436,7 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
     _maxDevicesCtrl = TextEditingController();
     _planCode = widget.company.planCode;
     _syncCommercialFields();
-    _activityFuture = widget.service.getActivity(widget.company.companyId);
+    _activityFuture = _loadActivity();
     _durationDaysCtrl.addListener(_syncExpiresFromDays);
     _expiresCtrl.addListener(_syncDaysFromExpires);
   }
@@ -2447,7 +2444,10 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
   @override
   void didUpdateWidget(covariant _LicenseControlPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.company.companyId == widget.company.companyId) return;
+    if (oldWidget.company.companyId == widget.company.companyId &&
+        oldWidget.usage?.businessId == widget.usage?.businessId) {
+      return;
+    }
     _maxUsersCtrl.text = widget.company.maxUsers.toString();
     _maxProductsCtrl.text = widget.company.maxProducts.toString();
     _setExpirationFields(widget.company.endsAt);
@@ -2455,7 +2455,15 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
     _notesCtrl.text = widget.company.notes ?? '';
     _planCode = widget.company.planCode;
     _syncCommercialFields();
-    _activityFuture = widget.service.getActivity(widget.company.companyId);
+    _activityFuture = _loadActivity();
+  }
+
+  Future<Map<String, dynamic>> _loadActivity() {
+    final usageBusinessId = widget.usage?.businessId?.trim();
+    final lookupId = usageBusinessId != null && usageBusinessId.isNotEmpty
+        ? usageBusinessId
+        : widget.company.companyId;
+    return widget.service.getActivity(lookupId);
   }
 
   @override
@@ -2918,9 +2926,8 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
           label: const Text('Reconciliar uso'),
           onPressed: _busy
               ? null
-              : () => _run(
-                    () => widget.service.refreshUsage(company.companyId),
-                  ),
+              : () =>
+                    _run(() => widget.service.refreshUsage(company.companyId)),
         ),
       ),
       action(
@@ -3183,7 +3190,10 @@ class _LicenseControlPanelState extends State<_LicenseControlPanel> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _DaleVentasUsageSummary(usage: widget.usage),
+                      _DaleVentasUsageSummary(
+                        company: company,
+                        usage: widget.usage,
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       FutureBuilder<Map<String, dynamic>>(
                         future: _activityFuture,
@@ -4040,13 +4050,16 @@ class _InfoItem extends StatelessWidget {
 }
 
 class _DaleVentasUsageSummary extends StatelessWidget {
+  final DaleVentasCompanyLicense company;
   final UsageAccount? usage;
 
-  const _DaleVentasUsageSummary({required this.usage});
+  const _DaleVentasUsageSummary({required this.company, required this.usage});
 
   @override
   Widget build(BuildContext context) {
     final account = usage;
+    final fallbackDate = _fallbackLicenseActivityDate(company);
+    final hasTelemetry = account != null;
     final businessItems = [
       _InfoItem(
         icon: Icons.point_of_sale_rounded,
@@ -4083,12 +4096,14 @@ class _DaleVentasUsageSummary extends StatelessWidget {
       _InfoItem(
         icon: Icons.online_prediction_rounded,
         label: 'Estado',
-        value: _daleUsageStatusLabel(account),
+        value: hasTelemetry
+            ? _daleUsageStatusLabel(account)
+            : _fallbackLicenseActivityLabel(company),
       ),
       _InfoItem(
         icon: Icons.schedule_rounded,
         label: 'Ultimo uso',
-        value: _fmtUsageDate(account?.lastSeenAt),
+        value: _fmtUsageDate(account?.lastSeenAt ?? fallbackDate),
       ),
       _InfoItem(
         icon: Icons.timer_outlined,
@@ -4118,14 +4133,14 @@ class _DaleVentasUsageSummary extends StatelessWidget {
       _InfoItem(
         icon: Icons.new_releases_outlined,
         label: 'Version',
-        value: account?.appVersion ?? 'Sin version',
+        value: account?.appVersion ?? 'Sin telemetria',
       ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _UsageAlert(usage: account),
+        _UsageAlert(company: company, usage: account),
         const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -4166,7 +4181,184 @@ class _DaleVentasUsageSummary extends StatelessWidget {
             );
           },
         ),
+        const SizedBox(height: AppSpacing.md),
+        _DeviceReportPanel(company: company, usage: account),
       ],
+    );
+  }
+}
+
+class _DeviceReportPanel extends StatelessWidget {
+  final DaleVentasCompanyLicense company;
+  final UsageAccount? usage;
+
+  const _DeviceReportPanel({required this.company, required this.usage});
+
+  @override
+  Widget build(BuildContext context) {
+    final devices = usage?.deviceBreakdown ?? const [];
+    final multipleDevices = devices.length > 1;
+    final title = devices.isEmpty
+        ? 'Dispositivos de uso'
+        : multipleDevices
+        ? 'Dispositivos de uso (${devices.length})'
+        : 'Dispositivo de uso';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.devices_other_outlined,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (devices.isNotEmpty)
+                _CommercialBadge(
+                  label: multipleDevices ? 'Varios equipos' : 'Un equipo',
+                  color: multipleDevices ? AppColors.warning : AppColors.info,
+                  icon: multipleDevices
+                      ? Icons.device_hub_outlined
+                      : Icons.computer_rounded,
+                  compact: true,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (devices.isEmpty)
+            Text(
+              _hasLicenseActivitySignal(company)
+                  ? 'Licencia/trial detectado, pero DaleVentas POS todavia no reporta el dispositivo por telemetria.'
+                  : 'Sin dispositivos reportados por telemetria.',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            )
+          else
+            ...devices.take(6).map((device) => _DeviceUsageRow(device: device)),
+          if (devices.length > 6) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '+${devices.length - 6} dispositivo${devices.length - 6 == 1 ? '' : 's'} adicional${devices.length - 6 == 1 ? '' : 'es'}',
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DeviceUsageRow extends StatelessWidget {
+  final UsageDeviceBreakdown device;
+
+  const _DeviceUsageRow({required this.device});
+
+  @override
+  Widget build(BuildContext context) {
+    final usingNow =
+        device.lastSeenAt != null &&
+        DateTime.now().difference(device.lastSeenAt!.toLocal()).inMinutes <= 15;
+    final label = _deviceLabel(device);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: usingNow
+              ? AppColors.success.withValues(alpha: 0.08)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: usingNow
+                ? AppColors.success.withValues(alpha: 0.28)
+                : AppColors.border,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              _deviceIcon(device.platform),
+              color: usingNow ? AppColors.success : AppColors.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_platformLabel(device.platform)} · Ultimo uso ${_fmtUsageDate(device.lastSeenAt)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${device.eventsCount} eventos · ${_fmtUsageDuration(device.activeSeconds)} · ${device.sessionsCount} sesiones${device.appVersion == null ? '' : ' · v${device.appVersion}'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            _CommercialBadge(
+              label: usingNow ? 'Ahora' : 'Historial',
+              color: usingNow ? AppColors.success : AppColors.textMuted,
+              icon: usingNow
+                  ? Icons.online_prediction_rounded
+                  : Icons.history_rounded,
+              compact: true,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -4223,9 +4415,18 @@ class _DaleVentasActivitySummary extends StatelessWidget {
                 ),
               ),
               _InfoItem(
+                icon: Icons.shopping_cart_checkout_rounded,
+                label: 'Compras',
+                value: _fmtDateTime(
+                  _dateFromAny(data['last_purchase_activity_at']),
+                ),
+              ),
+              _InfoItem(
                 icon: Icons.payments_outlined,
                 label: 'Caja',
-                value: _fmtDateTime(_dateFromAny(data['last_cash_activity_at'])),
+                value: _fmtDateTime(
+                  _dateFromAny(data['last_cash_activity_at']),
+                ),
               ),
               _InfoItem(
                 icon: Icons.people_alt_outlined,
@@ -4273,19 +4474,27 @@ class _DaleVentasActivitySummary extends StatelessWidget {
 }
 
 class _UsageAlert extends StatelessWidget {
+  final DaleVentasCompanyLicense company;
   final UsageAccount? usage;
 
-  const _UsageAlert({required this.usage});
+  const _UsageAlert({required this.company, required this.usage});
 
   @override
   Widget build(BuildContext context) {
     final account = usage;
-    final status = account?.usageStatus ?? 'NEVER_USED';
-    final color = _usageStatusColor(status);
+    final hasLicenseSignal = _hasLicenseActivitySignal(company);
+    final status =
+        account?.usageStatus ??
+        (hasLicenseSignal ? 'ACTIVE_RECENT' : 'NEVER_USED');
+    final color = account == null && hasLicenseSignal
+        ? AppColors.info
+        : _usageStatusColor(status);
     final title = account == null
-        ? 'Sin actividad enviada'
+        ? _fallbackLicenseActivityLabel(company)
         : _daleUsageStatusLabel(account);
-    final detail = account == null
+    final detail = account == null && hasLicenseSignal
+        ? 'Licencia/trial detectado. Pendiente recibir telemetria detallada desde DaleVentas POS.'
+        : account == null
         ? 'DaleVentas POS aun no ha reportado heartbeat para esta empresa.'
         : 'Reporte agregado ${account.eventsCount} · App ${account.appCode}';
 
@@ -4983,6 +5192,30 @@ String _fmtMetricList(String? value) {
   return parts.take(3).join(', ');
 }
 
+bool _hasLicenseActivitySignal(DaleVentasCompanyLicense company) {
+  return company.startsAt != null ||
+      company.licenseActivatedAt != null ||
+      company.trialStartedAt != null ||
+      company.isUsable ||
+      company.isActive ||
+      company.isTrial;
+}
+
+DateTime? _fallbackLicenseActivityDate(DaleVentasCompanyLicense company) {
+  return company.licenseActivatedAt ??
+      company.trialStartedAt ??
+      company.startsAt;
+}
+
+String _fallbackLicenseActivityLabel(DaleVentasCompanyLicense company) {
+  if (!_hasLicenseActivitySignal(company)) return 'Sin uso';
+  if (company.isTrial) return 'Demo registrada';
+  if (company.isActive || company.isUsable) return 'Licencia activa';
+  if (company.isBlocked) return 'Licencia bloqueada';
+  if (company.isExpired) return 'Licencia vencida';
+  return 'Licencia registrada';
+}
+
 String _fmtPrimaryPlatform(UsageAccount? account) {
   final platform = account?.platformBreakdown.isNotEmpty == true
       ? account!.platformBreakdown.first
@@ -5014,6 +5247,8 @@ String _platformLabel(String value) {
       return 'Android';
     case 'ios':
       return 'iPhone/iPad';
+    case 'pwa':
+      return 'PWA';
     case 'web':
       return 'Web';
     case 'macos':
@@ -5022,10 +5257,47 @@ String _platformLabel(String value) {
       return 'Linux';
     case 'unknown_native':
       return 'App nativa';
+    case 'pc':
+      return 'Windows';
+    case 'movil':
+    case 'mobile':
+      return 'Móvil';
+    case 'tablet':
+      return 'Tablet';
     case 'api':
       return 'Servidor';
     default:
       return 'Desconocido';
+  }
+}
+
+String _deviceLabel(UsageDeviceBreakdown device) {
+  final name = device.deviceName?.trim();
+  if (name != null && name.isNotEmpty) return name;
+  final id = device.deviceId.trim();
+  if (id.length <= 18) return id;
+  return '${id.substring(0, 8)}...${id.substring(id.length - 6)}';
+}
+
+IconData _deviceIcon(String platform) {
+  switch (platform.trim().toLowerCase()) {
+    case 'android':
+    case 'mobile':
+    case 'movil':
+    case 'tablet':
+    case 'ios':
+      return Icons.phone_android_rounded;
+    case 'pwa':
+      return Icons.install_mobile_rounded;
+    case 'windows':
+    case 'pc':
+    case 'macos':
+    case 'linux':
+      return Icons.computer_rounded;
+    case 'web':
+      return Icons.language_rounded;
+    default:
+      return Icons.devices_other_outlined;
   }
 }
 
