@@ -2,23 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../auth/auth_service.dart';
+import '../config/navigation_config.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // MODELO DE ITEM DEL SIDEBAR
 // ═══════════════════════════════════════════════════════════════
+
+/// Categoría de visibilidad de un item de navegación.
+///
+/// Ver `docs/APPYRA_PROJECT_MODE.md`.
+enum SidebarItemCategory {
+  /// Navegación general de Appyra (siempre visible).
+  general,
+
+  /// Funcionalidad global preservada pero fuera del flujo normal en project
+  /// mode (p. ej. el Panel global). NO es legacy: no está retirada.
+  hiddenInProjectMode,
+
+  /// Módulo global retirado de la navegación (LEGACY / HIDDEN). Su lógica
+  /// sigue en el código y se moverá dentro de cada proyecto.
+  legacyHidden,
+}
+
 class AppSidebarItem {
   final String label;
   final IconData icon;
   final IconData activeIcon;
   final String route;
 
+  /// Visibilidad del item en la navegación ([SidebarItemCategory]).
+  ///
+  /// Un item oculto conserva su ruta, pantalla, servicio y endpoints; solo
+  /// deja de aparecer en la navegación general de Appyra.
+  final SidebarItemCategory category;
+
   const AppSidebarItem({
     required this.label,
     required this.icon,
     required this.activeIcon,
     required this.route,
+    this.category = SidebarItemCategory.general,
   });
 }
 
@@ -29,31 +54,58 @@ class AppSidebarGroupItem {
   final IconData activeIcon;
   final List<AppSidebarItem> children;
 
+  /// Visibilidad del grupo en la navegación ([SidebarItemCategory]).
+  final SidebarItemCategory category;
+
   const AppSidebarGroupItem({
     required this.label,
     required this.icon,
     required this.activeIcon,
     required this.children,
+    this.category = SidebarItemCategory.general,
   });
 }
 
+/// Registro completo de navegación de Appyra.
+///
+/// Este registro NO se recorta: refleja todos los módulos existentes para que
+/// la navegación legacy pueda reactivarse con `LEGACY_MODULES_VISIBLE=true`.
+/// Lo que se renderiza es [visibleSidebarItems].
 const List<dynamic> sidebarItems = [
+  // ── Global preservado, fuera del flujo normal en project mode ──
+  // El Panel global NO se borra: ruta, pantalla, servicio y métricas siguen
+  // intactos. Solo deja de mostrarse en la navegación normal.
   AppSidebarItem(
     label: 'Panel',
     icon: Icons.dashboard_outlined,
     activeIcon: Icons.dashboard_rounded,
     route: '/admin/panel',
+    category: SidebarItemCategory.hiddenInProjectMode,
   ),
+
+  // ── Navegación principal de Appyra ────────────────────────────
+  AppSidebarItem(
+    label: 'Proyectos',
+    icon: Icons.folder_copy_outlined,
+    activeIcon: Icons.folder_copy_rounded,
+    route: '/admin/proyectos',
+  ),
+
+  // ── Módulos LEGACY / HIDDEN ───────────────────────────────────
+  // Ocultos por defecto. No borrar: rutas, pantallas, servicios, endpoints y
+  // tablas siguen intactos (ver `docs/APPYRA_PROJECT_MODE.md`).
   AppSidebarGroupItem(
     label: 'Clientes',
     icon: Icons.people_outline_rounded,
     activeIcon: Icons.people_rounded,
+    category: SidebarItemCategory.legacyHidden,
     children: [
       AppSidebarItem(
         label: 'Lista de Clientes',
         icon: Icons.list_alt_outlined,
         activeIcon: Icons.list_alt_rounded,
         route: '/admin/clientes',
+        category: SidebarItemCategory.legacyHidden,
       ),
     ],
   ),
@@ -62,33 +114,32 @@ const List<dynamic> sidebarItems = [
     icon: Icons.vpn_key_outlined,
     activeIcon: Icons.vpn_key_rounded,
     route: '/admin/licencias',
+    category: SidebarItemCategory.legacyHidden,
   ),
   AppSidebarItem(
     label: 'DaleVentas Cloud',
     icon: Icons.cloud_done_outlined,
     activeIcon: Icons.cloud_done_rounded,
     route: '/admin/daleventas-licencias',
+    category: SidebarItemCategory.legacyHidden,
   ),
   AppSidebarItem(
     label: 'Uso del sistema',
     icon: Icons.query_stats_outlined,
     activeIcon: Icons.query_stats_rounded,
     route: '/admin/uso',
-  ),
-  AppSidebarItem(
-    label: 'Proyectos',
-    icon: Icons.folder_copy_outlined,
-    activeIcon: Icons.folder_copy_rounded,
-    route: '/admin/proyectos',
+    category: SidebarItemCategory.legacyHidden,
   ),
   AppSidebarItem(
     label: 'Pagos',
     icon: Icons.payments_outlined,
     activeIcon: Icons.payments_rounded,
     route: '/admin/pagos',
+    category: SidebarItemCategory.legacyHidden,
   ),
 ];
 
+/// Sub-opciones de la sección "Configuración" (alcance global de Appyra).
 const List<AppSidebarItem> settingsSidebarItems = [
   AppSidebarItem(
     label: 'Usuarios',
@@ -97,6 +148,84 @@ const List<AppSidebarItem> settingsSidebarItems = [
     route: '/admin/usuarios',
   ),
 ];
+
+SidebarItemCategory _categoryOf(Object item) {
+  if (item is AppSidebarGroupItem) return item.category;
+  if (item is AppSidebarItem) return item.category;
+  return SidebarItemCategory.general;
+}
+
+/// `true` cuando el item/grupo está clasificado como LEGACY / HIDDEN.
+bool isLegacySidebarItem(Object item) =>
+    _categoryOf(item) == SidebarItemCategory.legacyHidden;
+
+/// `true` cuando el item está preservado pero oculto en project mode.
+bool isProjectModeHiddenSidebarItem(Object item) =>
+    _categoryOf(item) == SidebarItemCategory.hiddenInProjectMode;
+
+/// Navegación principal que debe renderizarse según el modo actual de Appyra.
+///
+/// - project mode (por defecto): solo [SidebarItemCategory.general].
+/// - `LEGACY_MODULES_VISIBLE=true`: registro completo (Panel + legacy).
+List<dynamic> get visibleSidebarItems => NavigationConfig.showLegacyModules
+    ? sidebarItems
+    : sidebarItems
+          .where((item) => _categoryOf(item) == SidebarItemCategory.general)
+          .toList();
+
+/// Sub-opciones de "Configuración" que deben renderizarse.
+List<AppSidebarItem> get visibleSettingsSidebarItems =>
+    NavigationConfig.showLegacyModules
+    ? settingsSidebarItems
+    : settingsSidebarItems
+          .where((item) => item.category == SidebarItemCategory.general)
+          .toList();
+
+/// Rutas de los módulos legacy ocultos (independiente del flag).
+///
+/// Documenta/verifica que las rutas siguen declaradas aunque no se naveguen.
+List<String> get legacySidebarRoutes {
+  final routes = <String>[];
+  for (final item in sidebarItems) {
+    if (item is AppSidebarGroupItem) {
+      routes.addAll(
+        item.children
+            .where((c) => c.category == SidebarItemCategory.legacyHidden)
+            .map((c) => c.route),
+      );
+    } else if (item is AppSidebarItem &&
+        item.category == SidebarItemCategory.legacyHidden) {
+      routes.add(item.route);
+    }
+  }
+  routes.addAll(
+    settingsSidebarItems
+        .where((i) => i.category == SidebarItemCategory.legacyHidden)
+        .map((i) => i.route),
+  );
+  return routes;
+}
+
+/// Rutas preservadas pero ocultas en project mode (p. ej. el Panel global).
+List<String> get projectModeHiddenSidebarRoutes {
+  final routes = <String>[];
+  for (final item in sidebarItems) {
+    if (item is AppSidebarGroupItem) {
+      if (item.category == SidebarItemCategory.hiddenInProjectMode) {
+        routes.addAll(item.children.map((c) => c.route));
+      }
+    } else if (item is AppSidebarItem &&
+        item.category == SidebarItemCategory.hiddenInProjectMode) {
+      routes.add(item.route);
+    }
+  }
+  routes.addAll(
+    settingsSidebarItems
+        .where((i) => i.category == SidebarItemCategory.hiddenInProjectMode)
+        .map((i) => i.route),
+  );
+  return routes;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // SIDEBAR PRINCIPAL COLAPSABLE
@@ -211,12 +340,12 @@ class AppSidebarState extends State<AppSidebar>
               children: [
                 // ── Header con toggle ──
                 _buildHeader(effectiveExpanded),
-                // ── Navegación ──
+                // ── Navegación principal (scrolleable) ──
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      ...sidebarItems.map((item) {
+                      ...visibleSidebarItems.map((item) {
                         if (item is AppSidebarGroupItem) {
                           return _SidebarGroupTile(
                             group: item,
@@ -243,17 +372,18 @@ class AppSidebarState extends State<AppSidebar>
                           },
                         );
                       }),
-                      const SizedBox(height: 8),
-                      _SettingsSection(
-                        currentRoute: widget.currentRoute,
-                        expanded: effectiveExpanded,
-                        mobile: widget.mobile,
-                        opacityAnim: opacityAnim,
-                        onItemTap: widget.onItemTap,
-                      ),
                     ],
                   ),
                 ),
+                // ── Configuración (anclada al fondo del sidebar) ──
+                if (visibleSettingsSidebarItems.isNotEmpty)
+                  _SettingsSection(
+                    currentRoute: widget.currentRoute,
+                    expanded: effectiveExpanded,
+                    mobile: widget.mobile,
+                    opacityAnim: opacityAnim,
+                    onItemTap: widget.onItemTap,
+                  ),
                 // ── Footer ──
                 _buildFooter(effectiveExpanded),
               ],
@@ -858,7 +988,7 @@ class _SettingsSectionState extends State<_SettingsSection> {
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
 
-  bool get _hasActiveChild => settingsSidebarItems.any(
+  bool get _hasActiveChild => visibleSettingsSidebarItems.any(
     (item) => widget.currentRoute.startsWith(item.route),
   );
 
@@ -937,7 +1067,7 @@ class _SettingsSectionState extends State<_SettingsSection> {
                     ),
                   ),
                   // Opciones
-                  ...settingsSidebarItems.map((item) {
+                  ...visibleSettingsSidebarItems.map((item) {
                     final isChildActive = widget.currentRoute.startsWith(
                       item.route,
                     );
@@ -1063,7 +1193,7 @@ class _SettingsSectionState extends State<_SettingsSection> {
                   ? CrossFadeState.showFirst
                   : CrossFadeState.showSecond,
               firstChild: Column(
-                children: settingsSidebarItems.map((item) {
+                children: visibleSettingsSidebarItems.map((item) {
                   final isChildActive = widget.currentRoute.startsWith(
                     item.route,
                   );

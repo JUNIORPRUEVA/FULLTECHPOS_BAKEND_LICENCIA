@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/auth/session_manager.dart';
+import '../../../core/config/appyra_projects.dart';
+import '../../../core/config/navigation_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../licenses/models/project.dart';
 import '../../licenses/models/project_profile.dart';
 import '../../licenses/services/projects_service.dart';
+import '../widgets/project_mode_card.dart';
 
 class ProjectsPage extends StatefulWidget {
-  const ProjectsPage({super.key});
+  /// Servicio opcional (inyectable en tests/verificación visual).
+  final ProjectsService? service;
+
+  const ProjectsPage({super.key, this.service});
 
   @override
   State<ProjectsPage> createState() => _ProjectsPageState();
 }
 
 class _ProjectsPageState extends State<ProjectsPage> {
-  final ProjectsService _service = ProjectsService(
-    sessionManager: SessionManager(),
-  );
+  late final ProjectsService _service;
 
   List<Project> _projects = [];
+
+  /// Filas reales de `projects` por `code` normalizado (para enriquecer las
+  /// tarjetas de project mode y habilitar la edición cuando existan).
+  Map<String, Project> _projectsByCode = <String, Project>{};
+
   Project? _selected;
   bool _loading = true;
   String? _error;
@@ -59,6 +69,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
   @override
   void initState() {
     super.initState();
+    _service =
+        widget.service ?? ProjectsService(sessionManager: SessionManager());
     _nameCtrl = TextEditingController();
     _codeCtrl = TextEditingController();
     _descCtrl = TextEditingController();
@@ -116,40 +128,69 @@ class _ProjectsPageState extends State<ProjectsPage> {
     setState(update);
   }
 
+  /// `true` cuando Appyra corre en project mode (navegación legacy oculta).
+  bool get _isProjectMode => !NavigationConfig.showLegacyModules;
+
   Future<void> _loadProjects() async {
     _safeSetState(() {
       _loading = true;
       _error = null;
     });
+
+    List<Project> databaseProjects = <Project>[];
     try {
-      final projects = await _service.listProjects();
+      databaseProjects = await _service.listProjects();
       if (!mounted) return;
-      // Ordenar proyectos por nombre alfabéticamente
-      projects.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
-      _safeSetState(() {
-        _projects = projects;
-        _loading = false;
-        // Re-seleccionar el mismo proyecto si estaba seleccionado
-        if (_selected != null) {
-          _selected = projects.cast<Project?>().firstWhere(
-            (p) => p!.id == _selected!.id,
-            orElse: () => null,
-          );
-        }
-      });
     } on UnauthorizedException {
       _safeSetState(() => _loading = false);
       // No hacer nada mas: el callback global de AuthService ya limpio la sesion
       // y el router redirigira al login automaticamente.
       return;
     } catch (e) {
-      _safeSetState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (!mounted) return;
+      // En project mode la entrada al proyecto viene del registro central
+      // (`lib/core/config/appyra_projects.dart`): un fallo de la API no debe
+      // ocultar la entrada ni el acceso a la consola del proyecto.
+      if (!_isProjectMode) {
+        _safeSetState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+        return;
+      }
+      databaseProjects = <Project>[];
     }
+
+    // En project mode el listado sale del registro central; la fila real de
+    // `projects` solo se usa para habilitar la edición cuando exista.
+    final listedProjects = _isProjectMode
+        ? databaseProjects
+              .where(
+                (project) =>
+                    AppyraProjects.isVisibleInProjectMode(project.code),
+              )
+              .toList()
+        : databaseProjects;
+    // Ordenar proyectos por nombre alfabéticamente
+    listedProjects.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+
+    _safeSetState(() {
+      _projects = listedProjects;
+      _projectsByCode = <String, Project>{
+        for (final project in databaseProjects)
+          AppyraProjects.normalizeCode(project.code): project,
+      };
+      _loading = false;
+      // Re-seleccionar el mismo proyecto si estaba seleccionado
+      if (_selected != null) {
+        _selected = listedProjects.cast<Project?>().firstWhere(
+          (p) => p!.id == _selected!.id,
+          orElse: () => null,
+        );
+      }
+    });
   }
 
   void _selectProject(Project project) {
@@ -421,6 +462,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
       );
     }
 
+    if (_isProjectMode) {
+      return _buildProjectModeList();
+    }
+
     if (_projects.isEmpty) {
       return const Center(
         child: Text(
@@ -433,33 +478,10 @@ class _ProjectsPageState extends State<ProjectsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header con título
-        Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: AppColors.border)),
-          ),
-          child: Row(
-            children: [
-              const Text(
-                'Proyectos',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${_projects.length} proyectos',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
-          ),
+        _buildListHeader(
+          _projects.length == 1
+              ? '1 proyecto'
+              : '${_projects.length} proyectos',
         ),
         // Lista
         Expanded(
@@ -475,6 +497,112 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 selected: isSelected,
                 onTap: () => _selectProject(project),
                 onEdit: () => _editProjectFromList(project),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Cabecera de la lista de proyectos.
+  Widget _buildListHeader(String countLabel) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.folder_copy_rounded,
+              size: 20,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Proyectos',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+                SizedBox(height: 1),
+                Text(
+                  'Administra los productos de Appyra',
+                  style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              countLabel,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Lista de proyectos en project mode.
+  ///
+  /// Las tarjetas salen del registro central ([AppyraProjects.projectModeVisible])
+  /// y su acción principal abre la consola existente de cada proyecto. No
+  /// dependen de que exista una fila en la tabla `projects`.
+  Widget _buildProjectModeList() {
+    final definitions = AppyraProjects.projectModeVisible;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildListHeader(
+          definitions.length == 1
+              ? '1 proyecto'
+              : '${definitions.length} proyectos',
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 22),
+            itemCount: definitions.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (_, index) {
+              final definition = definitions[index];
+              final project =
+                  _projectsByCode[AppyraProjects.normalizeCode(
+                    definition.code,
+                  )];
+              return ProjectModeCard(
+                definition: definition,
+                project: project,
+                onManage: () => context.go(definition.route),
+                onEdit: project == null
+                    ? null
+                    : () => _editProjectFromList(project),
               );
             },
           ),

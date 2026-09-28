@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'app_shell_actions.dart';
+import '../config/navigation_config.dart';
 import '../layout/responsive_layout.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -139,7 +140,7 @@ class _AdminShellState extends State<AdminShell> {
               borderRadius: BorderRadius.circular(14),
               child: InkWell(
                 onTap: isDaleVentas
-                    ? () => context.go('/admin/panel')
+                    ? () => context.go(NavigationConfig.homeRoute)
                     : _safePop,
                 borderRadius: BorderRadius.circular(14),
                 child: const SizedBox(

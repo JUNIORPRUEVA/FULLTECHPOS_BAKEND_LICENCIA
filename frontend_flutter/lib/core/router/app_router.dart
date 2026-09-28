@@ -6,13 +6,14 @@ import '../../features/auth/pages/login_page.dart';
 import '../../features/cloud_admin/configs/resource_configs.dart';
 import '../../features/cloud_admin/pages/cloud_resource_page.dart';
 import '../../features/customers/pages/customers_page.dart';
-import '../../features/daleventas_licenses/pages/daleventas_licenses_page.dart';
+import '../../features/daleventas_licenses/pages/daleventas_project_shell.dart';
 import '../../features/dashboard/pages/dashboard_page.dart';
 import '../../features/licenses/pages/licenses_page.dart';
 import '../../features/payments/pages/payments_page.dart';
 import '../../features/projects/pages/projects_page.dart';
 import '../../features/usage_analytics/pages/usage_analytics_page.dart';
 import '../auth/auth_service.dart';
+import '../config/navigation_config.dart';
 import '../layout/admin_shell.dart';
 
 class AppRouter {
@@ -36,7 +37,9 @@ class AppRouter {
           return isLogin ? null : '/login';
         }
 
-        if (isLogin || isSplash) return '/admin/panel';
+        // En project mode el destino inicial es Proyectos; el Panel global
+        // (`/admin/panel`) sigue declarado y accesible por URL directa.
+        if (isLogin || isSplash) return NavigationConfig.homeRoute;
         return null;
       },
       routes: [
@@ -46,6 +49,13 @@ class AppRouter {
               const Scaffold(body: FullposSplashScreen()),
         ),
         GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+        // Consola del proyecto DaleVentas: vive FUERA del shell general porque
+        // se presenta como una app independiente (cabecera propia + barra
+        // inferior con Reporte / Licencias / Boletín).
+        GoRoute(
+          path: '/admin/daleventas-licencias',
+          builder: (context, state) => const DaleVentasProjectShell(),
+        ),
         ShellRoute(
           builder: (context, state, child) => AdminShell(
             currentRoute: state.uri.path,
@@ -70,10 +80,6 @@ class AppRouter {
                 final licenseId = state.uri.queryParameters['licenseId'];
                 return LicensesPage(initialLicenseId: licenseId);
               },
-            ),
-            GoRoute(
-              path: '/admin/daleventas-licencias',
-              builder: (context, state) => const DaleVentasLicensesPage(),
             ),
             GoRoute(
               path: '/admin/uso',

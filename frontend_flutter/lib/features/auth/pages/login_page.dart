@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/api/api_exception.dart';
+import '../../../core/config/navigation_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_button.dart';
@@ -45,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
             _usernameCtrl.text.trim(),
             _passwordCtrl.text,
           );
-      if (mounted) context.go('/admin/panel');
+      if (mounted) context.go(NavigationConfig.homeRoute);
     } on ApiException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {

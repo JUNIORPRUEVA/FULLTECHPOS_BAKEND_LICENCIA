@@ -1847,22 +1847,32 @@ class _CompanyCardState extends State<_CompanyCard> {
         company.usersUsed >= company.maxUsers ||
         company.productsUsed >= company.maxProducts;
     final daysColor = _remainingDaysColor(company);
+    // Degradado de fondo acorde con el estado real de la licencia.
+    final gradient = _companyCardGradient(
+      company,
+      selected: widget.selected,
+    );
+    final accent = overLimit ? AppColors.warning : _companyAccentColor(company);
     return Material(
-      color: widget.selected ? AppColors.primaryLight : AppColors.surface,
-      borderRadius: BorderRadius.circular(8),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         onTap: widget.onTap,
-        child: Container(
+        child: Ink(
           padding: EdgeInsets.all(mobile ? AppSpacing.sm : AppSpacing.md),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              colors: gradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: widget.selected
                   ? AppColors.primary
-                  : overLimit
-                  ? AppColors.warning.withValues(alpha: 0.35)
-                  : AppColors.border,
+                  : accent.withValues(alpha: 0.30),
+              width: widget.selected ? 1.5 : 1,
             ),
           ),
           child: mobile
@@ -1870,7 +1880,7 @@ class _CompanyCardState extends State<_CompanyCard> {
                   company: company,
                   usage: widget.usage,
                   expanded: _expanded,
-                  overLimit: overLimit,
+                  accent: accent,
                   daysColor: daysColor,
                   onToggleExpanded: () =>
                       setState(() => _expanded = !_expanded),
@@ -1886,9 +1896,7 @@ class _CompanyCardState extends State<_CompanyCard> {
                           width: 4,
                           height: mobile ? 50 : 52,
                           decoration: BoxDecoration(
-                            color: overLimit
-                                ? AppColors.warning
-                                : AppColors.primary,
+                            color: accent,
                             borderRadius: BorderRadius.circular(99),
                           ),
                         ),
@@ -2036,7 +2044,9 @@ class _MobileCompanyCardContent extends StatelessWidget {
   final DaleVentasCompanyLicense company;
   final UsageAccount? usage;
   final bool expanded;
-  final bool overLimit;
+
+  /// Color fuerte del estado (barra lateral de la tarjeta).
+  final Color accent;
   final Color daysColor;
   final VoidCallback onToggleExpanded;
   final Future<void> Function(String action) onAction;
@@ -2045,7 +2055,7 @@ class _MobileCompanyCardContent extends StatelessWidget {
     required this.company,
     required this.usage,
     required this.expanded,
-    required this.overLimit,
+    required this.accent,
     required this.daysColor,
     required this.onToggleExpanded,
     required this.onAction,
@@ -2063,7 +2073,7 @@ class _MobileCompanyCardContent extends StatelessWidget {
               width: 4,
               height: 76,
               decoration: BoxDecoration(
-                color: overLimit ? AppColors.warning : AppColors.primary,
+                color: accent,
                 borderRadius: BorderRadius.circular(99),
               ),
             ),
@@ -5064,6 +5074,46 @@ Color _remainingDaysColor(DaleVentasCompanyLicense company) {
   if (days <= 7) return AppColors.error;
   if (days <= 30) return AppColors.warning;
   return AppColors.success;
+}
+
+/// Degradado de fondo de la tarjeta de una empresa, acorde con el estado real
+/// de su licencia (de un tinte suave a la superficie neutra).
+List<Color> _companyCardGradient(
+  DaleVentasCompanyLicense company, {
+  bool selected = false,
+}) {
+  if (selected) return const [AppColors.primaryLight, AppColors.surface];
+  return [_companyTintColor(company), AppColors.surface];
+}
+
+/// Tinte suave del estado (extremo "fuerte" del degradado).
+Color _companyTintColor(DaleVentasCompanyLicense company) {
+  if (company.isBlocked) return const Color(0xFFF1F5F9);
+  if (company.isExpired) return AppColors.errorLight;
+  if (company.isTrial) return AppColors.infoLight;
+  if (company.isActive) {
+    final days = _remainingDays(company);
+    if (days != null && days < 0) return AppColors.errorLight;
+    if (days != null && days <= 7) return AppColors.errorLight;
+    if (days != null && days <= 30) return AppColors.warningLight;
+    return AppColors.successLight;
+  }
+  return AppColors.surfaceVariant;
+}
+
+/// Color fuerte del estado (barra lateral y borde de la tarjeta).
+Color _companyAccentColor(DaleVentasCompanyLicense company) {
+  if (company.isBlocked) return AppColors.textSecondary;
+  if (company.isExpired) return AppColors.error;
+  if (company.isTrial) return AppColors.info;
+  if (company.isActive) {
+    final days = _remainingDays(company);
+    if (days != null && days < 0) return AppColors.error;
+    if (days != null && days <= 7) return AppColors.error;
+    if (days != null && days <= 30) return AppColors.warning;
+    return AppColors.success;
+  }
+  return AppColors.textSecondary;
 }
 
 bool _shouldShowListPlanBadge(DaleVentasCompanyLicense company) {
